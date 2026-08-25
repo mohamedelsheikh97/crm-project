@@ -1,0 +1,17 @@
+@import 'tailwindcss';
+
+/*
+ * Tailwind's preflight removes the browser's default focus ring, and the
+ * focus-indicator contract requires a visible one on every focusable element
+ * (FR-024). Restore it once, here, rather than per component.
+ */
+@layer base {
+  :focus-visible {
+    outline: 3px solid #1d4ed8;
+    outline-offset: 2px;
+  }
+
+  body {
+    @apply bg-white text-slate-900 antialiased;
+  }
+}

@@ -4,7 +4,8 @@
       "Bash(powershell.exe -File \".specify/scripts/powershell/resolve-template.ps1\" \"constitution-template\" \"-Json\")",
       "Bash(powershell.exe -ExecutionPolicy Bypass -File \".specify/scripts/powershell/resolve-template.ps1\" \"constitution-template\" \"-Json\")",
       "Bash(powershell.exe -ExecutionPolicy Bypass -File \".specify/scripts/powershell/check-prerequisites.ps1\" -Json -PathsOnly)",
-      "Bash(powershell.exe -ExecutionPolicy Bypass -File \".specify/scripts/powershell/setup-plan.ps1\" -Json)"
+      "Bash(powershell.exe -ExecutionPolicy Bypass -File \".specify/scripts/powershell/setup-plan.ps1\" -Json)",
+      "Bash(powershell.exe -ExecutionPolicy Bypass -File .specify/scripts/powershell/setup-tasks.ps1 -Json)"
     ]
   }
 }
