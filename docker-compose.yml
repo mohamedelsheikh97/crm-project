@@ -17,7 +17,17 @@ services:
     healthcheck:
       # quickstart step 2 tells the developer to wait for `healthy`, so this
       # healthcheck has to actually exist and actually mean something.
-      test: ['CMD', 'mysqladmin', 'ping', '-h', '127.0.0.1', '-u', 'root', '-p${DB_ROOT_PASSWORD:-crm_local_root_password}']
+      test:
+        [
+          'CMD',
+          'mysqladmin',
+          'ping',
+          '-h',
+          '127.0.0.1',
+          '-u',
+          'root',
+          '-p${DB_ROOT_PASSWORD:-crm_local_root_password}',
+        ]
       interval: 5s
       retries: 20
       start_period: 30s

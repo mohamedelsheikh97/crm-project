@@ -1,9 +1,5 @@
 export type ErrorCode =
-  | 'VALIDATION_ERROR'
-  | 'INVALID_CREDENTIALS'
-  | 'UNAUTHENTICATED'
-  | 'NOT_FOUND'
-  | 'INTERNAL_ERROR';
+  'VALIDATION_ERROR' | 'INVALID_CREDENTIALS' | 'UNAUTHENTICATED' | 'NOT_FOUND' | 'INTERNAL_ERROR';
 
 export interface ErrorDetail {
   field: string;

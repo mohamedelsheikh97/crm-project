@@ -24,7 +24,7 @@ builds on."
 - Q: What should the baseline database migration create, given PLAN.md says "empty baseline" but FR-009 requires a seeded test user? → A: Minimal `users` table only (unique email, hashed password, timestamps); roles/permissions/lockout deferred to Phase 1
 - Q: Should Phase 0 establish an accessibility baseline, or is accessibility deferred until real feature screens exist? → A: Minimal baseline only — correct root `lang`/`dir`, semantic landmarks, keyboard-accessible language toggle, visible focus indicators
 
-## User Scenarios & Testing *(mandatory)*
+## User Scenarios & Testing _(mandatory)_
 
 ### User Story 1 — Local Environment Boots Successfully (Priority: P1)
 
@@ -151,7 +151,7 @@ to report failure. A clean push produces a passing result. No test suite is invo
 - What happens when the CI pipeline step times out?
   The pipeline fails rather than hanging indefinitely, with a timeout-specific message.
 
-## Requirements *(mandatory)*
+## Requirements _(mandatory)_
 
 ### Functional Requirements
 
@@ -222,14 +222,14 @@ to report failure. A clean push produces a passing result. No test suite is invo
 
 Every requirement above maps to a **Scope** bullet of PLAN.md "Phase 0 — Project Foundation":
 
-| PLAN.md Phase 0 Scope bullet | Covered by |
-|---|---|
-| Monorepo scaffold (`/frontend`, `/backend`), shared env var conventions at root | FR-001, FR-017, FR-020, FR-021 |
-| Database connection, base ORM config, first migration (empty baseline) † | FR-005, FR-006, FR-006a, FR-006b |
-| Base backend app: layered folder structure, error-handling middleware, request logging | FR-004, FR-007, FR-008 |
-| JWT auth skeleton (login endpoint, token issuance/verification middleware) | FR-002, FR-003, FR-009, FR-018, FR-019 |
-| Base frontend shell: routing, state store setup, i18n (ar/en), root-level RTL toggle | FR-010–FR-015, FR-022–FR-024 |
-| CI: install + build (+ optional lint) pipeline | FR-016 |
+| PLAN.md Phase 0 Scope bullet                                                           | Covered by                             |
+| -------------------------------------------------------------------------------------- | -------------------------------------- |
+| Monorepo scaffold (`/frontend`, `/backend`), shared env var conventions at root        | FR-001, FR-017, FR-020, FR-021         |
+| Database connection, base ORM config, first migration (empty baseline) †               | FR-005, FR-006, FR-006a, FR-006b       |
+| Base backend app: layered folder structure, error-handling middleware, request logging | FR-004, FR-007, FR-008                 |
+| JWT auth skeleton (login endpoint, token issuance/verification middleware)             | FR-002, FR-003, FR-009, FR-018, FR-019 |
+| Base frontend shell: routing, state store setup, i18n (ar/en), root-level RTL toggle   | FR-010–FR-015, FR-022–FR-024           |
+| CI: install + build (+ optional lint) pipeline                                         | FR-016                                 |
 
 † **Deliberate deviation from PLAN.md wording.** PLAN.md describes the first migration as an
 "empty baseline", but the same phase's Definition of done requires logging in against a seeded
@@ -239,11 +239,11 @@ are created in Phase 0.
 
 PLAN.md **Definition of done** for Phase 0 maps as follows:
 
-| Definition of done clause | Verified by |
-|---|---|
-| "Both apps run locally" | User Story 1, SC-001 |
-| "a user can log in against a seeded test account and receive a valid JWT" | User Story 2, SC-002 |
-| "switching language flips layout direction" | User Story 3, SC-003, SC-004 |
+| Definition of done clause                                                 | Verified by                  |
+| ------------------------------------------------------------------------- | ---------------------------- |
+| "Both apps run locally"                                                   | User Story 1, SC-001         |
+| "a user can log in against a seeded test account and receive a valid JWT" | User Story 2, SC-002         |
+| "switching language flips layout direction"                               | User Story 3, SC-003, SC-004 |
 
 ### Key Entities
 
@@ -265,7 +265,7 @@ PLAN.md **Definition of done** for Phase 0 maps as follows:
   given language. One file per supported language (ar, en). All user-visible text in the
   frontend references these files, not hardcoded strings.
 
-## Success Criteria *(mandatory)*
+## Success Criteria _(mandatory)_
 
 ### Measurable Outcomes
 

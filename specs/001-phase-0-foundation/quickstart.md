@@ -9,11 +9,11 @@ Target: **under 10 minutes** from a clean clone (SC-001).
 
 ## Prerequisites
 
-| Requirement | Verified version on this machine |
-|---|---|
-| Node.js 22 LTS | v22.17.1 |
-| npm 10+ | 10.9.2 |
-| Docker (for MySQL) | 29.6.2 |
+| Requirement        | Verified version on this machine |
+| ------------------ | -------------------------------- |
+| Node.js 22 LTS     | v22.17.1                         |
+| npm 10+            | 10.9.2                           |
+| Docker (for MySQL) | 29.6.2                           |
 
 No local MySQL install is needed — the database runs in a container (research.md D3).
 
@@ -53,7 +53,7 @@ no automated test suite exists in this phase by decision (spec Clarifications, Q
 
 ### V1 — Both apps run locally
 
-*Definition of done clause 1 · User Story 1 · SC-001*
+_Definition of done clause 1 · User Story 1 · SC-001_
 
 ```bash
 curl http://localhost:3000/api/health
@@ -64,7 +64,7 @@ Open `http://localhost:5173` — the app shell renders with no console errors.
 
 ### V2 — Startup fails loudly on a missing dependency
 
-*User Story 1, Scenarios 2 and 3 · FR-005, FR-017*
+_User Story 1, Scenarios 2 and 3 · FR-005, FR-017_
 
 ```bash
 docker compose stop
@@ -79,7 +79,7 @@ docker compose start
 
 ### V3 — Login returns both tokens
 
-*Definition of done clause 2 · User Story 2, Scenario 1 · FR-002*
+_Definition of done clause 2 · User Story 2, Scenario 1 · FR-002_
 
 ```bash
 curl -i -X POST http://localhost:3000/api/auth/login \
@@ -92,7 +92,7 @@ carrying `HttpOnly` and `SameSite=Strict`. Confirm no `password_hash` anywhere i
 
 ### V4 — Protected route accepts a valid access token
 
-*User Story 2, Scenario 2 · FR-003*
+_User Story 2, Scenario 2 · FR-003_
 
 ```bash
 curl http://localhost:3000/api/auth/me -H "Authorization: Bearer <accessToken>"
@@ -104,7 +104,7 @@ curl -i http://localhost:3000/api/auth/me
 
 ### V5 — Bad credentials do not leak which field was wrong
 
-*User Story 2, Scenario 7 · contracts/auth-api.md*
+_User Story 2, Scenario 7 · contracts/auth-api.md_
 
 ```bash
 curl -s -X POST http://localhost:3000/api/auth/login \
@@ -121,7 +121,7 @@ enumeration defect.
 
 ### V6 — Tampered and wrong-type tokens are rejected
 
-*User Story 2, Scenarios 3–4 · Edge Cases*
+_User Story 2, Scenarios 3–4 · Edge Cases_
 
 ```bash
 # Flip the last character of a valid access token
@@ -138,7 +138,7 @@ restart, and retry after it lapses.
 
 ### V7 — Refresh issues a new access token
 
-*User Story 2, Scenarios 5–6 · FR-018*
+_User Story 2, Scenarios 5–6 · FR-018_
 
 ```bash
 curl -i -X POST http://localhost:3000/api/auth/refresh \
@@ -151,7 +151,7 @@ curl -i -X POST http://localhost:3000/api/auth/refresh
 
 ### V8 — Language switch flips direction
 
-*Definition of done clause 3 · User Story 3 · SC-003, SC-008*
+_Definition of done clause 3 · User Story 3 · SC-003, SC-008_
 
 In the browser at `http://localhost:5173`:
 
@@ -163,14 +163,14 @@ In the browser at `http://localhost:5173`:
 
 ### V9 — Language choice survives reload with no flash
 
-*User Story 3, Scenario 3 · FR-012, SC-004*
+_User Story 3, Scenario 3 · FR-012, SC-004_
 
 Switch to Arabic, then hard-reload. The app returns in Arabic/RTL, and there is **no visible
 flash of LTR** during load.
 
 ### V10 — Shell is keyboard operable
 
-*FR-024 · SC-007*
+_FR-024 · SC-007_
 
 Using only <kbd>Tab</kbd>, <kbd>Shift</kbd>+<kbd>Tab</kbd>, <kbd>Enter</kbd>, and
 <kbd>Space</kbd>: reach the language toggle, confirm a clearly visible focus indicator, activate
@@ -178,7 +178,7 @@ it, and confirm the language changes. Repeat in Arabic — focus order must foll
 
 ### V11 — Database loss degrades rather than crashes
 
-*Edge Cases*
+_Edge Cases_
 
 ```bash
 docker compose stop
@@ -190,7 +190,7 @@ docker compose start
 
 ### V12 — Layering and lint hold
 
-*FR-004, FR-015 · Constitution Principle III*
+_FR-004, FR-015 · Constitution Principle III_
 
 ```bash
 npm run lint
@@ -206,7 +206,7 @@ Then confirm by inspection:
 
 ### V13 — CI reports pass/fail
 
-*User Story 4 · FR-016, SC-005*
+_User Story 4 · FR-016, SC-005_
 
 > **Blocked.** The repository currently has no commits and no remote (research.md D12), so this
 > cannot be verified yet. Once a remote exists and a branch is pushed, confirm the workflow runs
@@ -217,11 +217,11 @@ Then confirm by inspection:
 
 ## Definition-of-done coverage
 
-| PLAN.md Phase 0 clause | Validated by |
-|---|---|
-| Both apps run locally | V1, V2 |
-| Log in against a seeded test account, receive a valid JWT | V3, V4, V7 |
-| Switching language flips layout direction | V8, V9 |
+| PLAN.md Phase 0 clause                                    | Validated by |
+| --------------------------------------------------------- | ------------ |
+| Both apps run locally                                     | V1, V2       |
+| Log in against a seeded test account, receive a valid JWT | V3, V4, V7   |
+| Switching language flips layout direction                 | V8, V9       |
 
 Supporting checks beyond the stated clauses: V5, V6 (security), V10 (accessibility), V11
 (resilience), V12 (constitution compliance), V13 (CI — blocked).
@@ -230,11 +230,11 @@ Supporting checks beyond the stated clauses: V5, V6 (security), V10 (accessibili
 
 ## Troubleshooting
 
-| Symptom | Likely cause |
-|---|---|
-| Backend exits naming the database | Container not healthy yet — `docker compose ps`, wait, retry |
-| Backend exits naming a variable | `.env` incomplete; compare with `.env.example` |
-| Startup rejects the JWT secrets | The two secrets are identical, or shorter than 32 characters |
+| Symptom                                | Likely cause                                                                                                                  |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Backend exits naming the database      | Container not healthy yet — `docker compose ps`, wait, retry                                                                  |
+| Backend exits naming a variable        | `.env` incomplete; compare with `.env.example`                                                                                |
+| Startup rejects the JWT secrets        | The two secrets are identical, or shorter than 32 characters                                                                  |
 | Login succeeds but refresh returns 401 | Cookie not sent — the frontend must use `credentials: 'include'`; check `CORS_ORIGIN` is the exact frontend origin, never `*` |
-| Arabic renders but layout stays LTR | A physical Tailwind utility is in use, or `dir` is not on `<html>` |
-| Brief LTR flash before Arabic appears | Locale is being read after mount instead of synchronously before it |
+| Arabic renders but layout stays LTR    | A physical Tailwind utility is in use, or `dir` is not on `<html>`                                                            |
+| Brief LTR flash before Arabic appears  | Locale is being read after mount instead of synchronously before it                                                           |

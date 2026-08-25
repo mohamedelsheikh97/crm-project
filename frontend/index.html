@@ -1,10 +1,27 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" dir="ltr">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>crm-frontend</title>
+    <title>CRM Support</title>
+    <script>
+      /*
+       * Synchronous and inline on purpose. This runs before any stylesheet or
+       * module executes, which is the only thing that prevents the flash of
+       * LTR that quickstart V9 checks for. Doing it in main.ts is too late.
+       */
+      (function () {
+        try {
+          var stored = localStorage.getItem('crm.locale');
+          if (stored === 'ar' || stored === 'en') {
+            document.documentElement.lang = stored;
+            document.documentElement.dir = stored === 'ar' ? 'rtl' : 'ltr';
+          }
+        } catch (e) {
+          /* Storage unavailable — the static lang/dir above stand. */
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="app"></div>

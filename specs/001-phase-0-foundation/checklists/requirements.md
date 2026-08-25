@@ -41,7 +41,7 @@ concrete technical specifics into the spec:
 - `users` table column list (FR-006, FR-006a)
 
 **Recommendation: accept these three as known, justified exceptions rather than reworking
-the spec.** Phase 0 is a scaffolding phase whose entire deliverable *is* project structure —
+the spec.** Phase 0 is a scaffolding phase whose entire deliverable _is_ project structure —
 the route path shape, the root element attributes, and the baseline schema are the actual
 subject matter, not leaked implementation detail. Abstracting them away would make the spec
 unimplementable and would discard the decisions just made. Every later phase (1–12) specifies
@@ -49,11 +49,11 @@ user-facing behaviour and should be held to the strict reading of these three it
 
 All other items pass, and several materially improved:
 
-- *Requirements are testable*: token expiry is now concrete (15 min / 7 days), so User Story 2's
+- _Requirements are testable_: token expiry is now concrete (15 min / 7 days), so User Story 2's
   expired-token scenario is finally testable.
-- *Scope is clearly bounded*: explicit out-of-scope statements now exist for test tooling,
+- _Scope is clearly bounded_: explicit out-of-scope statements now exist for test tooling,
   API versioning, WCAG auditing, and Phase 1 tables.
-- *Edge cases*: token-type confusion at the refresh endpoint added.
+- _Edge cases_: token-type confusion at the refresh endpoint added.
 
 No [NEEDS CLARIFICATION] markers exist. One spec contradiction was found and resolved:
 PLAN.md's "empty baseline" migration vs. FR-009's seeded test user — resolved in favour of a
@@ -62,6 +62,7 @@ minimal `users` table, documented as a deliberate deviation in the spec's tracea
 The spec is ready for `/speckit-plan`.
 
 ### Constitution compliance (v1.1.0)
+
 - Bilingual-First & RTL: Addressed in FR-010, FR-011, FR-012 and User Story 3
 - Security by Default: Addressed in FR-002, FR-003, FR-007, FR-009
 - Layered Architecture: Addressed in FR-004, FR-015

@@ -9,16 +9,16 @@ Decisions here are binding for the implementation phase.
 
 Recorded because it materially changes the task list:
 
-| Observation | Implication |
-|---|---|
-| Frontend exists at `frontend/crm-frontend/`, nested one level deeper than FR-001's `/frontend` | Requires a move, not a fresh scaffold |
-| Frontend `package.json` has only `vue` as a dependency | Tailwind, Pinia, vue-router, vue-i18n are all absent and must be added |
-| Existing frontend is the stock Vite template (`App.vue`, `HelloWorld.vue`, `style.css`) | Template placeholder content must be replaced by the app shell |
-| No `backend/` directory exists | Backend is a greenfield build |
-| Git repo on `main`, **zero commits, no remote** | CI workflow can be written but cannot execute until a remote exists |
-| `mysql` client not installed; Docker 29.6.2 present | Local MySQL must be containerised |
-| Node v22.17.1, npm 10.9.2 | npm workspaces available (npm 7+); Node 22 LTS is the baseline |
-| No root `.gitignore` | Needed before first commit to avoid committing `node_modules` / `.env` |
+| Observation                                                                                    | Implication                                                            |
+| ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| Frontend exists at `frontend/crm-frontend/`, nested one level deeper than FR-001's `/frontend` | Requires a move, not a fresh scaffold                                  |
+| Frontend `package.json` has only `vue` as a dependency                                         | Tailwind, Pinia, vue-router, vue-i18n are all absent and must be added |
+| Existing frontend is the stock Vite template (`App.vue`, `HelloWorld.vue`, `style.css`)        | Template placeholder content must be replaced by the app shell         |
+| No `backend/` directory exists                                                                 | Backend is a greenfield build                                          |
+| Git repo on `main`, **zero commits, no remote**                                                | CI workflow can be written but cannot execute until a remote exists    |
+| `mysql` client not installed; Docker 29.6.2 present                                            | Local MySQL must be containerised                                      |
+| Node v22.17.1, npm 10.9.2                                                                      | npm workspaces available (npm 7+); Node 22 LTS is the baseline         |
+| No root `.gitignore`                                                                           | Needed before first commit to avoid committing `node_modules` / `.env` |
 
 ---
 
@@ -35,11 +35,11 @@ give a single root `npm install` — directly serving SC-001 (under 10 minutes f
 
 **Alternatives considered**:
 
-- *pnpm / Yarn workspaces*: better hoisting and speed, but adds a toolchain install step that
+- _pnpm / Yarn workspaces_: better hoisting and speed, but adds a toolchain install step that
   works against SC-001 and is not mandated by the constitution.
-- *Turborepo / Nx*: build orchestration and caching are valuable at scale, but this phase has
+- _Turborepo / Nx_: build orchestration and caching are valuable at scale, but this phase has
   two packages and no shared library. Rejected as speculative per the constitution's YAGNI rule.
-- *Keep `frontend/crm-frontend` and add `backend/`*: avoids a move, but leaves a permanently
+- _Keep `frontend/crm-frontend` and add `backend/`_: avoids a move, but leaves a permanently
   inconsistent tree that every later phase and CI path must special-case.
 
 **Note**: The move must preserve the existing `.gitignore`, `tsconfig*.json`, and
@@ -60,7 +60,7 @@ enforceable at compile time (a controller cannot accidentally receive a model in
 
 **Alternatives considered**:
 
-- *Plain JavaScript*: faster to start, no build step. Rejected because Phases 1–12 add RBAC,
+- _Plain JavaScript_: faster to start, no build step. Rejected because Phases 1–12 add RBAC,
   SLA rules, and integrations where type errors are expensive, and retrofitting TS across a
   grown codebase is far costlier than starting with it.
 
@@ -80,9 +80,9 @@ version so all developers and CI share one engine version.
 
 **Alternatives considered**:
 
-- *Developer-installed MySQL*: no container overhead, but every developer's setup diverges and
+- _Developer-installed MySQL_: no container overhead, but every developer's setup diverges and
   SC-001's 10-minute target becomes unrealistic on a clean machine.
-- *SQLite for local, MySQL in production*: fastest local start, but Sequelize dialect
+- _SQLite for local, MySQL in production_: fastest local start, but Sequelize dialect
   differences (enums, JSON columns, FK behaviour) would let bugs hide until deployment. Rejected
   as violating the spirit of a foundation phase.
 
@@ -99,7 +99,7 @@ here is what Phase 1 will reuse for real user creation.
 
 **Alternatives considered**:
 
-- *Argon2id*: stronger memory-hard guarantees and generally the modern preference. Rejected only
+- _Argon2id_: stronger memory-hard guarantees and generally the modern preference. Rejected only
   on native-build friction for Windows contributors; revisit in Phase 1 if the team standardises
   on Linux/WSL. Noted as a deliberate, revisitable choice rather than a permanent one.
 
@@ -121,11 +121,11 @@ the token-type-confusion edge case the spec calls out.
 
 **Alternatives considered**:
 
-- *Both tokens in `localStorage`*: simplest to implement and debug; any XSS yields a 7-day
+- _Both tokens in `localStorage`_: simplest to implement and debug; any XSS yields a 7-day
   refresh token. Rejected under Principle II.
-- *Both in `httpOnly` cookies*: strongest against XSS, but makes every API call cookie-authenticated
+- _Both in `httpOnly` cookies_: strongest against XSS, but makes every API call cookie-authenticated
   and pulls full CSRF defence into Phase 0. Rejected as disproportionate for this phase.
-- *Opaque tokens with a server-side session table*: enables instant revocation, but requires a
+- _Opaque tokens with a server-side session table_: enables instant revocation, but requires a
   sessions table that FR-006b forbids in this phase. Deferred to Phase 1 alongside real revocation.
 
 **Consequence to implement**: because the refresh cookie is cross-origin in development
@@ -148,9 +148,9 @@ invalidate one another.
 
 **Alternatives considered**:
 
-- *axios with interceptors*: ergonomic and battle-tested, but adds a dependency for behaviour the
+- _axios with interceptors_: ergonomic and battle-tested, but adds a dependency for behaviour the
   native `fetch` API covers in this phase. Revisit if request/response transformation needs grow.
-- *Refresh on a timer before expiry*: avoids user-visible 401s, but silently keeps sessions alive
+- _Refresh on a timer before expiry_: avoids user-visible 401s, but silently keeps sessions alive
   for idle users and still needs 401 handling as a fallback. Rejected as more logic for less
   certainty.
 
@@ -167,8 +167,8 @@ the clarify session deferred to plan time.
 
 **Alternatives considered**:
 
-- *morgan*: the conventional Express logger, but line-oriented text that needs re-parsing later.
-- *console.log*: no. Fails structured-logging expectations immediately.
+- _morgan_: the conventional Express logger, but line-oriented text that needs re-parsing later.
+- _console.log_: no. Fails structured-logging expectations immediately.
 
 **Requirement**: request logs MUST redact `password`, `authorization`, and `cookie` fields so
 credentials never reach log storage.
@@ -187,9 +187,9 @@ through the codebase, which keeps Principle III's layering honest.
 
 **Alternatives considered**:
 
-- *envalid*: purpose-built and slightly terser, but `zod` is likely wanted anyway for request
+- _envalid_: purpose-built and slightly terser, but `zod` is likely wanted anyway for request
   validation in Phase 1+, so one dependency covers both.
-- *Manual `if (!process.env.X) throw`*: no dependency, but grows unmaintainable and gives poor
+- _Manual `if (!process.env.X) throw`_: no dependency, but grows unmaintainable and gives poor
   aggregate error messages.
 
 ---
@@ -207,9 +207,9 @@ losing type-checking there costs little.
 
 **Alternatives considered**:
 
-- *Umzug directly with TS migrations*: fully typed and ESM-native, but hand-rolled CLI plumbing
+- _Umzug directly with TS migrations_: fully typed and ESM-native, but hand-rolled CLI plumbing
   for what `sequelize-cli` already does.
-- *`sequelize.sync()`*: trivially easy, but no migration history — unacceptable when Phases 1–12
+- _`sequelize.sync()`_: trivially easy, but no migration history — unacceptable when Phases 1–12
   each evolve the schema.
 
 ---
@@ -227,9 +227,9 @@ removes the PostCSS config file that v3 required, and v4 suits the installed Vit
 
 **Alternatives considered**:
 
-- *Tailwind v3 + PostCSS + `tailwindcss-rtl` plugin*: proven, but an extra plugin and config file
+- _Tailwind v3 + PostCSS + `tailwindcss-rtl` plugin_: proven, but an extra plugin and config file
   to achieve what v4 does natively.
-- *Physical utilities plus an RTL stylesheet override*: exactly the per-component hack Principle I
+- _Physical utilities plus an RTL stylesheet override_: exactly the per-component hack Principle I
   prohibits.
 
 **Follow-on rule for later phases**: a lint or review check should reject physical-direction
@@ -250,10 +250,10 @@ on load. Reading `localStorage` before app mount avoids a visible flash of the w
 
 **Alternatives considered**:
 
-- *Locale in the URL path (`/ar/...`, `/en/...`)*: better for SEO and shareable links, and worth
+- _Locale in the URL path (`/ar/...`, `/en/...`)_: better for SEO and shareable links, and worth
   revisiting for the Phase 8 public portal. Rejected now because it couples routing to i18n
   before any real routes exist.
-- *Locale in a cookie*: needed only if the server rendered markup, which it does not here.
+- _Locale in a cookie_: needed only if the server rendered markup, which it does not here.
 
 ---
 
@@ -285,27 +285,27 @@ though tests do not.
 
 **Alternatives considered**:
 
-- *Biome*: much faster and single-tool, but `eslint-plugin-vue` has no equivalent yet for
+- _Biome_: much faster and single-tool, but `eslint-plugin-vue` has no equivalent yet for
   Vue SFC template linting.
-- *Lint in a pre-commit hook only*: easy to bypass locally; CI enforcement is what the
+- _Lint in a pre-commit hook only_: easy to bypass locally; CI enforcement is what the
   constitution asks for.
 
 ---
 
 ## Resolved-unknowns summary
 
-| Technical Context item | Resolution |
-|---|---|
-| Backend language/version | TypeScript strict on Node 22 LTS (D2) |
-| Monorepo tooling | npm workspaces; flatten to `frontend/` + `backend/` (D1) |
-| Storage provisioning | Dockerised MySQL 8.4 (D3) |
-| Password hashing | bcrypt cost 12 (D4) |
+| Technical Context item   | Resolution                                                       |
+| ------------------------ | ---------------------------------------------------------------- |
+| Backend language/version | TypeScript strict on Node 22 LTS (D2)                            |
+| Monorepo tooling         | npm workspaces; flatten to `frontend/` + `backend/` (D1)         |
+| Storage provisioning     | Dockerised MySQL 8.4 (D3)                                        |
+| Password hashing         | bcrypt cost 12 (D4)                                              |
 | Token format & transport | JWT HS256; access in memory, refresh in httpOnly cookie (D5, D6) |
-| Logging | pino + pino-http, JSON, credential redaction (D7) |
-| Env validation | zod schema, fail-fast at startup (D8) |
-| Migration tooling | sequelize-cli with `.cjs` migrations (D9) |
-| Styling & RTL | Tailwind v4, logical properties only (D10) |
-| i18n | vue-i18n v11, `localStorage` persistence, `en` fallback (D11) |
-| CI | GitHub Actions; **blocked on remote creation** (D12) |
-| Lint/format | ESLint 9 flat config + Prettier (D13) |
-| Testing | Out of scope this phase, per clarify decision |
+| Logging                  | pino + pino-http, JSON, credential redaction (D7)                |
+| Env validation           | zod schema, fail-fast at startup (D8)                            |
+| Migration tooling        | sequelize-cli with `.cjs` migrations (D9)                        |
+| Styling & RTL            | Tailwind v4, logical properties only (D10)                       |
+| i18n                     | vue-i18n v11, `localStorage` persistence, `en` fallback (D11)    |
+| CI                       | GitHub Actions; **blocked on remote creation** (D12)             |
+| Lint/format              | ESLint 9 flat config + Prettier (D13)                            |
+| Testing                  | Out of scope this phase, per clarify decision                    |

@@ -24,6 +24,21 @@ export default tseslint.config(
       },
     },
   },
+  {
+    rules: {
+      // A leading underscore marks a parameter that must exist but is unused —
+      // Express identifies error middleware by its 4-arity signature, so
+      // `next` cannot simply be dropped.
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
+      ],
+    },
+  },
   // Must stay last so formatting rules do not fight Prettier.
   prettier,
 );

@@ -14,13 +14,13 @@ to Phase 1's migration.
 
 The account record used for authentication. This is the only table the baseline migration creates.
 
-| Column | Type | Constraints | Notes |
-|---|---|---|---|
-| `id` | `INTEGER UNSIGNED` | PK, auto-increment | Surrogate key |
-| `email` | `VARCHAR(255)` | **UNIQUE**, NOT NULL | Login identifier (FR-006a) |
-| `password_hash` | `VARCHAR(255)` | NOT NULL | bcrypt cost 12; never returned by any endpoint |
-| `created_at` | `DATETIME` | NOT NULL | Sequelize `timestamps` |
-| `updated_at` | `DATETIME` | NOT NULL | Sequelize `timestamps` |
+| Column          | Type               | Constraints          | Notes                                          |
+| --------------- | ------------------ | -------------------- | ---------------------------------------------- |
+| `id`            | `INTEGER UNSIGNED` | PK, auto-increment   | Surrogate key                                  |
+| `email`         | `VARCHAR(255)`     | **UNIQUE**, NOT NULL | Login identifier (FR-006a)                     |
+| `password_hash` | `VARCHAR(255)`     | NOT NULL             | bcrypt cost 12; never returned by any endpoint |
+| `created_at`    | `DATETIME`         | NOT NULL             | Sequelize `timestamps`                         |
+| `updated_at`    | `DATETIME`         | NOT NULL             | Sequelize `timestamps`                         |
 
 **Validation rules**
 
@@ -50,9 +50,9 @@ None in this phase. Phase 1 adds the role/permission associations; Phase 2 attac
 
 One development-only row, inserted by a seeder and referenced by `quickstart.md`:
 
-| Field | Value |
-|---|---|
-| `email` | `admin@crm.local` |
+| Field    | Value                                                           |
+| -------- | --------------------------------------------------------------- |
+| `email`  | `admin@crm.local`                                               |
 | password | `ChangeMe123!` (hashed at seed time, never stored in plaintext) |
 
 The seeder MUST be idempotent — re-running it must not create a duplicate or fail. The plaintext
@@ -69,12 +69,12 @@ These are runtime objects, not tables. Phase 0 stores no session state server-si
 
 JWT, HS256, signed with `JWT_ACCESS_SECRET`, **15-minute** lifetime.
 
-| Claim | Value |
-|---|---|
-| `sub` | `users.id` |
-| `email` | User's email |
-| `type` | `"access"` — rejected by the refresh endpoint |
-| `iat` / `exp` | Issued-at / expiry (15 min) |
+| Claim         | Value                                         |
+| ------------- | --------------------------------------------- |
+| `sub`         | `users.id`                                    |
+| `email`       | User's email                                  |
+| `type`        | `"access"` — rejected by the refresh endpoint |
+| `iat` / `exp` | Issued-at / expiry (15 min)                   |
 
 Transport: JSON response body; held in a non-persisted Pinia store on the client (D6). Carries no
 role or permission claims — those arrive in Phase 1.
@@ -83,11 +83,11 @@ role or permission claims — those arrive in Phase 1.
 
 JWT, HS256, signed with a **separate** `JWT_REFRESH_SECRET`, **7-day** lifetime.
 
-| Claim | Value |
-|---|---|
-| `sub` | `users.id` |
-| `type` | `"refresh"` — rejected by protected-route middleware |
-| `iat` / `exp` | Issued-at / expiry (7 days) |
+| Claim         | Value                                                |
+| ------------- | ---------------------------------------------------- |
+| `sub`         | `users.id`                                           |
+| `type`        | `"refresh"` — rejected by protected-route middleware |
+| `iat` / `exp` | Issued-at / expiry (7 days)                          |
 
 Transport: `httpOnly`, `SameSite=Strict` cookie named `crm_refresh`, `Secure` when not in
 development, `Path=/api/auth`.
@@ -102,15 +102,15 @@ Not persisted, therefore **not revocable** in this phase. Server-side revocation
 
 Frozen object produced by validating `process.env` against a zod schema at startup (D8, FR-017).
 
-| Variable | Required | Notes |
-|---|---|---|
-| `NODE_ENV` | yes | `development` \| `production` \| `test` |
-| `PORT` | yes | Backend listen port |
-| `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` | yes | MySQL connection |
-| `JWT_ACCESS_SECRET` | yes | Min 32 chars; distinct from refresh secret |
-| `JWT_REFRESH_SECRET` | yes | Min 32 chars; distinct from access secret |
-| `CORS_ORIGIN` | yes | Explicit frontend origin; `*` MUST be rejected because credentialed CORS forbids wildcards |
-| `LOG_LEVEL` | no | Defaults to `info` |
+| Variable                                                  | Required | Notes                                                                                      |
+| --------------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------ |
+| `NODE_ENV`                                                | yes      | `development` \| `production` \| `test`                                                    |
+| `PORT`                                                    | yes      | Backend listen port                                                                        |
+| `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` | yes      | MySQL connection                                                                           |
+| `JWT_ACCESS_SECRET`                                       | yes      | Min 32 chars; distinct from refresh secret                                                 |
+| `JWT_REFRESH_SECRET`                                      | yes      | Min 32 chars; distinct from access secret                                                  |
+| `CORS_ORIGIN`                                             | yes      | Explicit frontend origin; `*` MUST be rejected because credentialed CORS forbids wildcards |
+| `LOG_LEVEL`                                               | no       | Defaults to `info`                                                                         |
 
 Frontend reads only `VITE_API_BASE_URL`, its single backend base path (FR-021).
 

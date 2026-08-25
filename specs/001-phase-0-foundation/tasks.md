@@ -1,5 +1,5 @@
 ---
-description: "Task list for Phase 0 — Project Foundation"
+description: 'Task list for Phase 0 — Project Foundation'
 ---
 
 # Tasks: Phase 0 — Project Foundation
@@ -61,19 +61,19 @@ not done, even if the code runs.
 
 **Canonical values** (do not invent alternatives):
 
-| Thing | Value |
-|---|---|
-| Backend port | `3000` |
-| Frontend dev port | `5173` |
-| API prefix | `/api` — unversioned (FR-020) |
-| Access token TTL | `900` seconds (15 min) |
-| Refresh token TTL | `604800` seconds (7 days) |
-| Refresh cookie name | `crm_refresh` |
-| Refresh cookie path | `/api/auth` |
-| Locale storage key | `crm.locale` |
-| Seed account | `admin@crm.local` / `ChangeMe123!` |
-| bcrypt cost | `12` |
-| Database name | `crm_support` |
+| Thing               | Value                              |
+| ------------------- | ---------------------------------- |
+| Backend port        | `3000`                             |
+| Frontend dev port   | `5173`                             |
+| API prefix          | `/api` — unversioned (FR-020)      |
+| Access token TTL    | `900` seconds (15 min)             |
+| Refresh token TTL   | `604800` seconds (7 days)          |
+| Refresh cookie name | `crm_refresh`                      |
+| Refresh cookie path | `/api/auth`                        |
+| Locale storage key  | `crm.locale`                       |
+| Seed account        | `admin@crm.local` / `ChangeMe123!` |
+| bcrypt cost         | `12`                               |
+| Database name       | `crm_support`                      |
 
 ---
 
@@ -98,26 +98,15 @@ not done, even if the code runs.
 - [X] T003 Create the workspace root `package.json` at repository root with:
       `"name": "crm-support"`, `"private": true`, `"version": "0.1.0"`, `"type": "module"`,
       `"workspaces": ["frontend", "backend"]`, `"engines": { "node": ">=22.0.0" }`, and these
-      scripts exactly (`quickstart.md` invokes them by name):
-      - `"dev": "concurrently -n backend,frontend -c blue,green \"npm:dev:backend\" \"npm:dev:frontend\""`
-      - `"dev:backend": "npm run dev --workspace backend"`
-      - `"dev:frontend": "npm run dev --workspace frontend"`
-      - `"build": "npm run build --workspace backend && npm run build --workspace frontend"`
-      - `"lint": "eslint ."`
-      - `"lint:fix": "eslint . --fix"`
-      - `"format": "prettier --write ."`
-      - `"format:check": "prettier --check ."`
-      - `"db:migrate": "npm run db:migrate --workspace backend"`
-      - `"db:migrate:undo": "npm run db:migrate:undo --workspace backend"`
-      - `"db:seed": "npm run db:seed --workspace backend"`
+      scripts exactly (`quickstart.md` invokes them by name): - `"dev": "concurrently -n backend,frontend -c blue,green \"npm:dev:backend\" \"npm:dev:frontend\""` - `"dev:backend": "npm run dev --workspace backend"` - `"dev:frontend": "npm run dev --workspace frontend"` - `"build": "npm run build --workspace backend && npm run build --workspace frontend"` - `"lint": "eslint ."` - `"lint:fix": "eslint . --fix"` - `"format": "prettier --write ."` - `"format:check": "prettier --check ."` - `"db:migrate": "npm run db:migrate --workspace backend"` - `"db:migrate:undo": "npm run db:migrate:undo --workspace backend"` - `"db:seed": "npm run db:seed --workspace backend"`
 
       Root `devDependencies`: `concurrently`, `eslint`, `@eslint/js`, `typescript-eslint`,
-      `eslint-plugin-vue`, `eslint-config-prettier`, `prettier`, `typescript`. Pin to current
-      major versions (ESLint 9.x, Prettier 3.x, TypeScript 5.x).
+                  `eslint-plugin-vue`, `eslint-config-prettier`, `prettier`, `typescript`. Pin to current
+                  major versions (ESLint 9.x, Prettier 3.x, TypeScript 5.x).
 
 - [X] T004 [P] Create `.env.example` at repository root documenting **every** variable from
       data-model.md's Application Configuration table, with a comment block at the top explaining
-      that `JWT_ACCESS_SECRET` and `JWT_REFRESH_SECRET` must be two *different* random strings of at
+      that `JWT_ACCESS_SECRET` and `JWT_REFRESH_SECRET` must be two _different_ random strings of at
       least 32 characters and that startup fails if they are equal or if `CORS_ORIGIN` is `*`.
       Keys, in this order, with the secrets left empty:
       `NODE_ENV=development`, `PORT=3000`, `DB_HOST=127.0.0.1`, `DB_PORT=3306`,
@@ -140,7 +129,7 @@ not done, even if the code runs.
       `dist`, `package-lock.json`, and `backend/src/db/migrations`.
 
 - [X] T007 Create `backend/package.json`: `"name": "backend"`, `"private": true`, `"version":
-      "0.1.0"`, **`"type": "module"`**, `"main": "dist/server.js"`. Scripts:
+"0.1.0"`, **`"type": "module"`**, `"main": "dist/server.js"`. Scripts:
       `"dev": "tsx watch src/server.ts"`, `"build": "tsc -p tsconfig.json"`,
       `"start": "node dist/server.js"`, `"db:migrate": "sequelize-cli db:migrate"`,
       `"db:migrate:undo": "sequelize-cli db:migrate:undo"`,
@@ -205,23 +194,17 @@ not done, even if the code runs.
 - [X] T014 Create `backend/src/config/env.ts`. Load the root `.env` with
       `dotenv.config({ path: path.resolve(dirname(fileURLToPath(import.meta.url)), '../../../.env') })`,
       then validate `process.env` against a **zod** schema covering exactly the variables in
-      `.env.example`. Rules (data-model.md, Application Configuration):
-      - `NODE_ENV` is an enum of `development` | `production` | `test`
-      - `PORT` and `DB_PORT` coerce to integers
-      - `JWT_ACCESS_SECRET` and `JWT_REFRESH_SECRET` are each `min(32)`
-      - a `superRefine` that fails when the two secrets are **equal** — equal secrets defeat the
-        token-type separation in T033
-      - a refinement that fails when `CORS_ORIGIN === '*'` — credentialed CORS forbids wildcards
-      - `LOG_LEVEL` is optional, defaulting to `info`
+      `.env.example`. Rules (data-model.md, Application Configuration): - `NODE_ENV` is an enum of `development` | `production` | `test` - `PORT` and `DB_PORT` coerce to integers - `JWT_ACCESS_SECRET` and `JWT_REFRESH_SECRET` are each `min(32)` - a `superRefine` that fails when the two secrets are **equal** — equal secrets defeat the
+      token-type separation in T033 - a refinement that fails when `CORS_ORIGIN === '*'` — credentialed CORS forbids wildcards - `LOG_LEVEL` is optional, defaulting to `info`
 
       On failure: print **every** issue as `MISSING/INVALID <VAR>: <message>` — one line per
-      variable, so the developer sees the full list, not just the first — then `process.exit(1)`.
-      On success, export `export const env = Object.freeze(parsed.data)`. This module is the ONLY
-      place `process.env` is read; no other file may touch it (research.md D8, FR-017).
+                  variable, so the developer sees the full list, not just the first — then `process.exit(1)`.
+                  On success, export `export const env = Object.freeze(parsed.data)`. This module is the ONLY
+                  place `process.env` is read; no other file may touch it (research.md D8, FR-017).
 
 - [X] T015 Create `backend/src/config/database.ts` exporting a configured Sequelize instance
       (`dialect: 'mysql'`, credentials from `env`, `logging: false`, `define: { underscored: true,
-      timestamps: true }` so columns are `created_at`/`updated_at` per data-model.md) plus two
+timestamps: true }` so columns are `created_at`/`updated_at` per data-model.md) plus two
       functions: `assertDatabaseConnection()` which calls `sequelize.authenticate()` and **throws**
       a descriptive error naming the database host/port on failure (used by T029 for fail-fast
       startup, FR-005), and `checkDatabaseConnection(): Promise<boolean>` which returns `false`
@@ -229,7 +212,7 @@ not done, even if the code runs.
 
 - [X] T016 [P] Create `backend/src/errors/app-error.ts` defining the error vocabulary from
       contracts/auth-api.md: a `type ErrorCode = 'VALIDATION_ERROR' | 'INVALID_CREDENTIALS' |
-      'UNAUTHENTICATED' | 'NOT_FOUND' | 'INTERNAL_ERROR'`, an `AppError extends Error` class with
+'UNAUTHENTICATED' | 'NOT_FOUND' | 'INTERNAL_ERROR'`, an `AppError extends Error` class with
       `code: ErrorCode`, `status: number`, and `details: Array<{ field: string; message: string }>`
       (defaulting to `[]`), and named factory helpers: `validationError(details)` → 400,
       `invalidCredentials()` → 401 with message `Email or password is incorrect.`,
@@ -248,7 +231,7 @@ not done, even if the code runs.
       send `{ error: { code, message, details } }` with `err.status` when `err instanceof AppError`;
       otherwise log the full error **including stack** server-side at `error` level and send `500`
       with `{ error: { code: 'INTERNAL_ERROR', message: 'An unexpected error occurred.',
-      details: [] } }`. **A stack trace MUST NEVER appear in a response body in any environment**
+details: [] } }`. **A stack trace MUST NEVER appear in a response body in any environment**
       (FR-007) — not even when `NODE_ENV === 'development'`.
 
 - [X] T019 [P] Create `backend/src/types/express.d.ts` augmenting `express-serve-static-core`'s
@@ -276,7 +259,7 @@ not done, even if the code runs.
 - [X] T023 Edit `frontend/vite.config.ts` to add the `@tailwindcss/vite` plugin alongside
       `@vitejs/plugin-vue`, set **`envDir: '..'`** so `VITE_API_BASE_URL` resolves from the root
       `.env` (rule 2 above), and set `server: { port: 5173 }`. **Verify**: `npm run build --workspace
-      frontend` succeeds.
+frontend` succeeds.
 
 **Checkpoint**: `npm run build` succeeds for both workspaces. Config validation, error envelope,
 logging, and Tailwind are all in place. User stories can now begin.
@@ -342,12 +325,9 @@ of done clause 1 ("Both apps run locally")
       `http://localhost:5173` with an empty browser console. Fix anything that fails before moving
       on.
 
-- [X] T032 [US1] Execute quickstart **V2** and **V11** and record the results:
-      - `docker compose stop` then `npm run dev:backend` → process exits naming the database.
-      - Remove `JWT_ACCESS_SECRET` from `.env`, retry → exits naming that variable. Restore it.
-      - With the backend already running, `docker compose stop` then `curl -i
-        http://localhost:3000/api/health` → `503 {"status":"degraded","database":"disconnected"}`
-        **and the process is still alive**. `docker compose start` afterwards.
+- [X] T032 [US1] Execute quickstart **V2** and **V11** and record the results: - `docker compose stop` then `npm run dev:backend` → process exits naming the database. - Remove `JWT_ACCESS_SECRET` from `.env`, retry → exits naming that variable. Restore it. - With the backend already running, `docker compose stop` then `curl -i
+  http://localhost:3000/api/health` → `503 {"status":"degraded","database":"disconnected"}`
+      **and the process is still alive**. `docker compose start` afterwards.
       The third check is the one most likely to fail — it proves T025 does not throw and T029's
       fail-fast does not also kill a running server.
 
@@ -369,7 +349,7 @@ SC-002, SC-002a · PLAN.md Definition of done clause 2
 
 ### Data layer
 
-- [ ] T033 [P] [US2] Create `backend/src/models/user.model.ts` defining the `users` model exactly as
+- [X] T033 [P] [US2] Create `backend/src/models/user.model.ts` defining the `users` model exactly as
       data-model.md specifies and **no more**: `id` (INTEGER UNSIGNED, PK, autoIncrement), `email`
       (STRING(255), unique, allowNull false), `password_hash` (STRING(255), allowNull false), plus
       Sequelize `timestamps` producing `created_at`/`updated_at`. Add
@@ -380,11 +360,11 @@ SC-002, SC-002a · PLAN.md Definition of done clause 2
       `mfa_secret`, or `department_id` — data-model.md defers all of them to Phase 1 and FR-006b
       forbids them here.
 
-- [ ] T034 [P] [US2] Create `backend/src/models/index.ts` importing the Sequelize instance and the
+- [X] T034 [P] [US2] Create `backend/src/models/index.ts` importing the Sequelize instance and the
       `User` model and re-exporting both. No associations exist in this phase (data-model.md:
       "None in this phase").
 
-- [ ] T035 [US2] Create the baseline migration
+- [X] T035 [US2] Create the baseline migration
       `backend/src/db/migrations/20260825000001-create-users.cjs` (**CommonJS**) with `up` creating
       the `users` table with the five columns above, and an **explicit unique index on `email`** —
       declared in the migration, not merely on the model, so the guarantee holds against direct SQL
@@ -392,7 +372,7 @@ SC-002, SC-002a · PLAN.md Definition of done clause 2
       `SHOW INDEX FROM users` lists a unique index on `email`, and `SHOW TABLES` lists `users` and
       `SequelizeMeta` — **and nothing else** (FR-006b).
 
-- [ ] T036 [US2] Create the seeder `backend/src/db/seeders/20260825000002-admin-user.cjs`
+- [X] T036 [US2] Create the seeder `backend/src/db/seeders/20260825000002-admin-user.cjs`
       (**CommonJS**) inserting one row: `email: 'admin@crm.local'`, `password_hash` = `bcrypt.hash`
       of `ChangeMe123!` at **cost 12**, with timestamps. It MUST be **idempotent** — query for the
       email first and return early if present, so re-running neither duplicates nor errors
@@ -403,68 +383,57 @@ SC-002, SC-002a · PLAN.md Definition of done clause 2
 
 ### Token and auth services
 
-- [ ] T037 [US2] Create `backend/src/services/token.service.ts`. Export the constants
+- [X] T037 [US2] Create `backend/src/services/token.service.ts`. Export the constants
       `ACCESS_TOKEN_TTL_SECONDS = 900` and `REFRESH_TOKEN_TTL_SECONDS = 604800`, and four
-      functions:
-      - `signAccessToken({ id, email })` → HS256 JWT signed with `env.JWT_ACCESS_SECRET`, claims
-        `sub` (the id), `email`, and **`type: 'access'`**, `expiresIn` 900s
-      - `signRefreshToken({ id })` → HS256 JWT signed with `env.JWT_REFRESH_SECRET`, claims `sub`
-        and **`type: 'refresh'`**, `expiresIn` 604800s. No `email` claim — the refresh token
-        carries no identity beyond the subject
-      - `verifyAccessToken(token)` → verifies against the access secret **and** asserts
-        `payload.type === 'access'`, throwing `unauthenticated()` otherwise
-      - `verifyRefreshToken(token)` → verifies against the refresh secret **and** asserts
-        `payload.type === 'refresh'`
+      functions: - `signAccessToken({ id, email })` → HS256 JWT signed with `env.JWT_ACCESS_SECRET`, claims
+      `sub` (the id), `email`, and **`type: 'access'`**, `expiresIn` 900s - `signRefreshToken({ id })` → HS256 JWT signed with `env.JWT_REFRESH_SECRET`, claims `sub`
+      and **`type: 'refresh'`**, `expiresIn` 604800s. No `email` claim — the refresh token
+      carries no identity beyond the subject - `verifyAccessToken(token)` → verifies against the access secret **and** asserts
+      `payload.type === 'access'`, throwing `unauthenticated()` otherwise - `verifyRefreshToken(token)` → verifies against the refresh secret **and** asserts
+      `payload.type === 'refresh'`
 
       Two distinct secrets plus the `type` claim is deliberate belt-and-braces (research.md D5,
-      plan.md Complexity Tracking): the separate secrets make cross-use cryptographically
-      impossible, and the `type` assertion makes the rejection explicit and testable. Implement
-      both — do not "simplify" to one. Neither token carries role or permission claims; those
-      arrive in Phase 1.
+                  plan.md Complexity Tracking): the separate secrets make cross-use cryptographically
+                  impossible, and the `type` assertion makes the rejection explicit and testable. Implement
+                  both — do not "simplify" to one. Neither token carries role or permission claims; those
+                  arrive in Phase 1.
 
-- [ ] T038 [US2] Create `backend/src/services/auth.service.ts` — the only file in this phase that
-      imports a model. Export:
-      - `login(email, password)` → normalises the email (trim + lowercase), rejects a malformed
-        email shape or an empty password with `validationError`, loads the user via the
-        `withPassword` scope, compares with `bcrypt.compare`, and returns
-        `{ user: { id, email }, accessToken, refreshToken }`. **When no user exists, still run a
-        `bcrypt.compare` against a fixed dummy hash before throwing**, so the response time does
-        not distinguish "no such user" from "wrong password". Both paths throw the identical
-        `invalidCredentials()` from T016 — a difference of any kind is an account-enumeration
-        defect (US2 Scenario 7, V5).
-      - `refresh(refreshToken)` → verifies via `verifyRefreshToken` and returns a new access token
-        only. **Do not issue a new refresh token** — the 7-day window is absolute, not sliding
-        (contracts/auth-api.md), which is what bounds the damage from a stolen refresh token.
-      - `getUserById(id)` → returns the user under the default scope, so `password_hash` cannot
-        leak.
+- [X] T038 [US2] Create `backend/src/services/auth.service.ts` — the only file in this phase that
+      imports a model. Export: - `login(email, password)` → normalises the email (trim + lowercase), rejects a malformed
+      email shape or an empty password with `validationError`, loads the user via the
+      `withPassword` scope, compares with `bcrypt.compare`, and returns
+      `{ user: { id, email }, accessToken, refreshToken }`. **When no user exists, still run a
+      `bcrypt.compare` against a fixed dummy hash before throwing**, so the response time does
+      not distinguish "no such user" from "wrong password". Both paths throw the identical
+      `invalidCredentials()` from T016 — a difference of any kind is an account-enumeration
+      defect (US2 Scenario 7, V5). - `refresh(refreshToken)` → verifies via `verifyRefreshToken` and returns a new access token
+      only. **Do not issue a new refresh token** — the 7-day window is absolute, not sliding
+      (contracts/auth-api.md), which is what bounds the damage from a stolen refresh token. - `getUserById(id)` → returns the user under the default scope, so `password_hash` cannot
+      leak.
 
       Note for later phases: password writes enforce a minimum length of 8; the login path only
-      requires non-empty, since a length check on login tells an attacker nothing but a rejected
-      short password would confuse a legitimate user with a short legacy password.
+                  requires non-empty, since a length check on login tells an attacker nothing but a rejected
+                  short password would confuse a legitimate user with a short legacy password.
 
 ### HTTP layer
 
-- [ ] T039 [US2] Create `backend/src/middleware/authenticate.ts` exporting middleware that reads
+- [X] T039 [US2] Create `backend/src/middleware/authenticate.ts` exporting middleware that reads
       the `Authorization` header, requires the exact form `Bearer <token>`, calls
       `verifyAccessToken`, sets `req.user = { id, email }`, and calls `next()`. Every failure —
       header absent, wrong scheme, expired, bad signature, or `type: 'refresh'` — forwards
       `unauthenticated()` (401). Do not distinguish these cases in the response (FR-003,
       contracts/auth-api.md failure table).
 
-- [ ] T040 [US2] Create `backend/src/controllers/auth.controller.ts` with four handlers. HTTP
-      concerns only — no business logic, no model access:
-      - `login`: calls `authService.login`, sets the refresh cookie via `res.cookie('crm_refresh',
-        refreshToken, { httpOnly: true, sameSite: 'strict', path: '/api/auth', maxAge: 604800000,
-        secure: env.NODE_ENV !== 'development' })`, responds `200` with
-        `{ accessToken, expiresIn: 900, user: { id, email } }`. Assert by inspection that
-        `password_hash` appears nowhere in the response.
-      - `refresh`: reads `req.cookies.crm_refresh`, forwards `unauthenticated()` when absent,
-        responds `200` with `{ accessToken, expiresIn: 900 }`. Sets no new cookie.
-      - `logout`: clears the cookie with the **same** `path` and options and responds `204`. It
-        MUST succeed even when no cookie was sent — logout is idempotent.
-      - `me`: responds `200` with `{ id, email }` from `req.user`.
+- [X] T040 [US2] Create `backend/src/controllers/auth.controller.ts` with four handlers. HTTP
+      concerns only — no business logic, no model access: - `login`: calls `authService.login`, sets the refresh cookie via `res.cookie('crm_refresh',
+  refreshToken, { httpOnly: true, sameSite: 'strict', path: '/api/auth', maxAge: 604800000,
+  secure: env.NODE_ENV !== 'development' })`, responds `200` with
+      `{ accessToken, expiresIn: 900, user: { id, email } }`. Assert by inspection that
+      `password_hash` appears nowhere in the response. - `refresh`: reads `req.cookies.crm_refresh`, forwards `unauthenticated()` when absent,
+      responds `200` with `{ accessToken, expiresIn: 900 }`. Sets no new cookie. - `logout`: clears the cookie with the **same** `path` and options and responds `204`. It
+      MUST succeed even when no cookie was sent — logout is idempotent. - `me`: responds `200` with `{ id, email }` from `req.user`.
 
-- [ ] T041 [US2] Create `backend/src/routes/auth.routes.ts`: `POST /login`, `POST /refresh`,
+- [X] T041 [US2] Create `backend/src/routes/auth.routes.ts`: `POST /login`, `POST /refresh`,
       `POST /logout`, and `GET /me` with the `authenticate` middleware from T039 applied to `/me`
       only. Delegation only — no logic. Then register this router in
       `backend/src/routes/index.ts` (T027) under `/auth`, producing the paths
@@ -472,36 +441,29 @@ SC-002, SC-002a · PLAN.md Definition of done clause 2
 
 ### Frontend consumption
 
-- [ ] T042 [P] [US2] Create `frontend/src/stores/auth.store.ts` — a Pinia store holding
+- [X] T042 [P] [US2] Create `frontend/src/stores/auth.store.ts` — a Pinia store holding
       `accessToken: string | null` and `user: { id: number; email: string } | null` **in memory
       only**, with a computed `isAuthenticated` and actions `setSession`, `setAccessToken`, and
       `clear`. It MUST NOT be persisted to `localStorage` or `sessionStorage` and MUST NOT use a
       Pinia persistence plugin (data-model.md D5/D6 — keeping the token out of web storage is what
       removes the standard XSS token-theft path).
 
-- [ ] T043 [US2] Create `frontend/src/services/http.ts` — the **only** module in the frontend that
-      reads or writes the access token. Requirements:
-      - Base URL comes from `import.meta.env.VITE_API_BASE_URL` and nowhere else, so Phase 11's
-        version segment is a one-line change (FR-021).
-      - Every request sends `credentials: 'include'` so the `httpOnly` refresh cookie is
-        transmitted.
-      - Attaches `Authorization: Bearer <token>` when the auth store holds one.
-      - On a `401` response, calls `POST /auth/refresh` once, updates the store, and **retries the
-        original request exactly once**. If the refresh also fails, clears the store and propagates
-        the error (FR-019).
-      - **Single-flight**: hold the in-flight refresh in a module-scoped
-        `let refreshPromise: Promise<boolean> | null`, return the same promise to every concurrent
-        caller, and null it in a `.finally()`. Without this, parallel 401s each start their own
-        refresh (research.md D6, data-model.md state transitions).
-      - Unwraps the `{ error: { code, message, details } }` envelope into a typed `ApiError`
-        carrying `code`, so callers can branch on a stable machine-readable value.
-      - Never retries the refresh call itself — that would recurse.
+- [X] T043 [US2] Create `frontend/src/services/http.ts` — the **only** module in the frontend that
+      reads or writes the access token. Requirements: - Base URL comes from `import.meta.env.VITE_API_BASE_URL` and nowhere else, so Phase 11's
+      version segment is a one-line change (FR-021). - Every request sends `credentials: 'include'` so the `httpOnly` refresh cookie is
+      transmitted. - Attaches `Authorization: Bearer <token>` when the auth store holds one. - On a `401` response, calls `POST /auth/refresh` once, updates the store, and **retries the
+      original request exactly once**. If the refresh also fails, clears the store and propagates
+      the error (FR-019). - **Single-flight**: hold the in-flight refresh in a module-scoped
+      `let refreshPromise: Promise<boolean> | null`, return the same promise to every concurrent
+      caller, and null it in a `.finally()`. Without this, parallel 401s each start their own
+      refresh (research.md D6, data-model.md state transitions). - Unwraps the `{ error: { code, message, details } }` envelope into a typed `ApiError`
+      carrying `code`, so callers can branch on a stable machine-readable value. - Never retries the refresh call itself — that would recurse.
 
-- [ ] T044 [US2] Create `frontend/src/services/auth.service.ts` exposing `login(email, password)`,
+- [X] T044 [US2] Create `frontend/src/services/auth.service.ts` exposing `login(email, password)`,
       `logout()`, and `fetchMe()`, each delegating to `http.ts`. No component may import `http.ts`
       directly; features talk to services like this one (FR-015).
 
-- [ ] T045 [US2] Execute quickstart **V3**, **V4**, **V5**, **V6**, and **V7** against the running
+- [X] T045 [US2] Execute quickstart **V3**, **V4**, **V5**, **V6**, and **V7** against the running
       backend and record the results. Specifically confirm: the `Set-Cookie` carries `HttpOnly` and
       `SameSite=Strict`; `expiresIn` is `900`; no `password_hash` anywhere in any body; the two
       wrong-credential bodies in V5 are **byte-identical**; presenting the refresh token to
@@ -525,7 +487,7 @@ reload occurs.
 **Maps to**: FR-010–FR-015, FR-022–FR-024 · SC-003, SC-004, SC-007, SC-008 · PLAN.md Definition of
 done clause 3
 
-- [ ] T046 [P] [US3] Create `frontend/src/locales/en.json` with dot-namespaced keys, flat object,
+- [X] T046 [P] [US3] Create `frontend/src/locales/en.json` with dot-namespaced keys, flat object,
       covering every string the shell renders: `app.title`, `nav.home`, `language.name.en`,
       `language.name.ar`, `language.switchTo.en`, `language.switchTo.ar`, `layout.skipToContent`,
       `route.home.title`, `route.notFound.title`, `home.heading`, `home.description`,
@@ -533,47 +495,47 @@ done clause 3
       `language.switchTo.ar` must read as the language it switches **to** (e.g. "Switch to Arabic"),
       because that is what the toggle announces (frontend-shell.md).
 
-- [ ] T047 [P] [US3] Create `frontend/src/locales/ar.json` with an **identical key set** to
+- [X] T047 [P] [US3] Create `frontend/src/locales/ar.json` with an **identical key set** to
       `en.json` and correct Arabic values. A key present in one file and missing from the other
       renders the raw key to the user. **Verify** the sets match programmatically, e.g.
       `node -e "const a=require('./frontend/src/locales/ar.json'),e=require('./frontend/src/locales/en.json');const ka=Object.keys(a).sort(),ke=Object.keys(e).sort();console.log(JSON.stringify(ka)===JSON.stringify(ke))"`
       → must print `true`.
 
-- [ ] T048 [US3] Create `frontend/src/i18n/index.ts` creating the `vue-i18n` v11 instance in
+- [X] T048 [US3] Create `frontend/src/i18n/index.ts` creating the `vue-i18n` v11 instance in
       **Composition API mode** (`legacy: false`), with `messages` from the two locale files,
       `fallbackLocale: 'en'` (which is what satisfies US3 Scenario 4, the corrupted/missing locale
       file), and the initial `locale` resolved by T049. Export the instance as the default.
 
-- [ ] T049 [US3] Create `frontend/src/stores/locale.store.ts` exporting
+- [X] T049 [US3] Create `frontend/src/stores/locale.store.ts` exporting
       `export const SUPPORTED_LOCALES = ['en', 'ar'] as const`, `export const LOCALE_STORAGE_KEY =
-      'crm.locale'`, a standalone `resolveInitialLocale()` that reads `localStorage`, validates the
+'crm.locale'`, a standalone `resolveInitialLocale()` that reads `localStorage`, validates the
       value against `SUPPORTED_LOCALES` and returns `'en'` for anything unrecognised (wrapped in
       try/catch for private-browsing storage failures), and a Pinia store with `locale`, a computed
       `direction` (`'rtl'` for `ar`, else `'ltr'`), and `setLocale(next)` which updates the store,
       writes `localStorage`, sets `i18n.global.locale.value`, and calls `applyDocumentLocale` from
       T050. Persist **only** the locale code — nothing else (frontend-shell.md, State contract).
 
-- [ ] T050 [US3] Create `frontend/src/composables/useDirection.ts` exporting
+- [X] T050 [US3] Create `frontend/src/composables/useDirection.ts` exporting
       `applyDocumentLocale(locale)` which sets `document.documentElement.lang` and
       `document.documentElement.dir`, plus a `useDirection()` composable exposing the reactive
       direction for components that need it. Both attributes must live on `<html>` — not on a
       wrapper `<div>` — because Tailwind's logical utilities resolve against the root direction
       (FR-022, research.md D10).
 
-- [ ] T051 [US3] Edit `frontend/index.html`: set `<html lang="en" dir="ltr">` as the static default
+- [X] T051 [US3] Edit `frontend/index.html`: set `<html lang="en" dir="ltr">` as the static default
       and add a small **inline, synchronous** `<script>` in `<head>` that reads
       `localStorage.getItem('crm.locale')`, validates it against `'ar'`/`'en'`, and sets
       `documentElement.lang`/`dir` **before any stylesheet or module executes**. This is the only
       thing that prevents the flash of LTR that V9 checks for; setting it in `main.ts` alone is too
       late. Wrap in try/catch. Also set the document `<title>`.
 
-- [ ] T052 [US3] Rewrite `frontend/src/main.ts` to: create the app, install **Pinia**, then the
+- [X] T052 [US3] Rewrite `frontend/src/main.ts` to: create the app, install **Pinia**, then the
       **i18n** instance, then the **router**, call `applyDocumentLocale(resolveInitialLocale())`
       **before** `app.mount('#app')`, and import `./style.css`. Order matters — Pinia must be
       installed before any store is used, and the locale must be applied pre-mount (FR-014,
       research.md D11).
 
-- [ ] T053 [US3] Create `frontend/src/router/index.ts` — `createRouter` with
+- [X] T053 [US3] Create `frontend/src/router/index.ts` — `createRouter` with
       `createWebHistory()` (history mode, FR-013) and two routes: `/` → `HomeView` named `home`,
       and a catch-all `/:pathMatch(.*)*` → `NotFoundView` named `not-found`. Put the i18n **key**
       (e.g. `route.home.title`) in `meta.titleKey`, never a literal string, and add an
@@ -581,26 +543,26 @@ done clause 3
       translatable from the first route onward (frontend-shell.md, Routing contract). Route
       definitions live in this file only, never inline in a component.
 
-- [ ] T054 [P] [US3] Create `frontend/src/views/HomeView.vue` and
+- [X] T054 [P] [US3] Create `frontend/src/views/HomeView.vue` and
       `frontend/src/views/NotFoundView.vue`, both `<script setup lang="ts">`. Render only i18n keys
       via `useI18n()` — zero hardcoded strings. `NotFoundView` includes a `<RouterLink>` home
       labelled from `notFound.backToHome`. Logical Tailwind utilities only.
 
-- [ ] T055 [US3] Create `frontend/src/components/LanguageToggle.vue` — `<script setup lang="ts">`.
+- [X] T055 [US3] Create `frontend/src/components/LanguageToggle.vue` — `<script setup lang="ts">`.
       A real `<button type="button">` (never a `div` with a click handler), rendered inside the
       header. Its `aria-label` is the localised `language.switchTo.<next>` string, announcing the
       language it switches **to**, not the current one. Clicking calls
       `localeStore.setLocale(nextLocale)`. It must show a clearly visible focus indicator in both
       directions (FR-024, frontend-shell.md, Language toggle contract).
 
-- [ ] T056 [US3] Create `frontend/src/layouts/DefaultLayout.vue` with the semantic landmark
+- [X] T056 [US3] Create `frontend/src/layouts/DefaultLayout.vue` with the semantic landmark
       structure fixed by frontend-shell.md: `<header>` containing the app title and
       `LanguageToggle`, `<nav>` for primary navigation (empty in this phase, populated from Phase
       1), and exactly one `<main>` containing `<slot />` or `<RouterView />`. Add a
       skip-to-content link using `layout.skipToContent`. Logical utilities only — no `ml-*`,
       `pl-*`, or `text-left` anywhere (FR-023).
 
-- [ ] T057 [US3] Replace `frontend/src/App.vue` (the T030 placeholder) with the real shell:
+- [X] T057 [US3] Replace `frontend/src/App.vue` (the T030 placeholder) with the real shell:
       `<script setup lang="ts">` rendering `DefaultLayout` wrapping `<RouterView />`. Nothing else.
 
 - [ ] T058 [US3] Execute quickstart **V8**, **V9**, and **V10** in a browser and record the
@@ -624,7 +586,7 @@ unambiguous pass or fail.
 
 **Maps to**: FR-016 · SC-005
 
-- [ ] T059 [US4] Create `.github/workflows/ci.yml`. Triggers: `push` on all branches and
+- [X] T059 [US4] Create `.github/workflows/ci.yml`. Triggers: `push` on all branches and
       `pull_request`. One job on `ubuntu-latest` with **`timeout-minutes: 10`** — the timeout is
       what makes the "pipeline step times out" edge case fail cleanly instead of hanging. Steps:
       `actions/checkout@v4`; `actions/setup-node@v4` with `node-version: '22'` and `cache: 'npm'`;
@@ -633,7 +595,7 @@ unambiguous pass or fail.
       `VITE_API_BASE_URL` set to a placeholder in `env`. **No test step** — FR-016 forbids blocking
       on a stage that does not exist. Do not add one "for later".
 
-- [ ] T060 [US4] Verify the pipeline's commands locally before trusting the workflow: run
+- [X] T060 [US4] Verify the pipeline's commands locally before trusting the workflow: run
       `npm ci`, `npm run lint`, and `npm run build` from a clean root and confirm all three exit 0.
       Then confirm the failure path: introduce a deliberate TypeScript error in a scratch file, run
       `npm run build`, confirm it exits non-zero, and revert. This validates US4 Scenarios 1 and 2
@@ -654,7 +616,7 @@ outstanding and explicitly flagged.
 
 ## Phase 7: Polish & Cross-Cutting Concerns
 
-- [ ] T062 [P] Create `README.md` at the repository root: what the project is, the prerequisite
+- [X] T062 [P] Create `README.md` at the repository root: what the project is, the prerequisite
       versions from quickstart.md, the setup commands, the workspace layout, and a pointer to
       `specs/001-phase-0-foundation/quickstart.md` for validation and
       `.specify/memory/constitution.md` for the rules. Include the "where do I add a backend
@@ -662,27 +624,27 @@ outstanding and explicitly flagged.
       without asking anyone. Delete the stock Vite `frontend/README.md` or replace its contents
       with a one-line pointer to the root README.
 
-- [ ] T063 **Physical-utility audit (Principle I).** Search the whole frontend for banned
+- [X] T063 **Physical-utility audit (Principle I).** Search the whole frontend for banned
       direction-specific Tailwind classes:
       `grep -rnE "\b(ml|mr|pl|pr)-[0-9a-z]|\btext-(left|right)\b|\b(left|right)-[0-9]" frontend/src frontend/index.html`
       → must return **nothing**. Replace any hit with its logical equivalent (`ms/me`, `ps/pe`,
       `text-start/text-end`, `start/end`). Symmetric utilities (`mx-*`, `px-*`, `mt-*`) are fine
       and will not match this pattern.
 
-- [ ] T064 **Layering audit (Principle III, quickstart V12).** Confirm by inspection and record the
+- [X] T064 **Layering audit (Principle III, quickstart V12).** Confirm by inspection and record the
       result: no business logic in `backend/src/routes/` (handlers only delegate); only
       `backend/src/services/` imports from `backend/src/models/`
       (`grep -rn "from '.*models" backend/src | grep -v "backend/src/services\|backend/src/models"`
       → empty); no file under `frontend/src/components/`, `frontend/src/views/`, or
       `frontend/src/layouts/` calls `fetch` (`grep -rn "fetch(" frontend/src/components
-      frontend/src/views frontend/src/layouts` → empty); `frontend/src/services/http.ts` is the
+frontend/src/views frontend/src/layouts` → empty); `frontend/src/services/http.ts` is the
       only file reading the access token.
 
-- [ ] T065 **Hardcoded-string audit (Principle I).** Confirm no user-visible literal text exists in
+- [X] T065 **Hardcoded-string audit (Principle I).** Confirm no user-visible literal text exists in
       any `.vue` template or script — every string is a `t('key')` call. Also re-run the identical
       key-set check from T047, since keys were added throughout Phase 5.
 
-- [ ] T066 Run `npm run format` then `npm run lint` at the root and resolve every finding. Both must
+- [X] T066 Run `npm run format` then `npm run lint` at the root and resolve every finding. Both must
       exit 0.
 
 - [ ] T067 **Full quickstart run from a clean state.** `docker compose down -v`, delete
@@ -737,16 +699,16 @@ Principle III violation the directory layout is designed to make visible.
 
 ### Parallel opportunities
 
-| Group | Tasks | Why safe |
-|---|---|---|
-| Setup config files | T004, T005, T006 | Three distinct new files, no imports between them |
-| Foundational middleware | T016, T017, T018, T019 | Separate files; only T018 depends on T016 |
-| Frontend build wiring | T022 | Independent of all backend work |
-| US2 data layer | T033, T034 | Separate model files |
-| US2 frontend | T042 | No dependency on the backend being finished |
-| US3 locale files | T046, T047 | Two files; verify the key sets match after both land |
-| US3 views | T054 | Independent of the layout and toggle |
-| Polish audits | T062, T063 | Read-only inspection of different concerns |
+| Group                   | Tasks                  | Why safe                                             |
+| ----------------------- | ---------------------- | ---------------------------------------------------- |
+| Setup config files      | T004, T005, T006       | Three distinct new files, no imports between them    |
+| Foundational middleware | T016, T017, T018, T019 | Separate files; only T018 depends on T016            |
+| Frontend build wiring   | T022                   | Independent of all backend work                      |
+| US2 data layer          | T033, T034             | Separate model files                                 |
+| US2 frontend            | T042                   | No dependency on the backend being finished          |
+| US3 locale files        | T046, T047             | Two files; verify the key sets match after both land |
+| US3 views               | T054                   | Independent of the layout and toggle                 |
+| Polish audits           | T062, T063             | Read-only inspection of different concerns           |
 
 **Cross-story parallelism**: once Phase 2 is done, US1, US2, and US3 can proceed simultaneously.
 US3 (T046–T058) touches no backend file at all, so it is the cleanest split for a second worker.
@@ -766,11 +728,11 @@ US3 (T046–T058) touches no backend file at all, so it is the cleanest split fo
 ### Incremental delivery
 
 1. Setup + Foundational → environment ready
-2. + US1 → both apps run (**clause 1**, MVP)
-3. + US2 → login returns a valid JWT (**clause 2**)
-4. + US3 → language switch flips direction (**clause 3** — Phase 0 is now functionally done)
-5. + US4 → CI safety net for Phases 1–12
-6. + Polish → audits, docs, full quickstart run
+2. - US1 → both apps run (**clause 1**, MVP)
+3. - US2 → login returns a valid JWT (**clause 2**)
+4. - US3 → language switch flips direction (**clause 3** — Phase 0 is now functionally done)
+5. - US4 → CI safety net for Phases 1–12
+6. - Polish → audits, docs, full quickstart run
 
 ### Suggested MVP scope
 

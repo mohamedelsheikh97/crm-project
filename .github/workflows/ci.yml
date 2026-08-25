@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    # Makes the "pipeline step times out" edge case fail cleanly instead of hanging.
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      # Root install: exercises the workspace wiring, so a broken workspace
+      # fails CI immediately (research.md D12).
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build both workspaces
+        run: npm run build
+        env:
+          VITE_API_BASE_URL: http://localhost:3000/api
+
+      # No test step: FR-016 forbids blocking on a stage that does not exist.
+      # Do not add one "for later".
