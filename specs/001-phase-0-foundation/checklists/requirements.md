@@ -80,3 +80,31 @@ No automated test framework is established in Phase 0 (user decision). Phase 1 d
 and audit logging, where the constitution requires provable server-side permission enforcement.
 Recommend introducing the test harness at the start of Phase 1 so that security-critical logic
 is not written untested.
+
+---
+
+### Post-implementation re-validation (2026-08-25, `/speckit-implement`)
+
+**Status unchanged: 13/16.** The three unchecked Content Quality / technology-agnosticism items
+remain accepted exceptions for exactly the reason recorded above — Phase 0's deliverable *is*
+project structure, so the route prefix, root `lang`/`dir` attributes, and baseline schema are the
+subject matter rather than leaked detail. Implementation surfaced no reason to revisit that
+judgement, and no new exception was needed.
+
+Phases 1–12 remain held to the strict reading of these three items.
+
+### Carry-forward into the Phase 1 spec (MANDATORY)
+
+`plan.md` Complexity Tracking records the deferred audit log as **time-boxed**, and that entry is
+still accurate as built: Phase 0 authenticates users and `pino` logs every login attempt, but no
+`audit_logs` table exists (FR-006b forbids it here). Both Complexity Tracking rows were verified
+against the implementation:
+
+- *Two JWT signing secrets* — built as specified. `JWT_ACCESS_SECRET` and `JWT_REFRESH_SECRET` are
+  separate, startup rejects them if equal, and each token additionally carries a `type` claim.
+- *No audit logging* — still open, still deferred, still time-boxed.
+
+**Phase 1's spec MUST treat the audit log as a first-class deliverable and MUST NOT inherit it as
+assumed-done.** The same applies to the test framework recorded under "Risk flagged" above: no test
+runner exists in Phase 0 by decision, and Phase 1 delivers RBAC, where the constitution requires
+provable server-side enforcement. Stand the harness up at the start of Phase 1.

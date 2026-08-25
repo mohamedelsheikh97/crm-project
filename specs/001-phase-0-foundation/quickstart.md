@@ -208,7 +208,7 @@ Then confirm by inspection:
 
 _User Story 4 · FR-016, SC-005_
 
-> **Blocked.** The repository currently has no commits and no remote (research.md D12), so this
+> **Blocked.** The repository has commits but still no git remote (research.md D12), so this
 > cannot be verified yet. Once a remote exists and a branch is pushed, confirm the workflow runs
 > `npm ci`, lint, and build for both workspaces and reports a result within 5 minutes. Then push a
 > deliberate syntax error and confirm it **fails** rather than silently passing.
@@ -238,3 +238,52 @@ Supporting checks beyond the stated clauses: V5, V6 (security), V10 (accessibili
 | Login succeeds but refresh returns 401 | Cookie not sent — the frontend must use `credentials: 'include'`; check `CORS_ORIGIN` is the exact frontend origin, never `*` |
 | Arabic renders but layout stays LTR    | A physical Tailwind utility is in use, or `dir` is not on `<html>`                                                            |
 | Brief LTR flash before Arabic appears  | Locale is being read after mount instead of synchronously before it                                                           |
+
+---
+
+## Recorded results — Phase 0 implementation run (2026-08-25)
+
+Executed on Windows 11, Node v22.17.1, npm 10.9.2, Docker 29.6.2, from a clean state
+(`docker compose down -v`, `node_modules` and `.env` deleted).
+
+**Setup time: 36 seconds** from `cp .env.example .env` through `npm run db:seed`, against SC-001's
+10-minute budget. The MySQL image was already in the local Docker cache; a cold image pull adds
+roughly a minute.
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| V1 — both apps run | **PASS** | `GET /api/health` → `200 {"status":"ok","database":"connected"}`; frontend serves `200` at `:5173` |
+| V2 — startup fails loudly | **PASS** | DB down → exit 1, `Cannot reach the database at 127.0.0.1:3306 (database "crm_support", user "crm")`. Missing var → exit 1, `MISSING JWT_ACCESS_SECRET`. Also verified: equal secrets and `CORS_ORIGIN=*` each exit 1, and multiple faults print one line per variable |
+| V3 — login returns both tokens | **PASS** | `200`, `expiresIn=900`, `user={id:1,email:admin@crm.local}`; `Set-Cookie` carries `HttpOnly`, `SameSite=Strict`, `Path=/api/auth`, `Max-Age=604800`; no `password_hash` in the body |
+| V4 — protected route | **PASS** | Valid access token → `200 {"id":1,"email":"admin@crm.local"}`; no header → `401 UNAUTHENTICATED` |
+| V5 — no account enumeration | **PASS** | Wrong password and unknown user produce **byte-identical** `401 INVALID_CREDENTIALS` bodies. A `bcrypt.compare` against a real dummy hash runs on the unknown-user path so timing does not distinguish them either |
+| V6 — tampered / wrong-type tokens | **PASS** | Tampered access token → `401`; refresh token on `/me` → `401`; access token on `/refresh` → `401`; non-`Bearer` scheme → `401` |
+| V7 — refresh | **PASS** | Valid cookie → `200` with a new access token that authenticates `/me`; no cookie → `401`; **no `Set-Cookie` on refresh**, so the 7-day window stays absolute. Logout returns `204` with and without a cookie |
+| V8 — language switch flips direction | **NOT RUN** | Requires a browser; no browser automation was available in this session. See "Outstanding manual checks" below |
+| V9 — choice survives reload, no flash | **NOT RUN** | As V8. The mechanism is in place and verified in the served markup: `index.html` ships `<html lang="en" dir="ltr">` plus an inline synchronous script that reads `crm.locale` and sets `lang`/`dir` before any stylesheet or module loads |
+| V10 — keyboard operable | **NOT RUN** | As V8. The toggle is a real `<button type="button">` with a localised `aria-label`, and `style.css` defines a `:focus-visible` outline |
+| V11 — database loss degrades | **PASS** | With the backend running, stopping MySQL gives `503 {"status":"degraded","database":"disconnected"}` and the process keeps serving. Restarting MySQL returns it to `200 ok/connected` with no restart |
+| V12 — layering and lint | **PASS** | `npm run lint` exits 0. No physical Tailwind utilities anywhere. Only `backend/src/services/` imports from `backend/src/models/`. No `fetch(` in `components/`, `views/`, or `layouts/` |
+| V13 — CI reports pass/fail | **BLOCKED** | No git remote exists. `npm ci`, `npm run lint`, and `npm run build` were all verified locally (exit 0), and the failure path was verified for both workspaces: a deliberate type error makes `npm run build` exit 2 |
+
+### Definition-of-done coverage
+
+| PLAN.md Phase 0 clause | Status |
+| --- | --- |
+| Both apps run locally | **Met** — V1, V2, V11 |
+| Log in against a seeded test account, receive a valid JWT | **Met** — V3, V4, V6, V7 |
+| Switching language flips layout direction | **Built, awaiting manual browser confirmation** — V8, V9, V10 |
+
+### Outstanding manual checks
+
+Run these in a browser at <http://localhost:5173> after `npm run dev`:
+
+1. **V8** — DevTools shows `<html lang="en" dir="ltr">`. Activate the language toggle in the
+   header: text becomes Arabic, layout mirrors, `<html lang="ar" dir="rtl">`, **no page reload**,
+   within about a second. Toggle back and confirm the reverse.
+2. **V9** — while in Arabic, hard-reload. The app returns in Arabic/RTL with **no visible flash of
+   LTR**.
+3. **V10** — using only <kbd>Tab</kbd>, <kbd>Shift</kbd>+<kbd>Tab</kbd>, <kbd>Enter</kbd>, and
+   <kbd>Space</kbd>: reach the skip link and the language toggle, confirm a clearly visible focus
+   indicator, and activate the toggle. Repeat in Arabic — focus order must follow RTL visual order.
+4. Confirm the browser console is empty throughout (part of V1).

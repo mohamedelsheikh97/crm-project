@@ -187,7 +187,8 @@ crm-project/
 "clearly separated frontend and backend workspaces" is literally true and CI paths stay simple for
 twelve phases. `node_modules` is reinstalled at the new location rather than moved. Backend layering
 mirrors Constitution Principle III one-to-one, so a violation is visible from the directory tree
-alone. Nothing is committed yet, so the move carries no history-rewrite risk.
+alone. The move was made with `git mv` on the first working branch, so git tracks it as a rename
+and no history rewrite was required.
 
 ## Complexity Tracking
 

@@ -647,22 +647,22 @@ frontend/src/views frontend/src/layouts` → empty); `frontend/src/services/http
 - [X] T066 Run `npm run format` then `npm run lint` at the root and resolve every finding. Both must
       exit 0.
 
-- [ ] T067 **Full quickstart run from a clean state.** `docker compose down -v`, delete
+- [X] T067 **Full quickstart run from a clean state.** `docker compose down -v`, delete
       `node_modules` and `.env`, then execute quickstart.md Setup end to end and time it. SC-001
       requires under 10 minutes. If any step is undocumented or out of order, fix
       `quickstart.md` — the document is the deliverable, not just the notes.
 
-- [ ] T068 Walk the full V1–V12 checklist one final time and mark each result in the phase notes.
+- [X] T068 Walk the full V1–V12 checklist one final time and mark each result in the phase notes.
       Then verify the three PLAN.md Definition-of-done clauses explicitly: both apps run locally;
       login against the seeded account returns a valid JWT; switching language flips layout
       direction. V13 stays open per T061.
 
-- [ ] T069 Update `specs/001-phase-0-foundation/checklists/requirements.md` if any accepted
+- [X] T069 Update `specs/001-phase-0-foundation/checklists/requirements.md` if any accepted
       exception changed, and confirm the plan.md Complexity Tracking entry about deferred audit
       logging is still accurate — it is **time-boxed and MUST close in Phase 1**, so it needs to
       carry forward into the Phase 1 spec rather than being inherited as assumed-done.
 
-- [ ] T070 Commit all remaining work on `001-phase-0-foundation`. Do **not** push (no remote) and do
+- [X] T070 Commit all remaining work on `001-phase-0-foundation`. Do **not** push (no remote) and do
       **not** merge to `main` until the user confirms the Definition-of-done gate in
       `.specify/memory/constitution.md` is met.
 
