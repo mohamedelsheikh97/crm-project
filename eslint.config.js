@@ -7,7 +7,7 @@ export default tseslint.config(
   {
     // CommonJS sequelize-cli migration/seeder files live outside the TS project
     // on purpose (research.md D9), so they are not linted as TS ESM.
-    ignores: ['**/dist/**', '**/node_modules/**', 'backend/src/db/**/*.cjs'],
+    ignores: ['**/dist/**', '**/node_modules/**', '**/coverage/**', 'backend/src/db/**/*.cjs'],
   },
   js.configs.recommended,
   tseslint.configs.recommended,

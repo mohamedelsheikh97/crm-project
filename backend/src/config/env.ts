@@ -27,6 +27,21 @@ const envSchema = z
         message: 'must be an explicit origin; credentialed CORS forbids the wildcard "*"',
       }),
     LOG_LEVEL: z.string().min(1).optional().default('info'),
+
+    // Account security policy (Phase 1, research.md D7). All optional with
+    // defaults, so an existing .env keeps working. Read once at startup, so a
+    // change requires a restart.
+    PASSWORD_MIN_LENGTH: z.coerce
+      .number()
+      .int()
+      // Floored at 8: the policy must not be configurable below the minimum
+      // the service layer already enforced in Phase 0.
+      .min(8, 'must be at least 8')
+      .optional()
+      .default(12),
+    PASSWORD_HISTORY_SIZE: z.coerce.number().int().positive().optional().default(5),
+    AUTH_MAX_FAILED_ATTEMPTS: z.coerce.number().int().positive().optional().default(5),
+    AUTH_LOCKOUT_MINUTES: z.coerce.number().int().positive().optional().default(15),
   })
   .superRefine((value, ctx) => {
     // Equal secrets would silently defeat the access/refresh type separation.

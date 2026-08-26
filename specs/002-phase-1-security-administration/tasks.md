@@ -94,48 +94,48 @@ not done, even if the code runs and the tests pass.
 **Purpose**: Stand up the test framework Phase 0 deliberately omitted, and add the policy
 configuration everything else reads.
 
-- [ ] T001 Install test dependencies at the repository root: `vitest` (4.x), `supertest` (7.x),
+- [X] T001 Install test dependencies at the repository root: `vitest` (4.x), `supertest` (7.x),
       `@types/supertest`, `@vue/test-utils` (2.x), `happy-dom`, `@vitest/coverage-v8`. Root
       `devDependencies` only — a single runner serves both workspaces (research.md D8). **Verify**:
       `npx vitest --version` resolves and the root `package-lock.json` is the only lockfile.
 
-- [ ] T002 Create `vitest.config.ts` at the repository root defining two projects: `backend`
+- [X] T002 Create `vitest.config.ts` at the repository root defining two projects: `backend`
       (environment `node`, include `backend/tests/**/*.test.ts`) and `frontend` (environment
       `happy-dom`, include `frontend/tests/**/*.test.ts`, with the Vue plugin so `.vue` files
       compile). Set `testTimeout` to 20000 — backend tests hit a real database and bcrypt at cost 12
       is deliberately slow.
 
-- [ ] T003 Add scripts to the root `package.json`: `"test": "vitest run"`,
+- [X] T003 Add scripts to the root `package.json`: `"test": "vitest run"`,
       `"test:watch": "vitest"`, `"test:coverage": "vitest run --coverage"`. Do not add a
       per-workspace test script; the root config owns both projects.
 
-- [ ] T004 [P] Create `backend/tests/helpers/database.ts` exporting `setupTestDatabase()` which
+- [X] T004 [P] Create `backend/tests/helpers/database.ts` exporting `setupTestDatabase()` which
       points Sequelize at `crm_support_test`, runs migrations, and seeds roles and grants; plus
       `truncateAll()` which empties every table except `SequelizeMeta` between tests, and
       `closeTestDatabase()`. The test schema is separate so a test run can never touch development
       data.
 
-- [ ] T005 [P] Create `backend/tests/helpers/auth.ts` exporting `createTestUser({ roleKey, ... })`
+- [X] T005 [P] Create `backend/tests/helpers/auth.ts` exporting `createTestUser({ roleKey, ... })`
       and `signInAs(user)` returning an access token, so tests express intent rather than repeating
       a login dance. Also export `agentFor(user)` wrapping `supertest(app)` with the Authorization
       header pre-set.
 
-- [ ] T006 [P] Create `frontend/tests/helpers/mount.ts` exporting a `mountWithPlugins(component,
+- [X] T006 [P] Create `frontend/tests/helpers/mount.ts` exporting a `mountWithPlugins(component,
       options)` helper that installs a fresh Pinia, the i18n instance, and a memory-history router,
       so component tests do not each reassemble the app's plugins.
 
-- [ ] T007 Add the four policy variables to `.env.example` with the same commentary style Phase 0
+- [X] T007 Add the four policy variables to `.env.example` with the same commentary style Phase 0
       used, documenting each default and that all are optional:
       `PASSWORD_MIN_LENGTH=12`, `PASSWORD_HISTORY_SIZE=5`, `AUTH_MAX_FAILED_ATTEMPTS=5`,
       `AUTH_LOCKOUT_MINUTES=15`. Note in the comment block that changing them requires a restart
       (research.md D7).
 
-- [ ] T008 Extend the zod schema in `backend/src/config/env.ts` with those four variables: each
+- [X] T008 Extend the zod schema in `backend/src/config/env.ts` with those four variables: each
       coerced to a positive integer with the defaults above, and `PASSWORD_MIN_LENGTH` additionally
       `.min(8)` so policy cannot be configured below the floor Phase 0 recorded. Do **not** add any
       other `process.env` read anywhere — this file remains the only one (FR-017 from Phase 0).
 
-- [ ] T009 Add a test step to `.github/workflows/ci.yml`: a MySQL 8.4 service container, `npm ci`,
+- [X] T009 Add a test step to `.github/workflows/ci.yml`: a MySQL 8.4 service container, `npm ci`,
       lint, `npm test` with `NODE_ENV=test` and `DB_NAME=crm_support_test`, then build. Phase 0's
       FR-016 forbade a test stage because none existed; one exists now, so the prohibition no longer
       applies (plan.md non-violations).
