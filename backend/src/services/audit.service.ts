@@ -1,5 +1,5 @@
 import type { Request } from 'express';
-import type { Transaction } from 'sequelize';
+import { Op, col, fn, type Transaction } from 'sequelize';
 
 import { AuditLog, type AuditOutcome } from '../models/audit-log.model.js';
 import { logger } from '../middleware/request-logger.js';
@@ -141,4 +141,100 @@ export function auditContextFrom(req: Request): Pick<AuditEntry, 'ipAddress' | '
     ipAddress: req.ip ?? null,
     userAgent: req.headers['user-agent'] ?? null,
   };
+}
+
+export interface AuditListOptions {
+  page?: unknown;
+  pageSize?: unknown;
+  from?: string;
+  to?: string;
+  actorUserId?: number;
+  action?: string;
+  outcome?: AuditOutcome;
+}
+
+export interface AuditEntryView {
+  id: number;
+  action: string;
+  actor: { id: number | null; email: string | null } | null;
+  target: { type: string | null; id: string | null; label: string | null };
+  outcome: AuditOutcome;
+  ipAddress: string | null;
+  previousValue: unknown;
+  newValue: unknown;
+  metadata: unknown;
+  createdAt: Date;
+}
+
+const DEFAULT_PAGE_SIZE = 25;
+const MAX_PAGE_SIZE = 100;
+
+export async function list(options: AuditListOptions = {}): Promise<{
+  items: AuditEntryView[];
+  page: number;
+  pageSize: number;
+  total: number;
+}> {
+  const requestedSize = Number(options.pageSize);
+  const pageSize =
+    Number.isFinite(requestedSize) && requestedSize >= 1
+      ? Math.min(Math.floor(requestedSize), MAX_PAGE_SIZE)
+      : DEFAULT_PAGE_SIZE;
+
+  const requestedPage = Number(options.page);
+  const page = Number.isFinite(requestedPage) && requestedPage >= 1 ? Math.floor(requestedPage) : 1;
+
+  const where: Record<string | symbol, unknown> = {};
+
+  if (options.action) where.action = options.action;
+  if (options.outcome) where.outcome = options.outcome;
+  if (typeof options.actorUserId === 'number') where.actor_user_id = options.actorUserId;
+
+  if (options.from || options.to) {
+    const range: Record<symbol, Date> = {};
+    if (options.from) range[Op.gte] = new Date(options.from);
+    if (options.to) range[Op.lte] = new Date(options.to);
+    where.created_at = range;
+  }
+
+  const { rows, count } = await AuditLog.findAndCountAll({
+    where,
+    // Most recent first (FR-039).
+    order: [['created_at', 'DESC']],
+    limit: pageSize,
+    offset: (page - 1) * pageSize,
+  });
+
+  return {
+    items: rows.map((row) => ({
+      id: Number(row.id),
+      action: row.action,
+      // Null for events with no authenticated actor — a failed sign-in against
+      // an unknown identifier (FR-037). actor_email preserves what was tried.
+      actor:
+        row.actor_user_id === null && row.actor_email === null
+          ? null
+          : { id: row.actor_user_id, email: row.actor_email },
+      target: { type: row.target_type, id: row.target_id, label: row.target_label },
+      outcome: row.outcome,
+      ipAddress: row.ip_address,
+      previousValue: row.previous_value,
+      newValue: row.new_value,
+      metadata: row.metadata,
+      createdAt: row.created_at,
+    })),
+    page,
+    pageSize,
+    total: count,
+  };
+}
+
+/** Distinct action keys, for populating the filter without a full scan. */
+export async function distinctActions(): Promise<string[]> {
+  const rows = await AuditLog.findAll({
+    attributes: [[fn('DISTINCT', col('action')), 'action']],
+    raw: true,
+  });
+
+  return (rows as unknown as Array<{ action: string }>).map((row) => row.action).sort();
 }

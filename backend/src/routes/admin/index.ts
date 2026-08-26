@@ -3,7 +3,9 @@ import { Router } from 'express';
 import { authenticate } from '../../middleware/authenticate.js';
 import { requirePasswordChange } from '../../middleware/require-password-change.js';
 
+import auditRoutes from './audit.routes.js';
 import rolesRoutes from './roles.routes.js';
+import settingsRoutes from './settings.routes.js';
 import usersRoutes from './users.routes.js';
 
 const router = Router();
@@ -16,5 +18,7 @@ router.use(requirePasswordChange);
 
 router.use('/users', usersRoutes);
 router.use(rolesRoutes);
+router.use('/audit', auditRoutes);
+router.use('/settings', settingsRoutes);
 
 export default router;

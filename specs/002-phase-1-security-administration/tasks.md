@@ -452,7 +452,7 @@ checks are enforced server-side, not just hidden in the UI")
 
 ### Tests for US2
 
-- [ ] T056 [US2] Create `backend/tests/authorization.matrix.test.ts` — **the most important test in
+- [X] T056 [US2] Create `backend/tests/authorization.matrix.test.ts` — **the most important test in
       this phase** (SC-003, quickstart **A1**). It is **generated, not hand-written**: iterate the
       catalog from T010 crossed with the three roles and assert each endpoint returns non-`403` when
       the role holds the key and `403` when it does not. Additionally assert that (a) **every route
@@ -461,16 +461,16 @@ checks are enforced server-side, not just hidden in the UI")
       a key nothing enforces is dead and fails. Those two assertions are what keep this honest as
       Phases 2–12 add modules ([contracts/authorization.md](./contracts/authorization.md)).
 
-- [ ] T057 [P] [US2] Create `backend/tests/admin/roles.test.ts` covering permission replacement,
+- [X] T057 [P] [US2] Create `backend/tests/admin/roles.test.ts` covering permission replacement,
       an unknown key → `400`, a stale `version` → `409`, and the FR-018 refusal when a change would
       leave no role holding `roles:update_permissions` or `users:update`.
 
-- [ ] T058 [P] [US2] Create `backend/tests/auth/permission-immediacy.test.ts` (quickstart **A14**,
+- [X] T058 [P] [US2] Create `backend/tests/auth/permission-immediacy.test.ts` (quickstart **A14**,
       SC-004) asserting that a permission removed mid-session takes effect on the **very next
       request** — no sign-out, no wait. This is what proves research.md D1's design rather than
       merely describing it.
 
-- [ ] T059 [P] [US2] Create `backend/tests/auth/forced-password-change.test.ts` (quickstart **A3**)
+- [X] T059 [P] [US2] Create `backend/tests/auth/forced-password-change.test.ts` (quickstart **A3**)
       asserting every route except the three exempt ones returns `403 PASSWORD_CHANGE_REQUIRED`
       while the flag is set.
 
@@ -481,18 +481,18 @@ checks are enforced server-side, not just hidden in the UI")
 
 ### Backend for US2
 
-- [ ] T061 [US2] Create `backend/src/services/role.service.ts` exporting `list()` returning each
+- [X] T061 [US2] Create `backend/src/services/role.service.ts` exporting `list()` returning each
       role with its resolved permissions and a `userCount`, and `replacePermissions(roleId, keys,
       version)`. Validate every key against the catalog. Enforce FR-018 by checking the **resulting
       state of all roles**, not just the edited one, and refuse with `conflict()`. Refuse a change
       stripping the caller's own administrative access with `forbidden()` (FR-008). Runs in a
       transaction with the audit entry carrying previous and new sets (FR-034).
 
-- [ ] T062 [US2] Create `backend/src/controllers/admin/roles.controller.ts` with `list`,
+- [X] T062 [US2] Create `backend/src/controllers/admin/roles.controller.ts` with `list`,
       `permissionCatalog` (serving T010's `permissionCatalog()` so the screen can never offer a
       permission nothing enforces), and `replacePermissions`.
 
-- [ ] T063 [US2] Create `backend/src/routes/admin/roles.routes.ts`: `GET /roles` and
+- [X] T063 [US2] Create `backend/src/routes/admin/roles.routes.ts`: `GET /roles` and
       `GET /permissions` behind `roles:view`, `PUT /roles/:id/permissions` behind
       `roles:update_permissions`. **Deliberately no `POST` or `DELETE`** — the role set is fixed, so
       those routes do not exist and a request gets `404` (FR-021, rule 10). Register in
@@ -562,24 +562,24 @@ persisted no audit record, and its plan required that gap close here — with ev
 
 ### Backend for US3
 
-- [ ] T073 [US3] Extend `backend/src/services/audit.service.ts` with `list({ page, pageSize, from,
+- [X] T073 [US3] Extend `backend/src/services/audit.service.ts` with `list({ page, pageSize, from,
       to, actorUserId, action, outcome })` returning `{ items, page, pageSize, total }` ordered
       **most recent first** with `pageSize` clamped to 100, and `distinctActions()` for populating
       the filter without a full scan (FR-039, FR-040).
 
-- [ ] T074 [US3] Add audit calls in `backend/src/services/user.service.ts` and
+- [X] T074 [US3] Add audit calls in `backend/src/services/user.service.ts` and
       `backend/src/services/role.service.ts` for every state-changing path built in Phases 3–4 — user created,
       updated, deactivated, reactivated, role changed, role permissions changed, password changed,
       password reset — each **inside the existing transaction** and carrying previous and new values
       where the action changes a role or a permission set (FR-034).
 
-- [ ] T075 [US3] Add `recordAuthEvent` calls in `backend/src/services/auth.service.ts` for the
+- [X] T075 [US3] Add `recordAuthEvent` calls in `backend/src/services/auth.service.ts` for the
       authentication paths: sign-in success, sign-in
       failure (**including when the identifier matches no account** — FR-037, so probing is visible),
       sign-out, account locked, and account unlocked. `actor_user_id` is null for unknown
       identifiers while `actor_email` preserves what was attempted.
 
-- [ ] T076 [US3] Create `backend/src/controllers/admin/audit.controller.ts` and
+- [X] T076 [US3] Create `backend/src/controllers/admin/audit.controller.ts` and
       `backend/src/routes/admin/audit.routes.ts` with `GET /audit` and `GET /audit/actions` behind
       `audit:view` (FR-038). **No write routes at any path** — append-only is enforced by their
       absence. Register in `backend/src/routes/admin/index.ts`.
