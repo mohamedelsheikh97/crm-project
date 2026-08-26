@@ -542,21 +542,21 @@ persisted no audit record, and its plan required that gap close here — with ev
 
 ### Tests for US3
 
-- [ ] T069 [US3] Create `backend/tests/audit/coverage.test.ts` (quickstart **A7**, SC-005) which
+- [X] T069 [US3] Create `backend/tests/audit/coverage.test.ts` (quickstart **A7**, SC-005) which
       **enumerates `AUDIT_ACTIONS` from T033** and exercises each trigger, asserting an entry
       appears. Because it iterates the constant rather than a hand-written list, an action added
       without a recording path fails the suite.
 
-- [ ] T070 [P] [US3] Create `backend/tests/audit/content.test.ts` (quickstart **A8**, SC-008)
+- [X] T070 [P] [US3] Create `backend/tests/audit/content.test.ts` (quickstart **A8**, SC-008)
       asserting no entry contains a password, hash, or token in **any** field including
       `previousValue`, `newValue`, and `metadata` — including a deliberate attempt to pass a
       password through `metadata`, which the redaction step must strip (FR-036).
 
-- [ ] T071 [P] [US3] Create `backend/tests/audit/immutability.test.ts` (quickstart **A9**) asserting
+- [X] T071 [P] [US3] Create `backend/tests/audit/immutability.test.ts` (quickstart **A9**) asserting
       no write route exists on the audit resource at any path or method — `POST`, `PATCH`, `PUT`,
       and `DELETE` against `/api/admin/audit` and `/api/admin/audit/:id` all return `404`.
 
-- [ ] T072 [P] [US3] Create `backend/tests/audit/transactional.test.ts` asserting that when the
+- [X] T072 [P] [US3] Create `backend/tests/audit/transactional.test.ts` asserting that when the
       audit insert fails during a state change, the change **rolls back** and the caller receives an
       error — there is no path where the action succeeds unrecorded (FR-041, rule 5).
 
@@ -621,45 +621,45 @@ with the failing rule named; repeated failures lock; Administrator unlock works.
 
 ### Tests for US4
 
-- [ ] T081 [P] [US4] Create `backend/tests/auth/password-policy.test.ts` (quickstart **A4**)
+- [X] T081 [P] [US4] Create `backend/tests/auth/password-policy.test.ts` (quickstart **A4**)
       asserting a too-short password, a reused password, and a wrong current password are each
       refused with the correct status and the **specific failing rule named** in `details[]`
       (FR-022–FR-024). Note the current-password failure is `401`, not `400` — it is a failed
       credential check, not a malformed request.
 
-- [ ] T082 [P] [US4] Create `backend/tests/auth/lockout.test.ts` (quickstart **A5**) asserting
+- [X] T082 [P] [US4] Create `backend/tests/auth/lockout.test.ts` (quickstart **A5**) asserting
       lockout at the threshold, refusal **with the correct password** while locked, automatic
       release after the period, counter reset on success, and Administrator unlock.
 
-- [ ] T083 [US4] Create `backend/tests/auth/no-enumeration.test.ts` (quickstart **A6**, SC-007) —
+- [X] T083 [US4] Create `backend/tests/auth/no-enumeration.test.ts` (quickstart **A6**, SC-007) —
       **the security-critical test of this story**. Assert that wrong password, unknown account,
       locked account, and inactive account produce **byte-identical response bodies and status
       codes**. Any difference is an account-enumeration defect, not a cosmetic one (rule 4).
 
 ### Implementation for US4
 
-- [ ] T084 [US4] Create `backend/src/services/password.service.ts` exporting
+- [X] T084 [US4] Create `backend/src/services/password.service.ts` exporting
       `validatePolicy(password)` returning per-rule failures rather than a boolean — the caller needs
       to name the failing rule (FR-022); `hash(password)` at bcrypt cost 12, unchanged from Phase 0;
       `isReused(userId, password)` comparing against the most recent `PASSWORD_HISTORY_SIZE` hashes;
       and `recordHistory(userId, hash, { transaction })` which **prunes** entries beyond the window
       so the table stays bounded and an old hash does not outlive its purpose (research.md D9).
 
-- [ ] T085 [US4] Extend `backend/src/services/auth.service.ts` login with lockout: increment
+- [X] T085 [US4] Extend `backend/src/services/auth.service.ts` login with lockout: increment
       `failed_login_attempts` on failure, set `locked_until` at the threshold, refuse while locked
       **even with the correct password**, and reset the counter on success (FR-026–FR-029).
 
-- [ ] T086 [US4] In `backend/src/services/auth.service.ts`, ensure the locked and inactive paths run
+- [X] T086 [US4] In `backend/src/services/auth.service.ts`, ensure the locked and inactive paths run
       a **bcrypt compare against the dummy hash** before returning, exactly as Phase 0's unknown-account path does. Skipping the hash
       would make those paths detectably faster and reintroduce the enumeration leak through timing
       (FR-030, rule 4). All four paths return the identical `invalidCredentials()`.
 
-- [ ] T087 [US4] Add `changePassword(userId, currentPassword, newPassword)` to
+- [X] T087 [US4] Add `changePassword(userId, currentPassword, newPassword)` to
       `backend/src/services/auth.service.ts`: verify the current password, run policy and reuse
       checks, hash, clear `must_change_password`, record history, and write the audit entry — all in
       one transaction (rule 5).
 
-- [ ] T088 [US4] Add `resetPassword` to `backend/src/services/user.service.ts`: set the new hash,
+- [X] T088 [US4] Add `resetPassword` to `backend/src/services/user.service.ts`: set the new hash,
       set `must_change_password`, reset the failure counter, clear any lock, record history, audit as
       `auth.password.reset`. The Administrator hands the password over out of band — there is no
       email until Phase 5 (spec Assumptions).

@@ -37,7 +37,11 @@ export interface LoginResult {
   refreshToken: string;
 }
 
-export async function login(email: unknown, password: unknown): Promise<LoginResult> {
+export async function login(
+  email: unknown,
+  password: unknown,
+  context: { ipAddress?: string | null; userAgent?: string | null } = {},
+): Promise<LoginResult> {
   const details: ErrorDetail[] = [];
   const normalisedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
 
@@ -60,6 +64,8 @@ export async function login(email: unknown, password: unknown): Promise<LoginRes
 
   if (!user) {
     await bcrypt.compare(String(password), DUMMY_HASH);
+    // Recorded even though no account matched, so probing is visible (FR-037).
+    await recordFailure(null, normalisedEmail, context, 'unknown_account');
     throw invalidCredentials();
   }
 
@@ -69,6 +75,7 @@ export async function login(email: unknown, password: unknown): Promise<LoginRes
   // enumeration leak through timing (FR-030, research.md D6).
   if (!user.is_active || user.isLocked) {
     await bcrypt.compare(String(password), DUMMY_HASH);
+    await recordFailure(user.id, user.email, context, user.is_active ? 'locked' : 'inactive');
     throw invalidCredentials();
   }
 
@@ -77,11 +84,22 @@ export async function login(email: unknown, password: unknown): Promise<LoginRes
   if (!matches) {
     // Identical error to every branch above — any difference in body, status,
     // or timing is an account-enumeration defect, not a cosmetic one.
-    await registerFailedAttempt(user);
+    await registerFailedAttempt(user, context);
+    await recordFailure(user.id, user.email, context, 'wrong_password');
     throw invalidCredentials();
   }
 
   await clearFailedAttempts(user);
+
+  await auditService.recordAuthEvent({
+    action: auditService.AUDIT_ACTIONS.LOGIN_SUCCESS,
+    actorUserId: user.id,
+    actorEmail: user.email,
+    targetType: 'user',
+    targetId: user.id,
+    targetLabel: user.email,
+    ...context,
+  });
 
   return {
     user: { id: user.id, email: user.email },
@@ -232,7 +250,10 @@ export async function changePassword(
  * response as a wrong password and an unknown account, or the login form
  * becomes an account-existence oracle (FR-030, research.md D6).
  */
-async function registerFailedAttempt(user: User): Promise<void> {
+async function registerFailedAttempt(
+  user: User,
+  context: { ipAddress?: string | null; userAgent?: string | null } = {},
+): Promise<void> {
   user.failed_login_attempts += 1;
 
   if (user.failed_login_attempts >= env.AUTH_MAX_FAILED_ATTEMPTS && !user.isLocked) {
@@ -249,6 +270,7 @@ async function registerFailedAttempt(user: User): Promise<void> {
       targetId: user.id,
       targetLabel: user.email,
       metadata: { attempts: user.failed_login_attempts },
+      ...context,
     });
 
     return;
@@ -266,4 +288,26 @@ async function clearFailedAttempts(user: User): Promise<void> {
   user.failed_login_attempts = 0;
   user.locked_until = null;
   await user.save();
+}
+
+/**
+ * Every failed sign-in is recorded, including ones against identifiers that
+ * match no account (FR-037). The reason is kept in metadata for an
+ * investigator — it is never revealed to the caller, whose response is
+ * identical in all four cases (FR-030).
+ */
+async function recordFailure(
+  userId: number | null,
+  email: string,
+  context: { ipAddress?: string | null; userAgent?: string | null },
+  reason: 'unknown_account' | 'wrong_password' | 'locked' | 'inactive',
+): Promise<void> {
+  await auditService.recordAuthEvent({
+    action: auditService.AUDIT_ACTIONS.LOGIN_FAILURE,
+    outcome: 'failure',
+    actorUserId: userId,
+    actorEmail: email,
+    metadata: { reason },
+    ...context,
+  });
 }

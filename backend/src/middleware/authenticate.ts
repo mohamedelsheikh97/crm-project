@@ -58,3 +58,26 @@ export async function authenticate(
     next(error);
   }
 }
+
+/**
+ * Populates req.user when a valid token is present and does nothing otherwise.
+ *
+ * Used only by logout, which must stay idempotent — it succeeds with no cookie
+ * and no token — while still recording WHO logged out when that is knowable.
+ */
+export async function optionalAuthenticate(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  if (!req.headers.authorization) {
+    next();
+    return;
+  }
+
+  await authenticate(req, res, (error?: unknown) => {
+    // A bad token on logout is not worth failing over; the cookie is cleared
+    // either way.
+    next(error instanceof Error && req.user ? error : undefined);
+  });
+}
