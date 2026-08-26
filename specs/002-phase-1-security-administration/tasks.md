@@ -397,35 +397,35 @@ clause 1 ("An Administrator can create users, assign roles")
 
 ### Frontend for US1
 
-- [ ] T048 [P] [US1] Create `frontend/src/services/admin-users.service.ts` exposing `list`, `get`,
+- [X] T048 [P] [US1] Create `frontend/src/services/admin-users.service.ts` exposing `list`, `get`,
       `create`, `update`, `deactivate`, `reactivate`, `resetPassword`, and `unlock`, each delegating
       to `http.ts`. No component imports `http.ts` directly (FR-015).
 
-- [ ] T049 [P] [US1] Create `frontend/src/stores/admin-users.store.ts` holding the current page,
+- [X] T049 [P] [US1] Create `frontend/src/stores/admin-users.store.ts` holding the current page,
       filters, and loading state. No token handling — that stays in `auth.store.ts`.
 
-- [ ] T050 [US1] Create `frontend/src/views/admin/UsersListView.vue` using `DataTable` from T040.
+- [X] T050 [US1] Create `frontend/src/views/admin/UsersListView.vue` using `DataTable` from T040.
       Columns: name, email, role, status, actions. **Status distinguishes three states** — active,
       inactive, and locked — because a locked account is a different situation from a deactivated
       one (data-model.md). Filters: search, role, active state. Row actions are real `<button>`s and
       are omitted, not disabled-without-explanation, when `can()` is false.
 
-- [ ] T051 [US1] Create `frontend/src/views/admin/UserFormView.vue` serving create and edit. Create
+- [X] T051 [US1] Create `frontend/src/views/admin/UserFormView.vue` serving create and edit. Create
       collects email, full name, role, initial password; edit collects full name and role —
       **email is not editable**, since it is the login identifier the audit log references. Warn
       before the user changes their own role. Map `details[]` onto fields and move focus to the
       first invalid one on failure.
 
-- [ ] T052 [US1] Wire deactivation in `frontend/src/views/admin/UsersListView.vue` through the
+- [X] T052 [US1] Wire deactivation in `frontend/src/views/admin/UsersListView.vue` through the
       `ConfirmDialog` from T040: the confirm button states the
       specific consequence ("Deactivate Support Agent"), never "OK", and a server refusal (last
       Administrator) is surfaced **in the dialog** with the server's message rather than swallowed.
 
-- [ ] T053 [US1] Create `frontend/src/views/ChangePasswordView.vue` and the
+- [X] T053 [US1] Create `frontend/src/views/ChangePasswordView.vue` and the
       `POST /api/auth/change-password` endpoint wiring, so a forced-change user has somewhere to
       land. Show the policy requirements up front rather than only after a failed attempt.
 
-- [ ] T054 [P] [US1] Add all US1 i18n keys to **both** `frontend/src/locales/en.json` and
+- [X] T054 [P] [US1] Add all US1 i18n keys to **both** `frontend/src/locales/en.json` and
       `ar.json` — table headers, filters, status words, form labels, dialog text, validation
       messages, and route titles. Identical key sets (rule 8).
 
@@ -500,22 +500,22 @@ checks are enforced server-side, not just hidden in the UI")
 
 ### Frontend for US2
 
-- [ ] T064 [P] [US2] Create `frontend/src/services/admin-roles.service.ts` exposing `list`,
+- [X] T064 [P] [US2] Create `frontend/src/services/admin-roles.service.ts` exposing `list`,
       `permissionCatalog`, and `replacePermissions`.
 
-- [ ] T065 [US2] Create `frontend/src/views/admin/RolesView.vue` showing the three roles with a
+- [X] T065 [US2] Create `frontend/src/views/admin/RolesView.vue` showing the three roles with a
       permission grid grouped by module, a checkbox per action, and per-role save sending the full
       set plus `version`. A grant whose key is no longer in the catalog is shown as **stale** and
       dropped on save. Make FR-018 legible rather than surprising: disable the control with an
       explanation before submission where possible, and surface the server's reason when refused.
 
-- [ ] T066 [US2] Apply `can()` across `frontend/src/layouts/AdminLayout.vue`,
+- [X] T066 [US2] Apply `can()` across `frontend/src/layouts/AdminLayout.vue`,
       `frontend/src/views/admin/UsersListView.vue`, `UserFormView.vue`, and `RolesView.vue` so
       unavailable actions are hidden or disabled (FR-020) — **in addition to**, never instead of, the server checks. Treat a `403`
       reaching the client as a real error worth surfacing: it means the interface offered something
       the server refused, which is a defect.
 
-- [ ] T067 [P] [US2] Add US2 i18n keys to `frontend/src/locales/en.json` and `ar.json`: role names and descriptions, module and
+- [X] T067 [P] [US2] Add US2 i18n keys to `frontend/src/locales/en.json` and `ar.json`: role names and descriptions, module and
       action names for the permission grid, stale-grant wording, and the FR-018 refusal explanation.
 
 - [ ] T068 [US2] Execute quickstart **V2** and **V3** and record the results. V2's third check — a
@@ -586,17 +586,17 @@ persisted no audit record, and its plan required that gap close here — with ev
 
 ### Frontend for US3
 
-- [ ] T077 [P] [US3] Create `frontend/src/services/admin-audit.service.ts` exposing `list` and
+- [X] T077 [P] [US3] Create `frontend/src/services/admin-audit.service.ts` exposing `list` and
       `actions`.
 
-- [ ] T078 [US3] Create `frontend/src/views/admin/AuditLogView.vue` with columns timestamp, actor,
+- [X] T078 [US3] Create `frontend/src/views/admin/AuditLogView.vue` with columns timestamp, actor,
       action, target, outcome, and filters for date range, actor, action type, and outcome. Action
       names are **translated from their key** — the raw `user.role.changed` is never shown to a user.
       Previous and new values appear in an expandable detail row for role and permission changes.
       **No edit or delete affordance anywhere**: append-only should be visible in the interface, not
       merely enforced behind it.
 
-- [ ] T079 [P] [US3] Add US3 i18n keys to `frontend/src/locales/en.json` and `ar.json`, including a translated label for
+- [X] T079 [P] [US3] Add US3 i18n keys to `frontend/src/locales/en.json` and `ar.json`, including a translated label for
       **every** action key in `AUDIT_ACTIONS` — a missing one renders a raw machine key to an
       Administrator.
 
@@ -664,7 +664,7 @@ with the failing rule named; repeated failures lock; Administrator unlock works.
       `auth.password.reset`. The Administrator hands the password over out of band — there is no
       email until Phase 5 (spec Assumptions).
 
-- [ ] T089 [P] [US4] Add US4 i18n keys to `frontend/src/locales/en.json` and `ar.json`: one message per policy rule, the
+- [X] T089 [P] [US4] Add US4 i18n keys to `frontend/src/locales/en.json` and `ar.json`: one message per policy rule, the
       change-password screen, and the unlock action. The generic sign-in failure message is
       unchanged and shared by all four failure paths — **do not add a "locked" message** (rule 4).
 
@@ -686,21 +686,21 @@ languages using only the keyboard.
 
 **Maps to**: FR-042–FR-048 · SC-009, SC-010 · Constitution Principles I and IV
 
-- [ ] T091 [US5] Create `frontend/src/views/admin/SettingsShellView.vue` with three sections —
+- [X] T091 [US5] Create `frontend/src/views/admin/SettingsShellView.vue` with three sections —
       categories, templates, channel settings — each present, navigable, and showing an empty state
       saying plainly it is populated in a later phase (FR-043). **Not an error, not a blank panel,
       and not a "coming soon" that reads like a bug.**
 
-- [ ] T092 [US5] Add the `settings:view` route to `frontend/src/router/index.ts` and its navigation
+- [X] T092 [US5] Add the `settings:view` route to `frontend/src/router/index.ts` and its navigation
       entry to `frontend/src/layouts/AdminLayout.vue`, and confirm the administration
       area is not offered at all to a user holding none of its permissions (FR-042).
 
-- [ ] T093 [P] [US5] Create `frontend/tests/locales/parity.test.ts` (quickstart **A13**,
+- [X] T093 [P] [US5] Create `frontend/tests/locales/parity.test.ts` (quickstart **A13**,
       research.md D14) asserting `ar.json` and `en.json` hold identical key sets and no value is an
       empty string. This replaces Phase 0's manual `node -e` check, which worked at 14 keys and will
       not at ~140.
 
-- [ ] T094 [P] [US5] Create `frontend/tests/components/admin/` component tests for `DataTable`
+- [X] T094 [P] [US5] Create `frontend/tests/components/admin/` component tests for `DataTable`
       (renders a real `<table>` with `scope="col"`, `aria-busy` while loading, empty state when no
       rows), `ConfirmDialog` (focus trapped, Escape dismisses, focus returned), and `FormField`
       (`aria-describedby` and `aria-invalid` wired on error).
