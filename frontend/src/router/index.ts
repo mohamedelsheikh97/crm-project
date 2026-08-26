@@ -5,6 +5,7 @@ import { useAuthStore } from '../stores/auth.store';
 import AdminLayout from '../layouts/AdminLayout.vue';
 import ChangePasswordView from '../views/ChangePasswordView.vue';
 import HomeView from '../views/HomeView.vue';
+import LoginView from '../views/LoginView.vue';
 import NotFoundView from '../views/NotFoundView.vue';
 import AuditLogView from '../views/admin/AuditLogView.vue';
 import RolesView from '../views/admin/RolesView.vue';
@@ -23,6 +24,12 @@ const router = createRouter({
       // An i18n key, never a literal — navigation is translatable from the
       // first route onward (Phase 0 frontend-shell.md).
       meta: { titleKey: 'route.home.title' },
+    },
+    {
+      path: '/login',
+      name: 'login',
+      component: LoginView,
+      meta: { titleKey: 'route.login.title' },
     },
     {
       path: '/change-password',
@@ -95,6 +102,13 @@ router.beforeEach((to) => {
   const auth = useAuthStore();
 
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
+    // Remember where they were heading, so signing in lands them there
+    // rather than dumping them on the home page.
+    return { name: 'login', query: { redirect: to.fullPath } };
+  }
+
+  // A signed-in user has no business on the login screen.
+  if (to.name === 'login' && auth.isAuthenticated) {
     return { name: 'home' };
   }
 
@@ -107,7 +121,9 @@ router.beforeEach((to) => {
   const permission = to.meta.permission;
 
   if (typeof permission === 'string' && !auth.permissions.has(permission)) {
-    return { name: 'home' };
+    // Denied rather than unauthenticated: they are signed in, just not
+    // permitted. The endpoint behind the screen refuses independently.
+    return { name: 'home', query: { denied: '1' } };
   }
 
   return true;
