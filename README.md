@@ -5,8 +5,9 @@ phases; see [PLAN.md](./PLAN.md) for the full roadmap and
 [.specify/memory/constitution.md](./.specify/memory/constitution.md) for the rules every phase
 must follow.
 
-**Current phase**: Phase 0 — Project Foundation. The application shell, authentication, and the
-build/CI toolchain exist. Business screens start in Phase 1.
+**Current phase**: Phase 1 — Security & Administration Foundations. Real users, three fixed roles,
+server-enforced permissions, an append-only audit log, and password policy with lockout. Business
+screens start in Phase 2.
 
 ## Prerequisites
 
@@ -34,7 +35,24 @@ npm run dev
 
 Backend on <http://localhost:3000>, frontend on <http://localhost:5173>.
 
-Seeded development account: `admin@crm.local` / `ChangeMe123!`.
+Seeded development account: `admin@crm.local` / `ChangeMe123!`. It is an ordinary Administrator
+holding no privilege outside the role system, and it is asked to choose a new password on first
+sign-in.
+
+### Account security policy
+
+Four optional variables, all with defaults, so an existing `.env` keeps working. They are read
+once at startup, so changing one needs a restart.
+
+| Variable                   | Default | Controls                                |
+| -------------------------- | ------- | --------------------------------------- |
+| `PASSWORD_MIN_LENGTH`      | `12`    | Minimum password length (floored at 8)  |
+| `PASSWORD_HISTORY_SIZE`    | `5`     | How many previous passwords are refused |
+| `AUTH_MAX_FAILED_ATTEMPTS` | `5`     | Consecutive failures before lockout     |
+| `AUTH_LOCKOUT_MINUTES`     | `15`    | How long a lockout lasts                |
+
+A locked account returns the **same** response as a wrong password and an unknown account. That is
+deliberate: saying "this account is locked" to an anonymous caller confirms the account exists.
 
 ## Scripts
 
@@ -92,6 +110,40 @@ views, and layouts must never call `fetch` directly. `services/http.ts` already 
 **A new environment variable?** Add it to `.env.example`, then to the zod schema in
 `backend/src/config/env.ts`. That schema is the only place `process.env` is read.
 
+### Authorization — read this before adding a protected endpoint
+
+A new protected route needs **three** things, not one:
+
+1. A permission key in the catalog at `backend/src/auth/permissions.ts`.
+2. `requirePermission(key)` applied to the route.
+3. A grant decision — which roles get it — in the seeder at
+   `backend/src/db/seeders/20260826000007-role-permissions.cjs`.
+
+**Miss any of them and the matrix test fails the build.** That is the feature, not an obstacle:
+`backend/tests/authorization.matrix.test.ts` is generated from the catalog and additionally
+asserts that every route under the admin router carries a permission, and that every catalog key
+is actually enforced somewhere. A permission nothing checks is a lie, and a route nothing guards
+is a hole — the suite refuses both.
+
+Two rules that are easy to get wrong:
+
+- **Never decide a permission outside `backend/src/services/authorization.service.ts`.** The
+  middleware translates its answer into a response; it computes nothing.
+- **Never put role or permission claims in the access token.** Authorization is read from the
+  database on every request, which is what makes a deactivation or a permission change take effect
+  immediately rather than whenever the token happens to expire.
+
+### Audit logging
+
+Every security-relevant action is recorded. For a **state change**, pass the transaction:
+`auditService.record(entry, transaction)` — the audit insert shares the transaction of the change
+it records, so an unrecorded change cannot exist. For an **authentication event**, use
+`recordAuthEvent(entry)`, which never throws: a failed sign-in cannot be un-failed, so a failed
+audit write is logged loudly rather than rolling anything back.
+
+No audit field may contain a credential. The writer strips a deny-list from every JSON column, so
+a careless `metadata` payload cannot leak one.
+
 ## Styling and RTL
 
 Tailwind v4 with **logical utilities only** — `ms-*`, `me-*`, `ps-*`, `pe-*`, `text-start`,
@@ -102,7 +154,11 @@ treats it as a defect, not a style preference.
 
 ## Validating a change
 
-There is no automated test suite in Phase 0 — this is a recorded decision, and a test framework
-arrives in Phase 1. Validation is the manual V1–V13 procedure in
-[specs/001-phase-0-foundation/quickstart.md](./specs/001-phase-0-foundation/quickstart.md).
-CI runs `npm ci`, `npm run lint`, and `npm run build` on every push.
+`npm test` runs the suite across both workspaces. Backend tests drive the real Express app through
+supertest against a dedicated `crm_support_test` schema, so a run can never touch development data.
+
+CI runs `npm ci`, lint, test, and build on every push.
+
+Manual validation procedures live with each phase:
+[Phase 0](./specs/001-phase-0-foundation/quickstart.md) ·
+[Phase 1](./specs/002-phase-1-security-administration/quickstart.md).

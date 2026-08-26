@@ -20,6 +20,14 @@ defineProps<{
 }>();
 
 const { t } = useI18n();
+
+/**
+ * The cast lives here rather than inline in the template: Prettier parses
+ * templates as HTML and reads `Record<string, unknown>` as a tag.
+ */
+function cellValue(row: T, key: string): unknown {
+  return (row as Record<string, unknown>)[key];
+}
 </script>
 
 <template>
@@ -30,7 +38,11 @@ const { t } = useI18n();
   -->
   <div class="overflow-x-auto" :aria-busy="loading ? 'true' : 'false'">
     <table v-if="rows.length > 0" class="w-full border-collapse text-start text-sm">
-      <caption class="sr-only">{{ t(captionKey) }}</caption>
+      <caption class="sr-only">
+        {{
+          t(captionKey)
+        }}
+      </caption>
       <thead>
         <tr class="border-b border-slate-200">
           <th
@@ -47,7 +59,7 @@ const { t } = useI18n();
         <tr v-for="row in rows" :key="row.id" class="border-b border-slate-100">
           <td v-for="column in columns" :key="column.key" class="px-3 py-2 align-middle">
             <slot :name="`cell-${column.key}`" :row="row">
-              {{ (row as Record<string, unknown>)[column.key] }}
+              {{ cellValue(row, column.key) }}
             </slot>
           </td>
         </tr>

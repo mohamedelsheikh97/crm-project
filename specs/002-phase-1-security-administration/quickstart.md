@@ -200,3 +200,76 @@ Constitution Definition-of-done gate (per phase):
 | A user cannot sign in and the message says the password is wrong | They may be locked or deactivated. All three responses are identical by design (FR-030). Check the users list or the audit log |
 | A new route returns `403` for everyone including Administrators | Its permission key is not in the catalog, so nothing grants it. Add it to `permissions.ts` and to the seeder |
 | Matrix test A1 fails after adding a route | Intentional. Either the route is missing `requirePermission`, or its key has no grant decision. Both are defects the test is designed to catch |
+
+---
+
+## Recorded results — Phase 1 implementation run (2026-08-26)
+
+Windows 11, Node v22.17.1, npm 10.9.2, Docker 29.6.2. Clean state: `docker compose down -v`
+followed by the Setup steps above.
+
+**Setup time: 25 seconds** from `docker compose up -d` through `npm run db:seed`.
+**Test suite: 93 tests, 10 files, all passing** against an empty database.
+
+### Automated checks
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| A1 — permission matrix | **PASS** | 27 generated cells (9 catalog keys × 3 roles). Also asserts every admin route carries a permission and every catalog key is probed |
+| A2 — inactive user | **PASS** | An already-issued token is refused with `401`, not `403`, on every protected route |
+| A3 — forced password change | **PASS** | Every route except the three exempt ones returns `403 PASSWORD_CHANGE_REQUIRED` |
+| A4 — password policy | **PASS** | Short, reused, and wrong-current-password each refused with the failing rule named; wrong current password is `401`, not `400` |
+| A5 — lockout | **PASS** | Locks at the threshold, refuses the correct password while locked, self-clears, resets on success, administrator unlock works |
+| A6 — no enumeration | **PASS** | Wrong password, unknown account, locked account and inactive account return byte-identical bodies, and no path is an order of magnitude faster |
+| A7 — audit coverage | **PASS** | Every wired action key in `AUDIT_ACTIONS` produces a retrievable entry |
+| A8 — audit content | **PASS** | No password, hash or token in any field, including a deliberate attempt to smuggle one through `metadata` |
+| A9 — audit immutability | **PASS** | `POST`, `PATCH`, `PUT`, `DELETE` on the audit resource all return `404` — the routes do not exist |
+| A10 — last administrator | **PASS** | Deactivation, role change and permission stripping each refused |
+| A11 — optimistic locking | **PASS** | A stale `version` returns `409` and the first write survives |
+| A12 — paging cap | **PASS** | `pageSize=10000` clamps to 100 |
+| A13 — locale parity | **PASS** | 170 keys per locale, identical sets, no empty values, every audit action and permission key translated |
+| A14 — permission immediacy | **PASS** | A permission change takes effect on the very next request |
+
+### Manual checks
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| V1 — create a user, assign a role | **PASS** | Seeded admin signs in, is forced to set a password, then creates an Agent who is themselves forced to set one |
+| V2 — enforcement bypassing the interface | **PASS** | A direct `curl` to `/api/admin/users` with an Agent token returns `403 FORBIDDEN` — the check that matters |
+| V3 — permission change takes effect | **PASS** | After granting `audit:view` to Agent, the agent's **existing token** reached `/api/admin/audit` immediately. No sign-out, no wait |
+| V4 — audit trail is legible | **PASS** | Sign-ins, the user creation and the permission change all present with actor, target, time and outcome; previous/new captured; no write route at any method |
+| V5 — lockout from the user's side | **PASS** | Five failures lock the account; the response is **byte-identical** to an unknown account and does not say "locked"; administrator unlock restores access immediately |
+| V6 — every admin screen in Arabic | **NOT RUN** | Requires a browser; none available in this session. See below |
+| V7 — every admin screen by keyboard | **NOT RUN** | As V6 |
+| V8 — settings shell reads as intentional | **NOT RUN** | As V6 |
+| V9 — layering holds | **PASS** | Lint and format clean; only services import models; no `fetch` in UI layers; no physical direction utilities |
+
+### Definition-of-done coverage
+
+| PLAN.md Phase 1 clause | Status |
+| --- | --- |
+| "An Administrator can create users, assign roles" | **Met** — V1, A10 |
+| "and see an audit trail" | **Met** — V4, A7, A8, A9 |
+| "permission checks are enforced server-side, not just hidden in the UI" | **Met** — V2, V3, A1, A2, A14 |
+
+Constitution per-phase gate: clauses 1, 3 and 5 are met. Clauses 2 (works in both languages) and 4
+(WCAG AA) are **built and partially evidenced** — the locale parity and component tests pass, but
+the visual and keyboard confirmation below has not been run.
+
+### Outstanding manual checks
+
+Run these in a browser after `npm run dev`, signing in as `admin@crm.local`:
+
+1. **V6** — visit users list, user form, roles, audit log and settings in Arabic. Every label,
+   header, filter, status word, action name, empty state and **validation message** must be Arabic
+   with the layout mirrored. Trigger a validation error in each form: error paths are where
+   hardcoded strings hide.
+2. **V7** — reach every control by keyboard alone. Open the deactivation dialog and confirm focus
+   is trapped, Escape dismisses it, and focus returns to the trigger. Submit a form with an invalid
+   field and confirm focus moves to it. Repeat in Arabic and confirm focus order follows RTL visual
+   order with a visible ring in both directions.
+3. **V8** — open each of the three configuration sections and confirm each reads as intentional
+   rather than broken.
+
+Phase 0's **V8–V10** (language switch, no-flash reload, keyboard shell) are also still unconfirmed,
+and this phase's screens sit inside that same shell.

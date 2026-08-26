@@ -84,3 +84,64 @@ Administrator come from PLAN.md and are domain vocabulary, not implementation de
 3. **FR-041 (audit write failure).** Requiring that a failed audit write surface rather than vanish
    raises a real design question — whether the audited action rolls back with it. The plan should
    decide this explicitly.
+
+---
+
+### Post-implementation re-validation (2026-08-26, `/speckit-implement`)
+
+**Status unchanged: 16/16.** No accepted exception changed, and no new one was needed. Both
+clarification decisions held through implementation without pressure to revisit them:
+
+- **MFA stayed out of scope.** A scope audit confirms no MFA column, flow, or setting exists
+  anywhere in `backend/src` or `frontend/src`. Nothing was added "in anticipation".
+- **The role set stayed fixed.** No create, rename, or delete route or column exists. A request to
+  create a role receives `404`, because the route genuinely does not exist rather than being
+  guarded.
+
+### Complexity Tracking verified against what was built
+
+All four `plan.md` entries describe the implementation accurately:
+
+1. **Authorization read per request.** Built as designed — the token carries no role or permission
+   claims, and `authenticate` loads the current row every time. Verified live: after granting
+   `audit:view` to Agent, an agent's **existing token** reached the endpoint immediately. Staleness
+   is zero, not merely bounded.
+2. **A locked account is indistinguishable from an unknown one.** Built, and the accepted cost is
+   real: a locked-out user cannot self-diagnose. Verified byte-identical live and by test A6, which
+   also asserts no path is an order of magnitude faster. **The right fix remains out-of-band
+   notification once email exists in Phase 5 — not weakening the response.**
+3. **State-changing audit writes share the action transaction.** Built. Proven by shrinking the
+   `action` column so the audit insert fails, then confirming the state change rolled back with it.
+   The documented residual limitation stands unchanged: authentication-path events cannot be
+   transactional, and log loudly instead.
+4. **Catalog in code, grants in data.** Built. Adding a module in a later phase needs no migration.
+
+### Carry-forward into the Phase 2 spec (MANDATORY)
+
+**Phase 0's audit deviation is closed.** It was recorded as time-boxed and must not be carried
+further. Test A7 enumerates `AUDIT_ACTIONS` and exercises each trigger, so the closure is evidenced
+rather than asserted. Phase 2 inherits a working audit log, not an obligation to build one.
+
+Three things Phase 2 must pick up rather than reinvent:
+
+- **Adding a protected endpoint takes three steps, not one**: a catalog entry in
+  `backend/src/auth/permissions.ts`, a `requirePermission` on the route, and a grant decision in the
+  seeder. The matrix test fails the build on any omission — including a catalog key that nothing
+  enforces. That failure is the feature.
+- **`data.exported` and `record.deleted` already exist in `AUDIT_ACTIONS` with no callers.** Phase 2
+  is the first phase with real records to delete, so it must wire those keys rather than inventing
+  its own shape.
+- **The admin UI patterns are fixed** in `contracts/admin-ui.md` and built as reusable components:
+  `DataTable`, `TablePagination`, `FormField`, `EmptyState`, `ConfirmDialog`. Later screens reuse
+  them so RTL correctness and keyboard behaviour are inherited rather than re-derived per screen.
+
+### Risks flagged for Phase 2
+
+- **The browser checks V6–V8 have not been run** (no browser available in the implementation
+  session). The screens are built and the locale-parity and component tests pass, but the visual
+  and keyboard confirmation is outstanding. Phase 0's V8–V10 are likewise unconfirmed, and this
+  phase's screens sit inside that same shell.
+- **The test suite takes roughly two minutes** because bcrypt at cost 12 is deliberately slow and
+  integration tests share one database serially. That is acceptable now; if it becomes a drag,
+  lowering the cost factor **in the test environment only** is the correct lever — never in
+  production.

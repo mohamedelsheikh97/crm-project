@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from 'express';
 
 import { unauthenticated } from '../errors/app-error.js';
-import { User } from '../models/index.js';
+import * as authService from '../services/auth.service.js';
 import { verifyAccessToken } from '../services/token.service.js';
 
 /**
@@ -38,20 +38,16 @@ export async function authenticate(
 
   try {
     const { id } = verifyAccessToken(token);
-    const user = await User.findByPk(id);
+    const session = await authService.getSessionContext(id);
 
-    if (!user || !user.is_active) {
+    // Null covers both "no such user" and "inactive" — the middleware is
+    // deliberately not told which, since both must produce the same 401.
+    if (!session) {
       next(unauthenticated());
       return;
     }
 
-    req.user = {
-      id: user.id,
-      email: user.email,
-      roleId: user.role_id,
-      isActive: user.is_active,
-      mustChangePassword: user.must_change_password,
-    };
+    req.user = session;
 
     next();
   } catch (error) {

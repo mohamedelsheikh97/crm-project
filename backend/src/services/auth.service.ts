@@ -311,3 +311,36 @@ async function recordFailure(
     ...context,
   });
 }
+
+export interface SessionContext {
+  id: number;
+  email: string;
+  roleId: number;
+  isActive: boolean;
+  mustChangePassword: boolean;
+}
+
+/**
+ * The current authorization-relevant state of a user, read fresh on every
+ * protected request (research.md D1).
+ *
+ * Exists so `authenticate` middleware does not import a model directly —
+ * only services touch models (Constitution Principle III, FR-051). Returns
+ * null when the user is missing OR inactive: both must produce the same 401,
+ * so the middleware is not given enough information to distinguish them.
+ */
+export async function getSessionContext(id: number): Promise<SessionContext | null> {
+  const user = await User.findByPk(id);
+
+  if (!user || !user.is_active) {
+    return null;
+  }
+
+  return {
+    id: user.id,
+    email: user.email,
+    roleId: user.role_id,
+    isActive: user.is_active,
+    mustChangePassword: user.must_change_password,
+  };
+}

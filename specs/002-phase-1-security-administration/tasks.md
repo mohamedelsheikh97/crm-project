@@ -429,7 +429,7 @@ clause 1 ("An Administrator can create users, assign roles")
       `ar.json` — table headers, filters, status words, form labels, dialog text, validation
       messages, and route titles. Identical key sets (rule 8).
 
-- [ ] T055 [US1] Execute quickstart **V1** and record the result: create a user in under two
+- [X] T055 [US1] Execute quickstart **V1** and record the result: create a user in under two
       minutes, sign in as them, confirm the forced change-password redirect and that no other route
       is reachable until the password is set.
 
@@ -474,7 +474,7 @@ checks are enforced server-side, not just hidden in the UI")
       asserting every route except the three exempt ones returns `403 PASSWORD_CHANGE_REQUIRED`
       while the flag is set.
 
-- [ ] T060 [P] [US2] Create `backend/tests/admin/not-found-vs-forbidden.test.ts` asserting FR-019:
+- [X] T060 [P] [US2] Create `backend/tests/admin/not-found-vs-forbidden.test.ts` asserting FR-019:
       a caller lacking `users:view` receives `403` for both an existing and a nonexistent user id,
       and `404` appears **only** for a permitted caller. Reversing the check order leaks existence
       through the status code (rule 3).
@@ -518,7 +518,7 @@ checks are enforced server-side, not just hidden in the UI")
 - [X] T067 [P] [US2] Add US2 i18n keys to `frontend/src/locales/en.json` and `ar.json`: role names and descriptions, module and
       action names for the permission grid, stale-grant wording, and the FR-018 refusal explanation.
 
-- [ ] T068 [US2] Execute quickstart **V2** and **V3** and record the results. V2's third check — a
+- [X] T068 [US2] Execute quickstart **V2** and **V3** and record the results. V2's third check — a
       direct `curl` to `/api/admin/users` with an Agent token returning `403` — is the one that
       matters; the first two are the interface being polite.
 
@@ -600,7 +600,7 @@ persisted no audit record, and its plan required that gap close here — with ev
       **every** action key in `AUDIT_ACTIONS` — a missing one renders a raw machine key to an
       Administrator.
 
-- [ ] T080 [US3] Execute quickstart **V4** and record the result: confirm the actions from V1–V3
+- [X] T080 [US3] Execute quickstart **V4** and record the result: confirm the actions from V1–V3
       appear correctly, filter to one person over a date range in under a minute (SC-006), and
       confirm no edit or delete control exists.
 
@@ -668,7 +668,7 @@ with the failing rule named; repeated failures lock; Administrator unlock works.
       change-password screen, and the unlock action. The generic sign-in failure message is
       unchanged and shared by all four failure paths — **do not add a "locked" message** (rule 4).
 
-- [ ] T090 [US4] Execute quickstart **V5** and record the result. Confirm explicitly that the
+- [X] T090 [US4] Execute quickstart **V5** and record the result. Confirm explicitly that the
       response after lockout is identical to a wrong password and **does not say the account is
       locked**, then confirm Administrator unlock grants immediate access.
 
@@ -716,7 +716,7 @@ languages using only the keyboard.
       failed submit. Repeat in Arabic — focus order must follow RTL visual order and the focus ring
       must be visible in both directions.
 
-- [ ] T097 [US5] Execute quickstart **V8** and confirm each configuration section reads as
+- [X] T097 [US5] Execute quickstart **V8** and confirm each configuration section reads as
       intentional rather than broken.
 
 **Checkpoint**: the constitution's per-phase Definition-of-done gate clauses 2 and 4 are satisfied.
@@ -725,57 +725,57 @@ languages using only the keyboard.
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T098 **Layering audit** (Constitution Principle III, quickstart **V9**). Confirm and record:
+- [X] T098 **Layering audit** (Constitution Principle III, quickstart **V9**). Confirm and record:
       `grep -rn "from '.*models" backend/src | grep -v "backend/src/services\|backend/src/models"`
       → empty; `grep -rn "fetch(" frontend/src/components frontend/src/views frontend/src/layouts`
       → empty. Then confirm by inspection that **no permission decision is made outside
       `authorization.service`** — `requirePermission` translates an answer, it does not compute one
       (rule 1).
 
-- [ ] T099 [P] **Physical-utility audit** (Principle I). `grep -rnE "\b(ml|mr|pl|pr)-[0-9a-z]|\btext-(left|right)\b|\b(left|right)-[0-9]" frontend/src frontend/index.html`
+- [X] T099 [P] **Physical-utility audit** (Principle I). `grep -rnE "\b(ml|mr|pl|pr)-[0-9a-z]|\btext-(left|right)\b|\b(left|right)-[0-9]" frontend/src frontend/index.html`
       → must return nothing. Replace any hit with its logical equivalent (rule 7).
 
-- [ ] T100 [P] **Scope audit** (rule 10). Confirm no MFA column, flow, or setting exists; no role
+- [X] T100 [P] **Scope audit** (rule 10). Confirm no MFA column, flow, or setting exists; no role
       create/rename/delete route or column exists; no per-user permission override exists; and
       `users` carries no `department_id` or `last_login_at`. These were ruled out by decision, and
       finding one means something was built that nobody asked for.
 
-- [ ] T101 Add the four new environment variables to the root `README.md`, and extend its "where do
+- [X] T101 Add the four new environment variables to the root `README.md`, and extend its "where do
       I add a backend endpoint" section with the authorization step — a new protected route needs a
       catalog entry, a `requirePermission`, and a grant decision, or the matrix test T056 will fail
       it. That failure is the feature; the README should say so.
 
-- [ ] T102 Run `npm run format` then `npm run lint` at the root and resolve every finding. Both must
+- [X] T102 Run `npm run format` then `npm run lint` at the root and resolve every finding. Both must
       exit 0.
 
-- [ ] T103 Run `npm test` and confirm all of quickstart **A1**–**A14** pass. Record the counts.
+- [X] T103 Run `npm test` and confirm all of quickstart **A1**–**A14** pass. Record the counts.
       **A1, A6, and A7 are the ones that matter most** — A1 is the Definition of done's second
       clause made mechanical, A6 protects the Phase 0 guarantee, and A7 is what closes the Phase 0
       audit deviation with evidence.
 
-- [ ] T104 **Full quickstart run from a clean state**: `docker compose down -v`, delete
+- [X] T104 **Full quickstart run from a clean state**: `docker compose down -v`, delete
       `node_modules`, then execute quickstart Setup end to end, then walk **V1**–**V9**. Fix
       `quickstart.md` if any step is undocumented or out of order — the document is a deliverable,
       not notes.
 
-- [ ] T105 Verify the constitution's per-phase Definition-of-done gate explicitly and record each:
+- [X] T105 Verify the constitution's per-phase Definition-of-done gate explicitly and record each:
       (1) all tasks marked done; (2) works in Arabic and English; (3) server-side permission checks
       verified, not just UI hiding; (4) screens pass basic WCAG 2.1 AA checks; (5) PLAN.md's Phase 1
       Definition of done satisfied and traceable to merged code.
 
-- [ ] T106 Update `specs/002-phase-1-security-administration/checklists/requirements.md` if any
+- [X] T106 Update `specs/002-phase-1-security-administration/checklists/requirements.md` if any
       accepted exception changed, and confirm plan.md's Complexity Tracking entries still describe
       what was built — particularly the two accepted costs (a locked account being indistinguishable
       from an unknown one, and authentication-path audit writes not being transactional). If either
       turned out differently in practice, the plan must say so rather than remaining aspirational.
 
-- [ ] T107 Record carry-forwards for Phase 2 in
+- [X] T107 Record carry-forwards for Phase 2 in
       `specs/002-phase-1-security-administration/checklists/requirements.md`: this phase's permission catalog is the pattern every
       later module extends, and **`data.exported` / `record.deleted` audit actions exist with no
       callers** — Phase 2 is the first phase that will have real records to delete, so it must wire
       them rather than inventing its own shape.
 
-- [ ] T108 Commit all remaining work on `002-phase-1-security-administration`. Open a pull request
+- [X] T108 Commit all remaining work on `002-phase-1-security-administration`. Open a pull request
       against `main` (now the repository default branch). Do **not** merge until the user confirms
       the Definition-of-done gate in `.specify/memory/constitution.md` is met.
 
