@@ -1,7 +1,6 @@
 import type { Router } from 'express';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
-import app from '../src/app.js';
 import { PERMISSIONS, type PermissionKey } from '../src/auth/permissions.js';
 import { Role } from '../src/models/index.js';
 import adminRouter from '../src/routes/admin/index.js';
