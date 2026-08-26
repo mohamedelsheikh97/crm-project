@@ -258,8 +258,10 @@ Not blockers for this phase, but they remain open and are recorded so they are n
 - **V8–V10** (language switch, no-flash reload, keyboard operation) were never confirmed in a
   browser. This phase's screens depend on that shell being correct, and its own accessibility checks
   will exercise the same machinery.
-- **V13** (CI reports pass/fail) was blocked on there being no git remote. A remote now exists and
-  the Phase 0 branch is pushed, so this is verifiable — and this phase adds a test stage to the same
-  workflow, which makes confirming it more valuable than before.
-- **Phase 0 is unmerged.** `main` sits at the pre-implementation commit. This branch builds on the
-  Phase 0 branch, so the merge order matters when Phase 1 is eventually integrated.
+- **V13** (CI reports pass/fail) was blocked on there being no git remote. A remote now exists, the
+  Phase 0 branch is pushed, and it has been merged through a pull request — so the workflow has had
+  the opportunity to run and the result simply needs confirming. This phase adds a test stage to the
+  same workflow, which makes confirming it more valuable than before.
+- **Phase 0 is merged.** `origin/main` is at `b864d17` (PR #1). This branch was cut from
+  `001-phase-0-foundation` at `7dd51a3`, which is exactly what was merged, so there is no content
+  divergence between this branch's base and `main` — Phase 1 targets `main` cleanly.
