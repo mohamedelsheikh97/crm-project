@@ -7,7 +7,9 @@ import { createMemoryHistory, createRouter, type RouteRecordRaw } from 'vue-rout
 import ar from '../../src/locales/ar.json';
 import en from '../../src/locales/en.json';
 
-const defaultRoutes: RouteRecordRaw[] = [{ path: '/', name: 'home', component: { template: '<div/>' } }];
+const defaultRoutes: RouteRecordRaw[] = [
+  { path: '/', name: 'home', component: { template: '<div/>' } },
+];
 
 /**
  * Installs the same plugins main.ts does, so a component test does not have to

@@ -25,6 +25,15 @@ export default tseslint.config(
     },
   },
   {
+    // TypeScript already reports undefined identifiers, and it knows about DOM
+    // lib types that ESLint's environment does not. Leaving no-undef on here
+    // means every `document` or `HTMLElement` reference is a false positive.
+    files: ['**/*.ts', '**/*.vue'],
+    rules: {
+      'no-undef': 'off',
+    },
+  },
+  {
     rules: {
       // A leading underscore marks a parameter that must exist but is unused —
       // Express identifies error middleware by its 4-arity signature, so

@@ -152,7 +152,7 @@ configuration everything else reads.
 
 ### Permission catalog
 
-- [ ] T010 Create `backend/src/auth/permissions.ts` — the single source of truth (research.md D2).
+- [X] T010 Create `backend/src/auth/permissions.ts` — the single source of truth (research.md D2).
       Export a `const PERMISSIONS` array of the twelve keys in data-model.md (`users:view`,
       `users:create`, `users:update`, `users:deactivate`, `users:reset_password`, `roles:view`,
       `roles:update_permissions`, `audit:view`, `settings:view` — plus the module/action metadata
@@ -166,112 +166,118 @@ configuration everything else reads.
 
 Run in this order; each is a separate reversible migration (data-model.md).
 
-- [ ] T011 Create `backend/src/db/migrations/20260826000001-create-roles.cjs` (**CommonJS**)
+- [X] T011 Create `backend/src/db/migrations/20260826000001-create-roles.cjs` (**CommonJS**)
       creating `roles` with `id`, `key` (**unique**, not null), `name_key`, `description_key`, and
       timestamps. `down` drops the table.
 
-- [ ] T012 Create `backend/src/db/migrations/20260826000002-create-role-permissions.cjs` creating
+- [X] T012 Create `backend/src/db/migrations/20260826000002-create-role-permissions.cjs` creating
       `role_permissions` with `id`, `role_id` (FK → `roles.id`, `ON DELETE CASCADE`),
       `permission_key`, timestamps; a **composite unique index on `(role_id, permission_key)`**
       declared in the migration so a duplicate grant is impossible even via direct SQL; and a
       secondary index on `permission_key`.
 
-- [ ] T013 Create `backend/src/db/migrations/20260826000003-add-user-columns.cjs` adding
+- [X] T013 Create `backend/src/db/migrations/20260826000003-add-user-columns.cjs` adding
       `full_name`, `role_id`, `is_active`, `must_change_password`, `failed_login_attempts`,
       `locked_until`, and `version` to `users`. **Order matters**: add `full_name` and `role_id`
       nullable, backfill (`full_name` from the email local-part, `role_id` to the `admin` role,
       counters zero, `is_active` true), then apply `NOT NULL` and the foreign key. Add indexes on
       `role_id` and `is_active`. `down` reverses each column.
 
-- [ ] T014 Create `backend/src/db/migrations/20260826000004-create-audit-logs.cjs` creating
+- [X] T014 Create `backend/src/db/migrations/20260826000004-create-audit-logs.cjs` creating
       `audit_logs` exactly as data-model.md specifies — `id` as **`BIGINT UNSIGNED`** because this
       table grows unbounded, `created_at` but **no `updated_at`** since an append-only row is never
       updated. Indexes on `created_at`, `actor_user_id`, `action`, and composite
       `(created_at, action)`.
 
-- [ ] T015 Create `backend/src/db/migrations/20260826000005-create-password-history.cjs` creating
+- [X] T015 Create `backend/src/db/migrations/20260826000005-create-password-history.cjs` creating
       `password_history` with `id`, `user_id` (FK, cascade), `password_hash`, `created_at`, and an
       index on `(user_id, created_at)`.
 
-- [ ] T016 Run `npm run db:migrate`. **Verify**: `SHOW TABLES` lists `users`, `roles`,
+- [X] T016 Run `npm run db:migrate`. **Verify**: `SHOW TABLES` lists `users`, `roles`,
       `role_permissions`, `audit_logs`, `password_history`, `SequelizeMeta` — **and nothing else**.
       `SHOW INDEX FROM role_permissions` shows the composite unique. Then `npm run db:migrate:undo`
       five times and re-apply, confirming every `down` works.
 
 ### Models
 
-- [ ] T017 [P] Create `backend/src/models/role.model.ts` defining `roles` per data-model.md, with a
+- [X] T017 [P] Create `backend/src/models/role.model.ts` defining `roles` per data-model.md, with a
       `hasMany` to `RolePermission` and `hasMany` to `User`. No create/destroy helpers — the set is
       fixed (FR-021).
 
-- [ ] T018 [P] Create `backend/src/models/role-permission.model.ts` defining `role_permissions`.
+- [X] T018 [P] Create `backend/src/models/role-permission.model.ts` defining `role_permissions`.
 
-- [ ] T019 [P] Create `backend/src/models/audit-log.model.ts` defining `audit_logs` with
+- [X] T019 [P] Create `backend/src/models/audit-log.model.ts` defining `audit_logs` with
       `timestamps: true, updatedAt: false`. **Expose no update or destroy path** — append-only is
       enforced by the absence of a write path, not a guard inside one (FR-035, research.md D5).
 
-- [ ] T020 [P] Create `backend/src/models/password-history.model.ts` with a `defaultScope`
+- [X] T020 [P] Create `backend/src/models/password-history.model.ts` with a `defaultScope`
       excluding `password_hash`, mirroring the pattern `user.model.ts` established in Phase 0. No
       endpoint ever returns any part of this table.
 
-- [ ] T021 Extend `backend/src/models/user.model.ts` with the seven new columns, `version: true` for
+- [X] T021 Extend `backend/src/models/user.model.ts` with the seven new columns, `version: true` for
       optimistic locking (research.md D11), a `belongsTo` to `Role`, and an `isLocked` virtual
       derived from `locked_until` rather than stored. Keep the existing `defaultScope` excluding
       `password_hash` and the `withPassword` scope untouched. Do **not** add `mfa_secret`,
       `department_id`, or `last_login_at` (rule 10).
 
-- [ ] T022 Update `backend/src/models/index.ts` to import all five models and declare the
+- [X] T022 Update `backend/src/models/index.ts` to import all five models and declare the
       associations in one place, so relationship wiring is reviewable at a glance.
 
 ### Seeders
 
-- [ ] T023 Create `backend/src/db/seeders/20260826000006-roles.cjs` (**CommonJS**) inserting exactly
-      three rows — `agent`, `supervisor`, `admin` — each with its i18n `name_key` and
-      `description_key`. **Idempotent**: query by `key` first and skip existing rows, so re-running
-      neither duplicates nor errors.
+- [X] T023 **Superseded during implementation — the three roles are inserted by the T011 migration,
+      not by a seeder.** Reason: T013 adds a `NOT NULL` `users.role_id` foreign key that must be
+      backfilled, and `sequelize-cli` runs **all migrations before any seeder**, so a seeder-owned
+      roles table is empty exactly when the backfill needs it. This was caught by running the
+      migration: `role_id` came out NULL and MySQL accepted the `NOT NULL` change anyway, leaving the
+      schema lying about its own data. FR-021 makes the role set permanently fixed, so the rows are
+      immutable reference data the schema depends on rather than mutable seed data — the migration is
+      their correct home. Role *permissions* stay in a seeder (T024), because Administrators edit
+      those at runtime. **Verify**: `SELECT COUNT(*) FROM roles` returns 3 immediately after
+      `db:migrate`, with no seeder run.
 
-- [ ] T024 Create `backend/src/db/seeders/20260826000007-role-permissions.cjs` seeding the default
+- [X] T024 Create `backend/src/db/seeders/20260826000007-role-permissions.cjs` seeding the default
       grants from data-model.md: `admin` gets every catalog key, `supervisor` gets `audit:view`,
       `settings:view`, `users:view`, and `agent` gets none. Idempotent and **reconciling** — it
       inserts missing grants without deleting an Administrator's deliberate changes, so re-running
       after a later phase adds catalog entries does the right thing.
 
-- [ ] T025 Update `backend/src/db/seeders/20260825000002-admin-user.cjs` so the seeded
+- [X] T025 Update `backend/src/db/seeders/20260825000002-admin-user.cjs` so the seeded
       `admin@crm.local` account is created with `full_name`, the `admin` role, `is_active` true, and
       `must_change_password` true (FR-049). Keep it idempotent and development-only. **The migration
       backfill deliberately does not set `must_change_password` on the pre-existing row**, so an
       established development environment keeps working (data-model.md).
 
-- [ ] T026 Run `npm run db:seed` twice. **Verify**: three roles, the documented grant counts, one
+- [X] T026 Run `npm run db:seed` twice. **Verify**: three roles, the documented grant counts, one
       admin user, and the second run is a no-op.
 
 ### Authorization mechanism
 
-- [ ] T027 Create `backend/src/services/authorization.service.ts` — **the only place a permission
+- [X] T027 Create `backend/src/services/authorization.service.ts` — **the only place a permission
       decision is made** (rule 1). Export `getRolePermissions(roleId): Promise<Set<PermissionKey>>`
       which reads `role_permissions`, discards keys absent from the catalog, and returns the set;
       `roleHasPermission(roleId, key): Promise<boolean>`; and `assertPermission(roleId, key)` which
       throws `forbidden()`. Reading current state per call is the design (research.md D1) — **do not
       add a cache**; the service boundary exists so one can be added later without touching callers.
 
-- [ ] T028 Add a `forbidden()` factory to `backend/src/errors/app-error.ts` returning `403` with
+- [X] T028 Add a `forbidden()` factory to `backend/src/errors/app-error.ts` returning `403` with
       code `FORBIDDEN`, and a `conflict(message)` factory returning `409` with code `CONFLICT`.
       Extend the `ErrorCode` union with `FORBIDDEN`, `CONFLICT`, and `PASSWORD_CHANGE_REQUIRED`.
       Fixing the messages here is what keeps two call sites from drifting apart, exactly as Phase 0's
       `invalidCredentials()` does.
 
-- [ ] T029 Extend `backend/src/middleware/authenticate.ts` to load the user's **current** row after
+- [X] T029 Extend `backend/src/middleware/authenticate.ts` to load the user's **current** row after
       verifying the token, populating `req.user` with `{ id, email, roleId, isActive,
       mustChangePassword }`. A missing **or inactive** user forwards `unauthenticated()` — the same
       `401` as a bad token, so deactivation is indistinguishable from an invalid session (rule 3).
       Update `backend/src/types/express.d.ts` to match.
 
-- [ ] T030 Create `backend/src/middleware/require-permission.ts` exporting
+- [X] T030 Create `backend/src/middleware/require-permission.ts` exporting
       `requirePermission(key)` returning middleware that calls
       `authorizationService.roleHasPermission` and forwards `forbidden()` on a false answer. **It
       computes nothing** (rule 1).
 
-- [ ] T031 Create `backend/src/middleware/require-password-change.ts` exporting middleware that
+- [X] T031 Create `backend/src/middleware/require-password-change.ts` exporting middleware that
       forwards a `403 PASSWORD_CHANGE_REQUIRED` when `req.user.mustChangePassword` is set, except on
       `GET /api/auth/me`, `POST /api/auth/change-password`, and `POST /api/auth/logout`
       (research.md D10). Enforcing this server-side rather than by router guard is the same
@@ -279,7 +285,7 @@ Run in this order; each is a separate reversible migration (data-model.md).
 
 ### Audit mechanism
 
-- [ ] T032 Create `backend/src/services/audit.service.ts` exporting `record(entry, { transaction })`
+- [X] T032 Create `backend/src/services/audit.service.ts` exporting `record(entry, { transaction })`
       and `recordAuthEvent(entry)`. `record` **requires** a transaction and is used for every state
       change (rule 5). `recordAuthEvent` writes directly and, on failure, logs at `error` with the
       full event and increments a counter — it never throws, because a failed sign-in cannot be
@@ -288,44 +294,44 @@ Run in this order; each is a separate reversible migration (data-model.md).
       `refreshToken`, `hash`, `password_hash`, `cookie`, `authorization`) before serialising, so a
       careless caller cannot leak a credential through `metadata` (rule 6, FR-036).
 
-- [ ] T033 Export an `AUDIT_ACTIONS` constant from `backend/src/services/audit.service.ts` holding
+- [X] T033 Export an `AUDIT_ACTIONS` constant from `backend/src/services/audit.service.ts` holding
       every action key in data-model.md's table, including `data.exported` and `record.deleted`
       which have no callers yet. They exist now so Phases 2–12 record in the established shape
       rather than inventing their own.
 
 ### Admin router and frontend plumbing
 
-- [ ] T034 Create `backend/src/routes/admin/index.ts` exporting a Router that applies
+- [X] T034 Create `backend/src/routes/admin/index.ts` exporting a Router that applies
       `authenticate` and `requirePasswordChange` once for the whole group, then mounts the
       per-resource routers added in later phases. Register it in `backend/src/routes/index.ts` under
       `/admin`, producing `/api/admin/*`.
 
-- [ ] T035 Extend `GET /api/auth/me` — `backend/src/controllers/auth.controller.ts` and
+- [X] T035 Extend `GET /api/auth/me` — `backend/src/controllers/auth.controller.ts` and
       `backend/src/services/auth.service.ts` — to return `{ id, email, fullName, role: { key,
       nameKey }, permissions: [...], mustChangePassword }` per
       [contracts/admin-api.md](./contracts/admin-api.md). `permissions` is the **resolved key set**
       from `authorization.service`, not the role name for the client to expand (research.md D13).
       This route stays reachable while `mustChangePassword` is set.
 
-- [ ] T036 [P] Extend `frontend/src/stores/auth.store.ts` with `role` and a `permissions: string[]`,
+- [X] T036 [P] Extend `frontend/src/stores/auth.store.ts` with `role` and a `permissions: string[]`,
       populated from `/auth/me`. Still **in memory only** — no `localStorage`, no persistence plugin
       (Phase 0 D5/D6 is unchanged by this phase).
 
-- [ ] T037 [P] Create `frontend/src/composables/usePermissions.ts` exporting `can(key)` reading the
+- [X] T037 [P] Create `frontend/src/composables/usePermissions.ts` exporting `can(key)` reading the
       auth store. Document in a comment that `can()` governs **display only** and that every guarded
       action's endpoint enforces the same permission independently (FR-015, FR-020).
 
-- [ ] T038 Create `frontend/src/layouts/AdminLayout.vue` — the admin shell nested inside Phase 0's
+- [X] T038 Create `frontend/src/layouts/AdminLayout.vue` — the admin shell nested inside Phase 0's
       `DefaultLayout`, with the admin navigation rendered in the existing `<nav>` landmark that
       Phase 0 left empty for exactly this. Each entry is hidden when `can(...)` is false; the current
       entry carries `aria-current="page"`. Labels are i18n keys. Logical utilities only.
 
-- [ ] T039 Add the `/admin` route group to `frontend/src/router/index.ts` with a `beforeEach` guard
+- [X] T039 Add the `/admin` route group to `frontend/src/router/index.ts` with a `beforeEach` guard
       redirecting when `can(...)` is false, and `meta.titleKey` on every route (never a literal).
       Add `/change-password`. **Comment that the guard is a convenience, not a control** — the
       endpoints enforce independently.
 
-- [ ] T040 [P] Create `frontend/src/components/admin/DataTable.vue`, `Pagination.vue`,
+- [X] T040 [P] Create `frontend/src/components/admin/DataTable.vue`, `Pagination.vue`,
       `FormField.vue`, `EmptyState.vue`, and `ConfirmDialog.vue` implementing the patterns in
       [contracts/admin-ui.md](./contracts/admin-ui.md): a real `<table>` with a visually-hidden
       `<caption>` and `<th scope="col">`; `aria-busy` while loading; labels bound by `for`/`id`;

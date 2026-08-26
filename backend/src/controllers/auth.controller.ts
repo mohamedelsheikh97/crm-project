@@ -57,11 +57,22 @@ export function logout(_req: Request, res: Response): void {
   res.status(204).send();
 }
 
-export function me(req: Request, res: Response, next: NextFunction): void {
-  if (!req.user) {
-    next(unauthenticated());
-    return;
-  }
+export async function me(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    if (!req.user) {
+      next(unauthenticated());
+      return;
+    }
 
-  res.status(200).json({ id: req.user.id, email: req.user.email });
+    const current = await authService.getCurrentUser(req.user.id);
+
+    if (!current) {
+      next(unauthenticated());
+      return;
+    }
+
+    res.status(200).json(current);
+  } catch (error) {
+    next(error);
+  }
 }
