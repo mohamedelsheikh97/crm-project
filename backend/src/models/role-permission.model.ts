@@ -1,4 +1,10 @@
-import { DataTypes, Model, type InferAttributes, type InferCreationAttributes } from 'sequelize';
+import {
+  DataTypes,
+  Model,
+  type CreationOptional,
+  type InferAttributes,
+  type InferCreationAttributes,
+} from 'sequelize';
 
 import { sequelize } from '../config/database.js';
 
@@ -11,11 +17,11 @@ export class RolePermission extends Model<
   InferAttributes<RolePermission>,
   InferCreationAttributes<RolePermission>
 > {
-  declare id: number;
+  declare id: CreationOptional<number>;
   declare role_id: number;
   declare permission_key: string;
-  declare readonly created_at: Date;
-  declare readonly updated_at: Date;
+  declare readonly created_at: CreationOptional<Date>;
+  declare readonly updated_at: CreationOptional<Date>;
 }
 
 RolePermission.init(

@@ -357,22 +357,22 @@ clause 1 ("An Administrator can create users, assign roles")
 
 ### Tests for US1
 
-- [ ] T041 [P] [US1] Create `backend/tests/admin/users.test.ts` covering the endpoint contract:
+- [X] T041 [P] [US1] Create `backend/tests/admin/users.test.ts` covering the endpoint contract:
       create with each role, duplicate email → `409` on the `email` field, list paging and filters,
       patch with a stale `version` → `409`, and role change. Tests fail until T044–T047 land.
 
-- [ ] T042 [P] [US1] Create `backend/tests/admin/last-administrator.test.ts` (quickstart **A10**)
+- [X] T042 [P] [US1] Create `backend/tests/admin/last-administrator.test.ts` (quickstart **A10**)
       asserting that deactivating, role-changing, **and** permission-stripping the last active
       Administrator are each refused — three separate paths to the same forbidden state, and all
       three must hold (FR-009, SC-012).
 
-- [ ] T043 [P] [US1] Create `backend/tests/auth/inactive-user.test.ts` (quickstart **A2**) asserting
+- [X] T043 [P] [US1] Create `backend/tests/auth/inactive-user.test.ts` (quickstart **A2**) asserting
       a deactivated user's existing token is refused on the next request with **`401`, not `403`**
       (FR-007, SC-011, rule 3).
 
 ### Backend for US1
 
-- [ ] T044 [US1] Create `backend/src/services/user.service.ts` — the only US1 file importing a
+- [X] T044 [US1] Create `backend/src/services/user.service.ts` — the only US1 file importing a
       model. Export `list({ page, pageSize, search, roleKey, isActive })` returning
       `{ items, page, pageSize, total }` with `pageSize` **clamped** to 100 rather than rejected;
       `getById`; `create`; `update`; `setActive`; and `unlock`. `create` and `update` run inside a
@@ -381,18 +381,18 @@ clause 1 ("An Administrator can create users, assign roles")
       Administrators with `conflict()` (FR-009) — checked against the resulting state, not the
       current one.
 
-- [ ] T045 [US1] Create `backend/src/controllers/admin/users.controller.ts` with handlers for list,
+- [X] T045 [US1] Create `backend/src/controllers/admin/users.controller.ts` with handlers for list,
       get, create, patch, deactivate, reactivate, reset-password, and unlock. HTTP concerns only —
       no business logic, no model access. Validate bodies with zod and map failures onto
       `details[]` by field name so the form can attach each error to its input.
 
-- [ ] T046 [US1] Create `backend/src/routes/admin/users.routes.ts` applying
+- [X] T046 [US1] Create `backend/src/routes/admin/users.routes.ts` applying
       `requirePermission('users:view' | 'users:create' | 'users:update' | 'users:deactivate' |
       'users:reset_password')` per the table in [contracts/admin-api.md](./contracts/admin-api.md).
       Note that reactivate deliberately shares `users:deactivate` — changing an account's active
       state is one capability, not two. Delegation only, no logic.
 
-- [ ] T047 [US1] Register the users router in `backend/src/routes/admin/index.ts`. **Verify**:
+- [X] T047 [US1] Register the users router in `backend/src/routes/admin/index.ts`. **Verify**:
       `curl` each endpoint as an Administrator and as an Agent, confirming `200`/`403` respectively.
 
 ### Frontend for US1

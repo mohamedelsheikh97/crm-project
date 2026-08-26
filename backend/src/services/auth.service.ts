@@ -6,7 +6,12 @@ import {
   validationError,
   type ErrorDetail,
 } from '../errors/app-error.js';
+import { sequelize } from '../config/database.js';
+import { env } from '../config/env.js';
 import { Role, User } from '../models/index.js';
+
+import * as auditService from './audit.service.js';
+import * as passwordService from './password.service.js';
 
 import * as authorizationService from './authorization.service.js';
 
@@ -58,13 +63,25 @@ export async function login(email: unknown, password: unknown): Promise<LoginRes
     throw invalidCredentials();
   }
 
+  // Deactivated and locked accounts are refused BEFORE the password is checked,
+  // but still run a bcrypt compare against the dummy hash first. Skipping the
+  // hash would make these paths detectably faster and reintroduce the
+  // enumeration leak through timing (FR-030, research.md D6).
+  if (!user.is_active || user.isLocked) {
+    await bcrypt.compare(String(password), DUMMY_HASH);
+    throw invalidCredentials();
+  }
+
   const matches = await bcrypt.compare(String(password), user.password_hash);
 
   if (!matches) {
-    // Identical error to the branch above — any difference is an account
-    // enumeration defect, not a cosmetic one.
+    // Identical error to every branch above — any difference in body, status,
+    // or timing is an account-enumeration defect, not a cosmetic one.
+    await registerFailedAttempt(user);
     throw invalidCredentials();
   }
+
+  await clearFailedAttempts(user);
 
   return {
     user: { id: user.id, email: user.email },
@@ -143,4 +160,110 @@ export async function getCurrentUser(id: number): Promise<CurrentUser | null> {
     permissions: [...permissions].sort(),
     mustChangePassword: user.must_change_password,
   };
+}
+
+/**
+ * The signed-in user changes their own password.
+ *
+ * Everything happens in one transaction: the new hash, clearing the forced
+ * change flag, the history entry, and the audit record. If the audit write
+ * fails, the password does not change either (FR-041).
+ */
+export async function changePassword(
+  userId: number,
+  currentPassword: unknown,
+  newPassword: unknown,
+  context: { ipAddress?: string | null; userAgent?: string | null } = {},
+): Promise<void> {
+  const user = await User.scope('withPassword').findByPk(userId);
+
+  if (!user) {
+    throw unauthenticated();
+  }
+
+  // A failed credential check, not a malformed request — hence 401, not 400.
+  if (
+    typeof currentPassword !== 'string' ||
+    !(await passwordService.verify(currentPassword, user.password_hash))
+  ) {
+    throw unauthenticated();
+  }
+
+  const failures = passwordService.validatePolicy(newPassword);
+
+  if (failures.length > 0) {
+    throw validationError(failures);
+  }
+
+  if (await passwordService.isReused(user.id, newPassword as string)) {
+    throw validationError([{ field: 'newPassword', message: 'password.rule.reused' }]);
+  }
+
+  const passwordHash = await passwordService.hash(newPassword as string);
+
+  await sequelize.transaction(async (transaction) => {
+    user.password_hash = passwordHash;
+    user.must_change_password = false;
+    await user.save({ transaction });
+
+    await passwordService.recordHistory(user.id, passwordHash, transaction);
+
+    // Records THAT it happened, never what changed (FR-036).
+    await auditService.record(
+      {
+        action: auditService.AUDIT_ACTIONS.PASSWORD_CHANGED,
+        actorUserId: user.id,
+        actorEmail: user.email,
+        targetType: 'user',
+        targetId: user.id,
+        targetLabel: user.email,
+        ...context,
+      },
+      transaction,
+    );
+  });
+}
+
+/**
+ * Increments the consecutive-failure counter and locks the account once the
+ * configured threshold is reached (FR-026).
+ *
+ * The lock is never surfaced to the caller: a locked account returns the same
+ * response as a wrong password and an unknown account, or the login form
+ * becomes an account-existence oracle (FR-030, research.md D6).
+ */
+async function registerFailedAttempt(user: User): Promise<void> {
+  user.failed_login_attempts += 1;
+
+  if (user.failed_login_attempts >= env.AUTH_MAX_FAILED_ATTEMPTS && !user.isLocked) {
+    user.locked_until = new Date(Date.now() + env.AUTH_LOCKOUT_MINUTES * 60_000);
+
+    await user.save();
+
+    await auditService.recordAuthEvent({
+      action: auditService.AUDIT_ACTIONS.ACCOUNT_LOCKED,
+      outcome: 'failure',
+      actorUserId: user.id,
+      actorEmail: user.email,
+      targetType: 'user',
+      targetId: user.id,
+      targetLabel: user.email,
+      metadata: { attempts: user.failed_login_attempts },
+    });
+
+    return;
+  }
+
+  await user.save();
+}
+
+/** A successful sign-in resets the counter and clears any expired lock (FR-029). */
+async function clearFailedAttempts(user: User): Promise<void> {
+  if (user.failed_login_attempts === 0 && user.locked_until === null) {
+    return;
+  }
+
+  user.failed_login_attempts = 0;
+  user.locked_until = null;
+  await user.save();
 }

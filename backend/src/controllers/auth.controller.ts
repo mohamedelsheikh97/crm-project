@@ -76,3 +76,27 @@ export async function me(req: Request, res: Response, next: NextFunction): Promi
     next(error);
   }
 }
+
+export async function changePassword(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    if (!req.user) {
+      next(unauthenticated());
+      return;
+    }
+
+    const body = req.body ?? {};
+
+    await authService.changePassword(req.user.id, body.currentPassword, body.newPassword, {
+      ipAddress: req.ip ?? null,
+      userAgent: req.headers['user-agent'] ?? null,
+    });
+
+    res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
+}
