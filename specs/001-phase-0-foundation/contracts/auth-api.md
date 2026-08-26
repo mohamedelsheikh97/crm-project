@@ -42,10 +42,10 @@ Set-Cookie: crm_refresh=<jwt>; HttpOnly; SameSite=Strict; Path=/api/auth; Max-Ag
 
 **Failures**
 
-| Status | Condition | Notes |
-|---|---|---|
-| `400` | Missing or malformed `email`/`password` | Validation error, field names listed |
-| `401` | No such user, **or** wrong password | Identical response for both — no account enumeration (User Story 2, Scenario 7) |
+| Status | Condition                               | Notes                                                                           |
+| ------ | --------------------------------------- | ------------------------------------------------------------------------------- |
+| `400`  | Missing or malformed `email`/`password` | Validation error, field names listed                                            |
+| `401`  | No such user, **or** wrong password     | Identical response for both — no account enumeration (User Story 2, Scenario 7) |
 
 `password_hash` MUST NOT appear in any response.
 
@@ -69,15 +69,15 @@ Exchanges a valid refresh token for a new access token. Implements FR-018.
 
 **Failures**
 
-| Status | Condition |
-|---|---|
-| `401` | Cookie absent |
-| `401` | Refresh token expired (older than 7 days) — user must log in again |
-| `401` | Signature invalid or tampered |
-| `401` | Token has `type: "access"` instead of `"refresh"` — token-type confusion rejected |
+| Status | Condition                                                                         |
+| ------ | --------------------------------------------------------------------------------- |
+| `401`  | Cookie absent                                                                     |
+| `401`  | Refresh token expired (older than 7 days) — user must log in again                |
+| `401`  | Signature invalid or tampered                                                     |
+| `401`  | Token has `type: "access"` instead of `"refresh"` — token-type confusion rejected |
 
 A new refresh cookie is **not** issued here; the 7-day window is absolute, not sliding. This
-bounds the damage from a stolen refresh token and is why SC-002a speaks of 7 days of *inactivity*.
+bounds the damage from a stolen refresh token and is why SC-002a speaks of 7 days of _inactivity_.
 
 ---
 
@@ -116,12 +116,12 @@ Authorization: Bearer <accessToken>
 
 **Failures**
 
-| Status | Condition |
-|---|---|
-| `401` | `Authorization` header absent or not `Bearer <token>` |
-| `401` | Access token expired (older than 15 minutes) |
-| `401` | Signature invalid or tampered |
-| `401` | Token has `type: "refresh"` instead of `"access"` |
+| Status | Condition                                             |
+| ------ | ----------------------------------------------------- |
+| `401`  | `Authorization` header absent or not `Bearer <token>` |
+| `401`  | Access token expired (older than 15 minutes)          |
+| `401`  | Signature invalid or tampered                         |
+| `401`  | Token has `type: "refresh"` instead of `"access"`     |
 
 ---
 

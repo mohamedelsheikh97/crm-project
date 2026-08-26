@@ -1,0 +1,9 @@
+node_modules
+dist
+package-lock.json
+backend/src/db/migrations
+
+# Hand-authored Spec Kit deliverables. Prettier rewrites markdown structure
+# here (including lowercasing task checkboxes), which is noise in a document
+# that is itself the artifact.
+specs

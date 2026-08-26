@@ -1,0 +1,16 @@
+{
+  "app.title": "دعم إدارة العملاء",
+  "nav.home": "الرئيسية",
+  "language.name.en": "الإنجليزية",
+  "language.name.ar": "العربية",
+  "language.switchTo.en": "التبديل إلى الإنجليزية",
+  "language.switchTo.ar": "التبديل إلى العربية",
+  "layout.skipToContent": "تخطَّ إلى المحتوى الرئيسي",
+  "route.home.title": "الرئيسية — دعم إدارة العملاء",
+  "route.notFound.title": "الصفحة غير موجودة — دعم إدارة العملاء",
+  "home.heading": "دعم إدارة العملاء",
+  "home.description": "أساس التطبيق يعمل الآن. ستصل شاشات الميزات في المراحل القادمة.",
+  "notFound.heading": "الصفحة غير موجودة",
+  "notFound.description": "الصفحة التي تبحث عنها غير موجودة أو تم نقلها.",
+  "notFound.backToHome": "العودة إلى الرئيسية"
+}

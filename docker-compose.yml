@@ -1,0 +1,36 @@
+# Local MySQL for development. Credentials come from the root .env, which
+# Compose auto-loads. See .env.example for the variables involved.
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: crm-support-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-crm_local_root_password}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - '${DB_PORT}:3306'
+    volumes:
+      - crm-mysql-data:/var/lib/mysql
+    healthcheck:
+      # quickstart step 2 tells the developer to wait for `healthy`, so this
+      # healthcheck has to actually exist and actually mean something.
+      test:
+        [
+          'CMD',
+          'mysqladmin',
+          'ping',
+          '-h',
+          '127.0.0.1',
+          '-u',
+          'root',
+          '-p${DB_ROOT_PASSWORD:-crm_local_root_password}',
+        ]
+      interval: 5s
+      retries: 20
+      start_period: 30s
+
+volumes:
+  crm-mysql-data:

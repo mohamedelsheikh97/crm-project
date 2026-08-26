@@ -12,9 +12,9 @@ inherits, so these contracts constrain all later UI work.
 The `<html>` element MUST always reflect the active locale:
 
 | Active locale | `lang` | `dir` |
-|---|---|---|
-| English | `en` | `ltr` |
-| Arabic | `ar` | `rtl` |
+| ------------- | ------ | ----- |
+| English       | `en`   | `ltr` |
+| Arabic        | `ar`   | `rtl` |
 
 Both attributes update on language switch **without a page reload** (FR-011), and are applied
 **before first paint** on load by reading persisted state synchronously — otherwise Arabic users
@@ -34,7 +34,7 @@ The base layout MUST expose semantic landmarks that later screens slot into:
 ```
 
 Rules for later phases: exactly one `<main>` per rendered page, and feature screens render
-*inside* `<main>` rather than replacing the shell.
+_inside_ `<main>` rather than replacing the shell.
 
 ---
 
@@ -43,7 +43,7 @@ Rules for later phases: exactly one `<main>` per rendered page, and feature scre
 - Rendered in `<header>`.
 - A real `<button>` (not a `div`), reachable and operable by keyboard alone.
 - Has an accessible name that is itself localised.
-- Announces the language it switches *to*, not the current one.
+- Announces the language it switches _to_, not the current one.
 - Shows a visible focus indicator in both directions.
 
 ---
@@ -52,12 +52,12 @@ Rules for later phases: exactly one `<main>` per rendered page, and feature scre
 
 Tailwind v4 with **logical properties only**:
 
-| Use | Never use |
-|---|---|
-| `ms-*`, `me-*` | `ml-*`, `mr-*` |
-| `ps-*`, `pe-*` | `pl-*`, `pr-*` |
+| Use                      | Never use                 |
+| ------------------------ | ------------------------- |
+| `ms-*`, `me-*`           | `ml-*`, `mr-*`            |
+| `ps-*`, `pe-*`           | `pl-*`, `pr-*`            |
 | `text-start`, `text-end` | `text-left`, `text-right` |
-| `start-*`, `end-*` | `left-*`, `right-*` |
+| `start-*`, `end-*`       | `left-*`, `right-*`       |
 
 **Rationale**: logical utilities follow the root `dir`, so one stylesheet serves both directions.
 A single physical utility silently breaks Arabic layout while looking correct in English — which
