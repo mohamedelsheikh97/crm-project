@@ -24,7 +24,10 @@ afterAll(async () => {
  * rather than hand-listed, so a module added in a later phase without a matrix
  * entry fails here instead of shipping unverified.
  */
-const PROBES: Record<PermissionKey, { method: 'get' | 'post' | 'patch' | 'put'; path: string }> = {
+const PROBES: Record<
+  PermissionKey,
+  { method: 'get' | 'post' | 'patch' | 'put' | 'delete'; path: string }
+> = {
   'users:view': { method: 'get', path: '/api/admin/users' },
   'users:create': { method: 'post', path: '/api/admin/users' },
   'users:update': { method: 'patch', path: '/api/admin/users/999999' },
@@ -34,6 +37,18 @@ const PROBES: Record<PermissionKey, { method: 'get' | 'post' | 'patch' | 'put'; 
   'roles:update_permissions': { method: 'put', path: '/api/admin/roles/999999/permissions' },
   'audit:view': { method: 'get', path: '/api/admin/audit' },
   'settings:view': { method: 'get', path: '/api/admin/settings' },
+
+  // Phase 2 — customers sit at the top level, not under /api/admin: they are
+  // everyday Agent work rather than administration.
+  'customers:view': { method: 'get', path: '/api/customers' },
+  'customers:create': { method: 'post', path: '/api/customers' },
+  'customers:update': { method: 'patch', path: '/api/customers/999999' },
+  'customers:deactivate': { method: 'post', path: '/api/customers/999999/deactivate' },
+  'customers:export': { method: 'get', path: '/api/customers/export' },
+  'notes:create': { method: 'post', path: '/api/customers/999999/notes' },
+  'notes:manage': { method: 'patch', path: '/api/customers/999999/notes/999999' },
+  'attachments:upload': { method: 'post', path: '/api/customers/999999/attachments' },
+  'attachments:delete': { method: 'delete', path: '/api/customers/999999/attachments/999999' },
 };
 
 const ROLE_KEYS = ['agent', 'supervisor', 'admin'] as const;

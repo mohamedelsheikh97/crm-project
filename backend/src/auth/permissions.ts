@@ -39,6 +39,25 @@ export const PERMISSIONS = [
   define('roles', 'update_permissions'),
   define('audit', 'view'),
   define('settings', 'view'),
+
+  // Phase 2 — Customer Management. Viewing, editing, and exporting are
+  // distinguished because export is the action that takes customer data out of
+  // the system (FR-042). Deactivation is separate from update because it is the
+  // closest thing to deletion available.
+  define('customers', 'view'),
+  define('customers', 'create'),
+  define('customers', 'update'),
+  define('customers', 'deactivate'),
+  define('customers', 'export'),
+
+  // Separate modules so "may add a note" can be granted without "may edit the
+  // customer". The manage action covers another user's note (FR-027); anyone
+  // holding notes:create may always edit their own.
+  define('notes', 'create'),
+  define('notes', 'manage'),
+
+  define('attachments', 'upload'),
+  define('attachments', 'delete'),
 ] as const satisfies readonly PermissionDefinition[];
 
 export type PermissionKey = (typeof PERMISSIONS)[number]['key'];

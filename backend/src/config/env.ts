@@ -42,6 +42,40 @@ const envSchema = z
     PASSWORD_HISTORY_SIZE: z.coerce.number().int().positive().optional().default(5),
     AUTH_MAX_FAILED_ATTEMPTS: z.coerce.number().int().positive().optional().default(5),
     AUTH_LOCKOUT_MINUTES: z.coerce.number().int().positive().optional().default(15),
+
+    // Customer attachments and phone handling (Phase 2, research.md D1-D2).
+    // All optional with defaults, so an existing .env keeps working.
+
+    // Must never sit under a statically served directory — every download goes
+    // through a permission-checked endpoint (FR-033).
+    ATTACHMENT_STORAGE_PATH: z.string().min(1).optional().default('./storage/attachments'),
+    ATTACHMENT_MAX_BYTES: z.coerce.number().int().positive().optional().default(10_485_760),
+    // Matched against the type sniffed from file CONTENT, never the extension
+    // or the client's Content-Type (FR-032).
+    ATTACHMENT_ALLOWED_TYPES: z
+      .string()
+      .optional()
+      .default(
+        'application/pdf,image/png,image/jpeg,image/gif,image/webp,text/plain,' +
+          'application/msword,' +
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document,' +
+          'application/vnd.ms-excel,' +
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      )
+      .transform((value) =>
+        value
+          .split(',')
+          .map((type) => type.trim().toLowerCase())
+          .filter(Boolean),
+      ),
+    // Parses a number entered without a country code, so +20 100 123 4567 and
+    // 01001234567 are recognised as the same number. Duplicate detection —
+    // this phase's Definition of done — depends on it.
+    DEFAULT_PHONE_REGION: z
+      .string()
+      .regex(/^[A-Z]{2}$/, 'must be a two-letter uppercase region code, e.g. EG')
+      .optional()
+      .default('EG'),
   })
   .superRefine((value, ctx) => {
     // Equal secrets would silently defeat the access/refresh type separation.

@@ -92,41 +92,41 @@ not done, even if the code runs and the tests pass.
 
 **Purpose**: Dependencies, configuration, and the permission entries every later phase enforces.
 
-- [ ] T001 Install backend dependencies at the repository root:
+- [X] T001 Install backend dependencies at the repository root:
       `libphonenumber-js` (1.13.x), `multer` (2.x), `@types/multer`, `file-type` (22.x). Add to
       `backend/package.json` dependencies (`@types/multer` to devDependencies). Each is fixed by
       research.md D1–D2 — do not substitute. **Verify**: `npm ls libphonenumber-js multer file-type`
       resolves and the root `package-lock.json` remains the only lockfile.
 
-- [ ] T002 [P] Add the four new variables to `.env.example` with commentary matching the existing
+- [X] T002 [P] Add the four new variables to `.env.example` with commentary matching the existing
       style: `ATTACHMENT_STORAGE_PATH=./storage/attachments`, `ATTACHMENT_MAX_BYTES=10485760`,
       `ATTACHMENT_ALLOWED_TYPES=...` (the list in data-model.md), `DEFAULT_PHONE_REGION=EG`. Note in
       the comment block that the storage path must never sit under a route that is served statically.
 
-- [ ] T003 Extend the zod schema in `backend/src/config/env.ts` with those four: path as a non-empty
+- [X] T003 Extend the zod schema in `backend/src/config/env.ts` with those four: path as a non-empty
       string, `ATTACHMENT_MAX_BYTES` a positive integer, `ATTACHMENT_ALLOWED_TYPES` a comma-separated
       list parsed into a string array, `DEFAULT_PHONE_REGION` a two-letter uppercase code. All
       optional with the defaults above so an existing `.env` keeps working. This file remains the
       only place `process.env` is read.
 
-- [ ] T004 [P] Add a named volume for attachment storage to `docker-compose.yml` at the repository root, mounted at the
+- [X] T004 [P] Add a named volume for attachment storage to `docker-compose.yml` at the repository root, mounted at the
       configured path, so uploads survive a container restart. Add `storage/` to `.gitignore` — an
       uploaded customer file must never be committed.
 
-- [ ] T005 Add the nine new entries to `backend/src/auth/permissions.ts` using the existing `define`
+- [X] T005 Add the nine new entries to `backend/src/auth/permissions.ts` using the existing `define`
       helper: `customers` × (`view`, `create`, `update`, `deactivate`, `export`), `notes` ×
       (`create`, `manage`), `attachments` × (`upload`, `delete`). **The matrix test will now fail**
       until each has a grant and a route — that is the mechanism working, not a problem to route
       around.
 
-- [ ] T006 Create `backend/src/db/seeders/20260827000001-customer-permissions.cjs` (**CommonJS**)
+- [X] T006 Create `backend/src/db/seeders/20260827000001-customer-permissions.cjs` (**CommonJS**)
       adding the default grants from data-model.md: Agent gains `customers:view|create|update`,
       `notes:create`, `attachments:upload`; Supervisor additionally gains `customers:deactivate`,
       `customers:export`, `notes:manage`, `attachments:delete`; Administrator gains every catalog
       key. **Reconciling, never deleting** — it must not wipe an Administrator's deliberate changes.
       Follow the pattern in the Phase 1 role-permissions seeder.
 
-- [ ] T007 Add the new permission probes to `backend/tests/authorization.matrix.test.ts` — one entry
+- [X] T007 Add the new permission probes to `backend/tests/authorization.matrix.test.ts` — one entry
       per new key in the `PROBES` map, pointing at the route that will enforce it. The routes do not
       exist yet, so these fail until their phase lands; that is the intended sequence.
 

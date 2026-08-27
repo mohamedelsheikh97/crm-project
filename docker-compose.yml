@@ -34,3 +34,7 @@ services:
 
 volumes:
   crm-mysql-data:
+  # Uploaded customer files. Kept in a volume so they survive a container
+  # restart; the backend reads and writes them through an authenticated
+  # endpoint, never as statically served files.
+  crm-attachments:

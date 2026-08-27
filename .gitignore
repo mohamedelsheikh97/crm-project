@@ -6,6 +6,9 @@ node_modules/
 .env.local
 .env.*.local
 
+# Uploaded customer files — never commit these
+storage/
+
 # Test output
 coverage/
 
