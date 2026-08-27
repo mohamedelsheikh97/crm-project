@@ -4,6 +4,8 @@ import { authenticate } from '../../middleware/authenticate.js';
 import { requirePasswordChange } from '../../middleware/require-password-change.js';
 
 import customersRoutes from './customers.routes.js';
+import attachmentsRoutes from './attachments.routes.js';
+import notesRoutes from './notes.routes.js';
 
 const router = Router();
 
@@ -13,6 +15,8 @@ const router = Router();
 router.use(authenticate);
 router.use(requirePasswordChange);
 
+router.use('/:id/notes', notesRoutes);
+router.use('/:id/attachments', attachmentsRoutes);
 router.use(customersRoutes);
 
 export default router;

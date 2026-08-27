@@ -53,6 +53,22 @@ const PROBES: Record<
 
 const ROLE_KEYS = ['agent', 'supervisor', 'admin'] as const;
 
+/**
+ * Permissions that are NOT a route gate.
+ *
+ * `notes:manage` is conditional: the route requires `notes:create`, and the
+ * service additionally demands `notes:manage` only when the note belongs to
+ * someone else (FR-027). A route-level probe cannot express "allowed for your
+ * own, refused for another's", so asserting one here would either pass
+ * vacuously or fail for the wrong reason.
+ *
+ * These are still enforced and still tested — by the named tests listed
+ * below, which cover the condition the matrix cannot.
+ */
+const CONDITIONAL_PERMISSIONS: Record<string, string> = {
+  'notes:manage': 'backend/tests/customers/notes.test.ts',
+};
+
 interface RegisteredRoute {
   path: string;
   methods: string[];
@@ -104,6 +120,11 @@ describe('permission matrix (SC-003)', () => {
       ROLE_KEYS.map((roleKey) => ({ key: permission.key as PermissionKey, roleKey })),
     ),
   )('$roleKey against $key', async ({ key, roleKey }) => {
+    if (key in CONDITIONAL_PERMISSIONS) {
+      // Covered by a named test instead — see CONDITIONAL_PERMISSIONS.
+      return;
+    }
+
     const { agent } = await agentAs(roleKey);
     const role = await Role.findOne({ where: { key: roleKey } });
     const granted = await import('../src/services/authorization.service.js').then((m) =>
@@ -140,6 +161,16 @@ describe('permission matrix (SC-003)', () => {
     const unguarded = adminRoutes.filter((route) => route.handlerCount < 2);
 
     expect(unguarded).toEqual([]);
+  });
+
+  it('every conditional permission names the test that covers it', () => {
+    // A conditional permission is exempt from the route probe, so it must
+    // point at where it IS covered. Exempt and untested is the failure this
+    // prevents.
+    for (const [key, coveredBy] of Object.entries(CONDITIONAL_PERMISSIONS)) {
+      expect(PERMISSIONS.map((p) => p.key)).toContain(key);
+      expect(coveredBy).toMatch(/.test.ts$/);
+    }
   });
 
   it('every catalog key is enforced by some route', () => {

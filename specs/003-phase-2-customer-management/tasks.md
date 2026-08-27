@@ -440,33 +440,33 @@ and confirm someone else's is refused without `notes:manage`.
 
 **Maps to**: FR-024–FR-028 · Constitution Principle II (server-side enforcement)
 
-- [ ] T058 [P] [US4] Create `backend/tests/customers/notes.test.ts`: newest-first paged listing;
+- [X] T058 [P] [US4] Create `backend/tests/customers/notes.test.ts`: newest-first paged listing;
       `editedAt` set only on edit; the author may edit their own with `notes:create`; **another
       user's note is refused without `notes:manage`** and permitted with it (FR-027); every note is
       visible to anyone who may view the customer (Q2 — assert there is no hidden-note behaviour).
 
-- [ ] T059 [US4] Create `backend/src/services/customer-note.service.ts` with `list`, `create`,
+- [X] T059 [US4] Create `backend/src/services/customer-note.service.ts` with `list`, `create`,
       `update`, and `remove`. Authorisation nuance lives here: editing another user's note requires
       `notes:manage`, checked through `authorization.service` — **never a role comparison in a
       controller** (Phase 1 rule, still in force). Audit inside the transaction; set `edited_at` on
       update.
 
-- [ ] T060 [US4] Create `backend/src/controllers/customers/notes.controller.ts` and
+- [X] T060 [US4] Create `backend/src/controllers/customers/notes.controller.ts` and
       `backend/src/routes/customers/notes.routes.ts`: `GET` behind `customers:view`, `POST` behind
       `notes:create`, `PATCH` and `DELETE` behind `notes:create` with the ownership rule applied in
       the service.
 
-- [ ] T061 [P] [US4] Create `frontend/src/services/customer-notes.service.ts`.
+- [X] T061 [P] [US4] Create `frontend/src/services/customer-notes.service.ts`.
 
-- [ ] T062 [US4] Create `frontend/src/components/customers/NoteList.vue`: newest first, paged, each
+- [X] T062 [US4] Create `frontend/src/components/customers/NoteList.vue`: newest first, paged, each
       showing author, time, and an **edited** marker when `editedAt` is set. Edit and delete appear on
       a user's own notes, and on others' only with `notes:manage` — omitted, not shown-disabled
       without explanation.
 
-- [ ] T063 [P] [US4] Add US4 i18n keys to `frontend/src/locales/en.json` and `frontend/src/locales/ar.json`, including the edited marker and the
+- [X] T063 [P] [US4] Add US4 i18n keys to `frontend/src/locales/en.json` and `frontend/src/locales/ar.json`, including the edited marker and the
       empty state.
 
-- [ ] T064 [US4] Execute quickstart **V4** and record the result, including calling the edit endpoint
+- [X] T064 [US4] Execute quickstart **V4** and record the result, including calling the edit endpoint
       directly as a user without `notes:manage`.
 
 ---
@@ -480,49 +480,49 @@ disallowed, refuse a file whose extension lies, and refuse a download to a user 
 
 **Maps to**: FR-029–FR-036 · SC-008 · Constitution Principle II
 
-- [ ] T065 [P] [US5] Create `backend/tests/customers/attachment-security.test.ts` (**B9**) — the
+- [X] T065 [P] [US5] Create `backend/tests/customers/attachment-security.test.ts` (**B9**) — the
       security test of this phase. Oversized refused naming the limit; disallowed type refused; **a
       PNG renamed `.pdf` refused on sniffed content** (FR-032); a crafted `storage_key` containing
       path separators refused by `resolvePath`.
 
-- [ ] T066 [P] [US5] Create `backend/tests/customers/attachment-access.test.ts` (**B10**, SC-008): a
+- [X] T066 [P] [US5] Create `backend/tests/customers/attachment-access.test.ts` (**B10**, SC-008): a
       user without `customers:view` is refused the download while holding a valid attachment id, and
       the storage directory is not reachable by any route.
 
-- [ ] T067 [P] [US5] Create `backend/tests/customers/attachment-ordering.test.ts` (**B11**, FR-034):
+- [X] T067 [P] [US5] Create `backend/tests/customers/attachment-ordering.test.ts` (**B11**, FR-034):
       a failure during the row commit leaves **no** attachment row pointing at a missing file. Force
       it the way Phase 1 forced the audit rollback — make the insert fail and assert the state.
 
-- [ ] T068 [US5] Create `backend/src/services/attachment.service.ts`: `list`, `upload`, `getForDownload`,
+- [X] T068 [US5] Create `backend/src/services/attachment.service.ts`: `list`, `upload`, `getForDownload`,
       and `remove`. `upload` sniffs the type with `file-type`, checks it against
       `env.ATTACHMENT_ALLOWED_TYPES`, calls `fileStorage.store` for a generated key, then commits the
       row and audit entry — **file first, row second, delete the file if the commit fails** (rule 5).
       `remove` deletes the row in a transaction with its audit entry and removes the file after
       commit, logging at `error` if that fails.
 
-- [ ] T069 [US5] Create `backend/src/controllers/customers/attachments.controller.ts`. `download`
+- [X] T069 [US5] Create `backend/src/controllers/customers/attachments.controller.ts`. `download`
       streams via `fileStorage.readStream` with `Content-Disposition: attachment` carrying
       `original_name` and the **stored sniffed** content type. Never expose `storage_key` in any
       response.
 
-- [ ] T070 [US5] Create `backend/src/routes/customers/attachments.routes.ts`: `GET /` and
+- [X] T070 [US5] Create `backend/src/routes/customers/attachments.routes.ts`: `GET /` and
       `GET /:attachmentId/download` behind `customers:view`, `POST /` behind `attachments:upload` with
       the upload middleware, `DELETE /:attachmentId` behind `attachments:delete`. **Confirm by
       inspection that no static file middleware is mounted anywhere near the storage path** (rule 7).
 
-- [ ] T071 [P] [US5] Create `frontend/src/services/customer-attachments.service.ts` including a
+- [X] T071 [P] [US5] Create `frontend/src/services/customer-attachments.service.ts` including a
       download helper that goes through the authenticated endpoint, never a direct path.
 
-- [ ] T072 [US5] Create `frontend/src/components/customers/AttachmentList.vue`: name, size, type,
+- [X] T072 [US5] Create `frontend/src/components/customers/AttachmentList.vue`: name, size, type,
       uploader, time; download as a real link to the endpoint; upload showing the size limit and
       permitted types **before** an attempt; upload progress, since a 10 MB file on a slow connection
       is otherwise indistinguishable from a hung page; refusals stating which rule was broken; delete
       via `ConfirmDialog` naming the file, shown only with `attachments:delete`.
 
-- [ ] T073 [P] [US5] Add US5 i18n keys to `frontend/src/locales/en.json` and `frontend/src/locales/ar.json`, including the size and type limits shown
+- [X] T073 [P] [US5] Add US5 i18n keys to `frontend/src/locales/en.json` and `frontend/src/locales/ar.json`, including the size and type limits shown
       on the control and each refusal reason.
 
-- [ ] T074 [US5] Execute quickstart **V5** and record the result, including the renamed-file test and
+- [X] T074 [US5] Execute quickstart **V5** and record the result, including the renamed-file test and
       the direct-link access check.
 
 ---
@@ -536,18 +536,18 @@ and the audit log records the count.
 
 **Maps to**: FR-015, FR-037–FR-040, FR-044 · Constitution Principle II
 
-- [ ] T075 [P] [US6] Create `backend/tests/customers/export.test.ts` (**B12**): the export contains
+- [X] T075 [P] [US6] Create `backend/tests/customers/export.test.ts` (**B12**): the export contains
       **exactly** the filtered rows and not the whole table; a `data.exported` audit entry is written
       with the row count; a user without `customers:export` is refused; the output begins with a
       UTF-8 BOM and an Arabic name survives a round-trip through it.
 
-- [ ] T076 [US6] Create `backend/src/services/export.service.ts` producing streamed CSV with a UTF-8
+- [X] T076 [US6] Create `backend/src/services/export.service.ts` producing streamed CSV with a UTF-8
       BOM (research.md D9 — without it Excel misreads UTF-8 and Arabic names arrive as mojibake).
       Reuse `customer.service.list`'s filter so an export is always "what I am looking at". Include
       only fields the caller can already see (FR-039). Write the `data.exported` audit entry — **the
       key Phase 1 defined**, not a new one (rule 14, FR-044).
 
-- [ ] T077 [US6] Add the `export` handler to `backend/src/controllers/customers/customers.controller.ts`
+- [X] T077 [US6] Add the `export` handler to `backend/src/controllers/customers/customers.controller.ts`
       and `GET /export` to `backend/src/routes/customers/customers.routes.ts` behind `customers:export`, accepting the
       **same query parameters as the list endpoint**.
 

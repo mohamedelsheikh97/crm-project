@@ -3,6 +3,7 @@ import type { NextFunction, Request, Response } from 'express';
 import { notFound, unauthenticated } from '../../errors/app-error.js';
 import { auditContextFrom } from '../../services/audit.service.js';
 import * as customerService from '../../services/customer.service.js';
+import * as exportService from '../../services/export.service.js';
 
 /**
  * HTTP concerns only — no business logic, no model access. Duplicate detection,
@@ -135,6 +136,31 @@ export async function checkDuplicates(
     );
 
     res.status(200).json({ duplicates });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Accepts the SAME query parameters as the list endpoint, so an export is
+ * always "what I am currently looking at" rather than a separate query someone
+ * has to keep in step.
+ */
+export async function exportCsv(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const result = await exportService.exportCustomers(
+      {
+        search: typeof req.query.search === 'string' ? req.query.search : undefined,
+        company: typeof req.query.company === 'string' ? req.query.company : undefined,
+        isActive: parseActive(req.query.isActive),
+      },
+      actorFrom(req),
+      auditContextFrom(req),
+    );
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="customers.csv"');
+    res.status(200).send(result.csv);
   } catch (error) {
     next(error);
   }

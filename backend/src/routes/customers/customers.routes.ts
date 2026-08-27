@@ -17,6 +17,9 @@ router.post(
   customersController.checkDuplicates,
 );
 
+// Declared BEFORE /:id, or Express matches 'export' as an id.
+router.get('/export', requirePermission('customers:export'), customersController.exportCsv);
+
 router.get('/:id', requirePermission('customers:view'), customersController.get);
 router.patch('/:id', requirePermission('customers:update'), customersController.update);
 
