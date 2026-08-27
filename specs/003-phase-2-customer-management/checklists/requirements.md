@@ -90,3 +90,57 @@ the Phase 1 role model, not implementation detail.
    choose an approach rather than default into one.
 4. **Duplicate detection on edit (FR-021) is easy to overlook.** It is specified, but it is a second
    code path that will not be exercised by the creation flow's tests. It needs its own coverage.
+
+---
+
+### Post-implementation re-validation (2026-08-27, `/speckit-implement`)
+
+**Status unchanged: 16/16.** No accepted exception changed, and no new one was needed. All three
+clarification decisions held through implementation and are verified by audit:
+
+- **No permanent deletion** (Q1) — no delete route, no `destroy` call on a customer, and
+  `DELETE /api/customers/:id` returns `404` because the route does not exist. Phase 3 may treat a
+  customer reference as permanent.
+- **No note visibility** (Q2) — no column, and a test asserts every note is visible to anyone who may
+  view the customer.
+- **No virus scanning** (Q3) — no scan-state column and no pending state on any download path.
+
+### Complexity Tracking verified against what was built
+
+All four `plan.md` entries describe the implementation accurately:
+
+1. **A phone library rather than a hand-rolled rule.** Built. The suite includes the case the naive
+   alternative fails — an Egyptian and a British number sharing a digit tail must not collide.
+   Normalisation appears in exactly one file, confirmed by audit.
+2. **Attachments on the filesystem.** Built, with all four rules verified by test: generated
+   filenames, content-sniffed types, file-before-row ordering, and no static route.
+3. **The envelope gained one sibling key.** Built. A test asserts `details[]` stays empty on a
+   `409 DUPLICATE_CUSTOMER`, so the existing field keeps its defined meaning.
+4. **Substring search on name and company.** Built as designed, with the accepted linear cost
+   unchanged. The volume trigger in research.md D3 stands.
+
+### Carry-forward into the Phase 3 spec (MANDATORY)
+
+- **Customers are never deleted.** A ticket may hold a customer reference without handling a
+  vanishing target.
+- **`record.deleted` STILL has no caller.** Phase 1 defined it expecting Phase 2 to be its first;
+  Q1 overturned that. Phase 3 may be the phase that finally needs it — and if so it must use that
+  key rather than inventing one.
+- **Adding a protected endpoint takes three steps** — catalog entry, `requirePermission`, grant
+  decision. The matrix test fails the build on any omission. Phase 2's `customers` module is the
+  pattern a `tickets` module extends.
+- **The matrix now models CONDITIONAL permissions.** `notes:manage` is enforced in a service based on
+  ownership rather than at the route, so it is declared in `CONDITIONAL_PERMISSIONS` and must name the
+  test that covers it. A later phase adding a similar rule should do the same rather than leaving the
+  key exempt and untested.
+- **Q3's virus-scanning deferral must be revisited before Phase 8**, whose customer portal would let
+  files arrive from outside the organisation.
+
+### Risks flagged for Phase 3
+
+- **V7 and V8 were not run** — no browser was available. The screens are built and covered by
+  component and locale tests, but nobody has looked at them. Phase 1's V6–V8 and Phase 0's V8–V10 are
+  likewise unrun; three phases of screens now sit unverified in the same shell.
+- **The suite takes roughly four minutes.** bcrypt at cost 12 plus serial integration tests against
+  one database. Acceptable, but Phase 3 adds more. Lowering the bcrypt cost **in the test environment
+  only** is the correct lever if it becomes a drag — never in production.

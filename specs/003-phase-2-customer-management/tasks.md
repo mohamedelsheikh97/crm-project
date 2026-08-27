@@ -293,20 +293,20 @@ confirm partial matching works and a non-match offers to create.
       `GET /` and `GET /:id` behind `requirePermission('customers:view')`, registered in the group
       router. **Verify**: an Agent gets `200`, and the matrix probe for `customers:view` now passes.
 
-- [ ] T034 [US1] Create `frontend/src/views/customers/CustomerListView.vue` per the UI contract: a
+- [X] T034 [US1] Create `frontend/src/views/customers/CustomerListView.vue` per the UI contract: a
       **single** search box (no field selector) holding focus on load, debounced updates, rows showing
       name, company, primary phone, primary email, and an inactive marker, plus an indication of which
       detail matched. **Phone values display `raw`, never `normalised`** (rule 3). Reuses Phase 1's
       `DataTable` and `TablePagination`.
 
-- [ ] T035 [US1] In `frontend/src/views/customers/CustomerListView.vue`, implement the empty state carrying the search term and offering to create that
+- [X] T035 [US1] In `frontend/src/views/customers/CustomerListView.vue`, implement the empty state carrying the search term and offering to create that
       customer (FR-016). "No results" as a dead end forces the Agent to retype what they just typed.
 
-- [ ] T036 [P] [US1] Add US1 i18n keys to `frontend/src/locales/en.json` and `frontend/src/locales/ar.json`: search
+- [X] T036 [P] [US1] Add US1 i18n keys to `frontend/src/locales/en.json` and `frontend/src/locales/ar.json`: search
       placeholder, column headers, match-reason labels, inactive marker, filters, empty state.
       Identical key sets.
 
-- [ ] T037 [US1] Execute quickstart **V1** and record the result, including a phone typed differently
+- [X] T037 [US1] Execute quickstart **V1** and record the result, including a phone typed differently
       from how it was stored.
 
 **Checkpoint**: PLAN.md Definition-of-done part 1 satisfied.
@@ -349,26 +349,26 @@ the clause this phase exists for**
       that `check-duplicates` is an **aid for live feedback, not the barrier** — a match can appear
       between a check and a save (research.md D5).
 
-- [ ] T043 [US2] Create `frontend/src/views/customers/CustomerFormView.vue`: name required, a
+- [X] T043 [US2] Create `frontend/src/views/customers/CustomerFormView.vue`: name required, a
       repeatable contact-method group (FR-004), at least one contact stated **before** submission, one
       primary per kind. **The form must not reformat what the user typed** (rule 3). Server
       `details[]` maps onto fields; focus moves to the first invalid field on failure.
 
-- [ ] T044 [US2] Create `frontend/src/components/customers/DuplicateDialog.vue` per the UI contract.
+- [X] T044 [US2] Create `frontend/src/components/customers/DuplicateDialog.vue` per the UI contract.
       States which detail matched and what it matched; shows **every** match; labels a deactivated
       match as such; three actions in order — **Open the existing customer** (visually primary),
       **Change the details**, **Create anyway** (secondary). **"Create anyway" must not be the default
       focus and must not be reachable by pressing Enter** — someone dismissing dialogs on autopilot
       should not create a duplicate by reflex.
 
-- [ ] T045 [US2] Wire the `409 DUPLICATE_CUSTOMER` response from
+- [X] T045 [US2] Wire the `409 DUPLICATE_CUSTOMER` response from
       `frontend/src/services/customers.service.ts` into `frontend/src/views/customers/CustomerFormView.vue`: open the dialog, and on acknowledgement resubmit with `acknowledgeDuplicates: true`.
 
-- [ ] T046 [P] [US2] Add US2 i18n keys to `frontend/src/locales/en.json` and `frontend/src/locales/ar.json`: form labels, contact-kind labels, the
+- [X] T046 [P] [US2] Add US2 i18n keys to `frontend/src/locales/en.json` and `frontend/src/locales/ar.json`: form labels, contact-kind labels, the
       duplicate dialog's heading, per-match wording, all three action labels, and every validation
       message. Identical key sets.
 
-- [ ] T047 [US2] Execute quickstart **V2** and record the result. Confirm specifically that a
+- [X] T047 [US2] Execute quickstart **V2** and record the result. Confirm specifically that a
       differently-formatted phone **is** flagged, that "Open the existing customer" is primary, and
       that **Enter does not create a duplicate**.
 
@@ -414,17 +414,17 @@ part 2
       `PATCH /:id` behind `customers:update`, `POST /:id/deactivate` and `POST /:id/reactivate` both
       behind `customers:deactivate` — changing active state is one capability, not two.
 
-- [ ] T054 [US3] Extend `frontend/src/views/customers/CustomerFormView.vue` for edit mode: load the record, carry `version`, and
+- [X] T054 [US3] Extend `frontend/src/views/customers/CustomerFormView.vue` for edit mode: load the record, carry `version`, and
       show the **same** `DuplicateDialog` with wording reflecting an existing record being changed
       rather than created.
 
-- [ ] T055 [US3] Add deactivate and reactivate to `frontend/src/views/customers/CustomerListView.vue`, using
+- [X] T055 [US3] Add deactivate and reactivate to `frontend/src/views/customers/CustomerListView.vue`, using
       Phase 1's `ConfirmDialog` naming the customer, shown only with `customers:deactivate`.
 
-- [ ] T056 [P] [US3] Add US3 i18n keys to `frontend/src/locales/en.json` and `frontend/src/locales/ar.json`: edit-mode titles, deactivate/reactivate
+- [X] T056 [P] [US3] Add US3 i18n keys to `frontend/src/locales/en.json` and `frontend/src/locales/ar.json`: edit-mode titles, deactivate/reactivate
       labels and confirmation text, the conflict message, and the last-contact refusal.
 
-- [ ] T057 [US3] Execute quickstart **V3** and record the result, including editing a phone into one
+- [X] T057 [US3] Execute quickstart **V3** and record the result, including editing a phone into one
       another customer already holds.
 
 **Checkpoint**: all three parts of PLAN.md's Definition of done are satisfied.
@@ -551,83 +551,83 @@ and the audit log records the count.
       and `GET /export` to `backend/src/routes/customers/customers.routes.ts` behind `customers:export`, accepting the
       **same query parameters as the list endpoint**.
 
-- [ ] T078 [US6] Add the export control to `frontend/src/views/customers/CustomerListView.vue`, shown only with
+- [X] T078 [US6] Add the export control to `frontend/src/views/customers/CustomerListView.vue`, shown only with
       `customers:export`, stating next to it that it exports the **current filter** — an export that
       silently returns everything is a data-leak-shaped surprise. Disable while producing.
 
-- [ ] T079 [P] [US6] Add US6 i18n keys to `frontend/src/locales/en.json` and `frontend/src/locales/ar.json`,
+- [X] T079 [P] [US6] Add US6 i18n keys to `frontend/src/locales/en.json` and `frontend/src/locales/ar.json`,
       including the export-scope note.
 
-- [ ] T080 [US6] Execute quickstart **V6** and record the result, opening the file in a spreadsheet
+- [X] T080 [US6] Execute quickstart **V6** and record the result, opening the file in a spreadsheet
       to confirm Arabic names render rather than appearing as mojibake.
 
 ---
 
 ## Phase 9: Polish & Cross-Cutting Concerns
 
-- [ ] T081 [US1] Create `frontend/src/views/customers/CustomerProfileView.vue` assembling details,
+- [X] T081 [US1] Create `frontend/src/views/customers/CustomerProfileView.vue` assembling details,
       `NoteList`, and `AttachmentList` per the UI contract. Deferred to here because it composes
       pieces that only exist once US4 and US5 land.
 
-- [ ] T082 [P] Create `backend/tests/customers/arabic.test.ts` (**B8**): an Arabic name, address, and
+- [X] T082 [P] Create `backend/tests/customers/arabic.test.ts` (**B8**): an Arabic name, address, and
       note body store and return **byte-exact**, and the name is findable by partial search. Cheap,
       and it fails loudly if a future migration changes a column's charset.
 
-- [ ] T083 [P] Create `frontend/tests/customers/DuplicateDialog.test.ts`: renders every match; labels
+- [X] T083 [P] Create `frontend/tests/customers/DuplicateDialog.test.ts`: renders every match; labels
       a deactivated match; **"Create anyway" is not the initially focused control**; Escape emits
       cancel. The keyboard-reflex hazard is worth a test, not just a note.
 
-- [ ] T084 **Layering audit** (Principle III, quickstart **V9**). Confirm and record:
+- [X] T084 **Layering audit** (Principle III, quickstart **V9**). Confirm and record:
       `grep -rn "from '.*models" backend/src | grep -v "backend/src/services\|backend/src/models"`
       → empty; `grep -rn "fetch(" frontend/src/components frontend/src/views frontend/src/layouts`
       → empty. Then confirm by inspection that **phone normalisation happens in exactly one place**
       and that create and update call the **same** duplicate detector (rules 1 and 2).
 
-- [ ] T085 [P] **Physical-utility audit** (Principle I).
+- [X] T085 [P] **Physical-utility audit** (Principle I).
       `grep -rnE "\b(ml|mr|pl|pr)-[0-9a-z]|\btext-(left|right)\b|\b(left|right)-[0-9]" frontend/src`
       → must return nothing.
 
-- [ ] T086 [P] **Scope audit** (rule 14) across `backend/src` and `frontend/src`. Confirm no customer
+- [X] T086 [P] **Scope audit** (rule 14) across `backend/src` and `frontend/src`. Confirm no customer
       delete route or service method exists;
       no note-visibility column; no attachment scan-state column; no merge, bulk import, structured
       address, or per-agent ownership. Confirm `record.deleted` still has **no caller** — Phase 1
       expected Phase 2 to be its first, and Clarification Q1 overturned that.
 
-- [ ] T087 [P] **Normalised-value display audit** (rule 3):
+- [X] T087 [P] **Normalised-value display audit** (rule 3):
       `grep -rn "normalised" frontend/src --include=*.vue` — confirm no template renders
       `value_normalised` or `normalised` — users see only what they typed.
 
-- [ ] T088 Update the root `README.md`: the four new environment variables, and a note in the
+- [X] T088 Update the root `README.md`: the four new environment variables, and a note in the
       "where do I add a backend endpoint" section that customer routes sit at `/api/customers` rather
       than under `/api/admin`, with the reason.
 
-- [ ] T089 Run `npm run format` then `npm run lint` at the root; both must exit 0.
+- [X] T089 Run `npm run format` then `npm run lint` at the root; both must exit 0.
 
-- [ ] T090 Run `npm test` and confirm **B1–B17** all pass. Record the counts. **B2, B4, and B9 matter
+- [X] T090 Run `npm test` and confirm **B1–B17** all pass. Record the counts. **B2, B4, and B9 matter
       most**: B2 is the Definition of done made mechanical, B4 covers the path the spec's checklist
       flagged as easy to overlook, and B9 is the upload attack the type restriction exists to stop.
 
-- [ ] T091 **Full quickstart run from a clean state**: `docker compose down -v`, then Setup end to
+- [X] T091 **Full quickstart run from a clean state**: `docker compose down -v`, then Setup end to
       end, then walk **V1**–**V9**. Fix `quickstart.md` if any step is undocumented or out of order.
 
-- [ ] T092 Verify the constitution's per-phase Definition-of-done gate from
+- [X] T092 Verify the constitution's per-phase Definition-of-done gate from
       `.specify/memory/constitution.md` explicitly and record each in `quickstart.md`:
       all tasks done; works in Arabic and English; server-side permission checks verified; screens
       pass basic WCAG 2.1 AA checks; PLAN.md's Phase 2 Definition of done satisfied.
 
-- [ ] T093 Update `specs/003-phase-2-customer-management/checklists/requirements.md` if any accepted
+- [X] T093 Update `specs/003-phase-2-customer-management/checklists/requirements.md` if any accepted
       exception changed, and confirm plan.md's Complexity Tracking still describes what was built —
       particularly the accepted linear cost of name search (research.md D3) and the envelope
       extension for duplicates (D5). If either turned out differently, the plan must say so rather
       than remaining aspirational.
 
-- [ ] T094 Record Phase 3 carry-forwards in
+- [X] T094 Record Phase 3 carry-forwards in
       `specs/003-phase-2-customer-management/checklists/requirements.md`: customers are **never deleted**, so a customer reference
       is permanent; the `customers` permission module is the pattern a `tickets` module extends; and
       **`record.deleted` still has no caller** — Phase 3 may be the phase that finally needs it.
       Also record that **Q3's virus-scanning deferral must be revisited before Phase 8**.
 
-- [ ] T095 Commit all remaining work on `003-phase-2-customer-management`. Open a pull request
+- [X] T095 Commit all remaining work on `003-phase-2-customer-management`. Open a pull request
       against `main`. Do **not** merge until the user confirms the Definition-of-done gate in
       `.specify/memory/constitution.md` is met.
 

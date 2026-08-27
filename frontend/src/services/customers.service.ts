@@ -129,3 +129,26 @@ export async function checkDuplicates(
 
   return result.duplicates;
 }
+
+/**
+ * Downloads the filtered export.
+ *
+ * Goes through the authenticated wrapper rather than a plain link, because the
+ * endpoint requires an Authorization header — an anchor tag would arrive
+ * unauthenticated and be refused.
+ */
+export async function exportCsv(filters: CustomerFilters = {}): Promise<void> {
+  const blob = await http.getBlob(`/customers/export${query(filters)}`);
+  const url = URL.createObjectURL(blob);
+
+  try {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'customers.csv';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}

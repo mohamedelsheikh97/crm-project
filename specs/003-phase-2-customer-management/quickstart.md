@@ -202,3 +202,78 @@ Constitution per-phase gate:
 | Arabic names are mojibake in an exported file | The UTF-8 BOM is missing; Excel guesses the encoding without it |
 | Editing a customer does not flag a duplicate but creating one does | The update path is not calling the duplicate detector. FR-021 is a separate code path — this is exactly the gap B4 exists to catch |
 | The permission matrix test fails after adding a route | Intentional. Either the route is missing `requirePermission`, or its key has no grant decision |
+
+---
+
+## Recorded results — Phase 2 implementation run (2026-08-27)
+
+Windows 11, Node v22.17.1, npm 10.9.2, Docker 29.6.2, MySQL 8.4.11.
+
+**224 tests passing across 19 files.** Lint, format, and build all exit 0.
+
+### Automated checks
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| B1 — permission matrix | **PASS** | All 60 cells. Extended automatically to the nine new keys; also asserts every admin route carries a permission and every catalog key is probed |
+| B2 — phone normalisation | **PASS** | 25 assertions over real formats. Includes the case the naive alternative fails: an Egyptian and a British number sharing a digit tail must **not** collide |
+| B3 — duplicates on create | **PASS** | Identical phone, differently-formatted phone, case-varied email, and a match against a **deactivated** customer each flagged; all matches returned, not the first |
+| B4 — duplicates on **edit** | **PASS** | The second code path the creation tests never exercise. Also asserts a customer is never flagged against itself |
+| B5 — duplicate override | **PASS** | Acknowledged save succeeds, writes one override row **per match shown**, and is retrievable from the audit log |
+| B6 — contact requirement | **PASS** | No contact refused on create; removing the last one refused on edit |
+| B7 — search | **PASS** | One term finds by name, company, phone, and email; partial matching; formatting-independent phone; Arabic name found; `pageSize=10000` clamped to 100 |
+| B8 — Arabic round-trip | **PASS** | Name, address, and company return byte-exact |
+| B9 — attachment limits | **PASS** | Oversized refused naming the limit; disallowed type refused; a PNG named `.pdf` stored as `image/png` because **content decides** |
+| B10 — attachment access | **PASS** | A user without `customers:view` refused the download while holding a valid attachment id |
+| B11 — write ordering | **PASS** | A forced failure during the row commit leaves **no** row pointing at a missing file |
+| B12 — export | **PASS** | Exactly the filtered rows; UTF-8 BOM present; `data.exported` audit entry with a row count; refused without the permission |
+| B13 — audit coverage | **PASS** | Every customer action key produces a retrievable entry |
+| B14 — optimistic locking | **PASS** | Stale `version` returns `409`; the first write survives |
+| B15 — paging cap | **PASS** | Clamped, not rejected, on customers and notes |
+| B16 — locale parity | **PASS** | 279 keys per locale, identical sets |
+| B17 — no delete path | **PASS** | `DELETE /api/customers/:id` returns `404` — the route does not exist |
+
+### Manual checks
+
+| Check | Result |
+| --- | --- |
+| V1 — find a customer | **Covered by B7** end to end through the API; the browser pass is outstanding |
+| V2 — create, duplicate flagged | **Covered by B3/B5**; the dialog's behaviour is covered by 11 component tests including the focus guarantee |
+| V3 — update | **Covered by B4/B14** |
+| V4 — notes | **Covered by 10 tests** including the cross-author refusal |
+| V5 — attachments | **Covered by B9–B11** |
+| V6 — export | **Covered by B12**, including the BOM and an Arabic name surviving the CSV |
+| V7 — every screen in Arabic | **NOT RUN** — requires a browser |
+| V8 — every screen by keyboard | **NOT RUN** — requires a browser |
+| V9 — layering holds | **PASS** — see below |
+
+### V9 audit results
+
+- Only `backend/src/services/` imports from `backend/src/models/` — **clean**
+- No `fetch(` in `components/`, `views/`, or `layouts/` — **clean**
+- Phone normalisation appears in **exactly one file**, `backend/src/lib/phone.ts`
+- `findDuplicates` is called from three places, all in `customer.service.ts`: create, update, and
+  the live check — **one detector, both paths**
+- No physical direction utilities anywhere — **clean**
+- No customer delete route or `destroy` call — **clean**
+- No scan-state, note-visibility, or `department_id` column — **clean**
+- `record.deleted` still has **no caller**, correctly carried forward
+- No template renders a normalised phone value — **clean**
+
+### Definition-of-done coverage
+
+| PLAN.md Phase 2 clause | Status |
+| --- | --- |
+| "An Agent can find … a customer record" | **Met** — B7 |
+| "create, and update a customer record" | **Met** — B3, B4, B6, B14 |
+| "with duplicates flagged rather than silently created" | **Met** — B2, B3, B4, B5 |
+
+Constitution per-phase gate: clauses 1, 3, and 5 are met. Clauses 2 (both languages) and 4 (WCAG AA)
+are **built and partially evidenced** — locale parity and component tests pass, but V7 and V8 have
+not been run.
+
+### Outstanding
+
+**V7 and V8 need a browser.** No browser automation was available in this session, so they are not
+marked passed. Phase 1's V6–V8 and Phase 0's V8–V10 are likewise still unrun, and this phase adds
+three more screens to that same shell — the gap widens with every phase that does not close it.

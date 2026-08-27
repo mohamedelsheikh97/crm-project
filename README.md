@@ -5,9 +5,9 @@ phases; see [PLAN.md](./PLAN.md) for the full roadmap and
 [.specify/memory/constitution.md](./.specify/memory/constitution.md) for the rules every phase
 must follow.
 
-**Current phase**: Phase 1 — Security & Administration Foundations. Real users, three fixed roles,
-server-enforced permissions, an append-only audit log, and password policy with lockout. Business
-screens start in Phase 2.
+**Current phase**: Phase 2 — Customer Management. The customer record every later module attaches
+to: search, create, edit, deactivate, notes, attachments, and filtered export — with duplicates
+flagged rather than silently created. Tickets attach to these records in Phase 3.
 
 ## Prerequisites
 
@@ -132,6 +132,44 @@ Two rules that are easy to get wrong:
 - **Never put role or permission claims in the access token.** Authorization is read from the
   database on every request, which is what makes a deactivation or a permission change take effect
   immediately rather than whenever the token happens to expire.
+
+### Customers
+
+Customer routes sit at **`/api/customers`**, not under `/api/admin`. They are everyday Agent work
+rather than administration, and putting them under the admin prefix would imply a permission
+boundary that does not exist.
+
+Two rules that are easy to get wrong:
+
+- **Phone normalisation happens in exactly one place** — `backend/src/lib/phone.ts`. Contact
+  writes, search, and duplicate detection all call it. A second implementation is how duplicate
+  detection silently stops working, and its failure mode is a MISSED duplicate: nothing surfaces at
+  the time, and the customer's history ends up split across two records.
+- **Never display a normalised phone number.** Users see `value_raw`, exactly as they typed it.
+  Normalisation is for matching only; showing `+201001234567` where the record says
+  `+20 100 123 4567` reads as a bug.
+
+Customers are **deactivated, never deleted**, so any later phase may treat a customer reference as
+permanent.
+
+### Attachments
+
+Uploaded files live on disk under `ATTACHMENT_STORAGE_PATH` and are **never served statically**.
+Every download streams through an authenticated, permission-checked endpoint — serving the
+directory would make a file reachable by anyone who obtains its address, which is the same defect
+as not checking permission at all.
+
+Three further rules, each closing a specific hole:
+
+- The stored filename is **generated**. A user's filename is attacker-controlled input, and
+  `../..` inside one is how it becomes a path.
+- The type is **sniffed from content**, never the extension or the client's `Content-Type`.
+- The file is written **before** the row commits. An orphan file is harmless and sweepable; a
+  committed row pointing at a file that was never written is a broken download.
+
+Files are **not** virus-scanned in this phase — a deliberate deferral (Phase 2 Clarifications Q3)
+that must be revisited before Phase 8, whose customer portal would let files arrive from outside
+the organisation.
 
 ### Audit logging
 

@@ -52,7 +52,12 @@ function buildUrl(path: string): string {
 function buildHeaders(init: RequestInit, token: string | null): Headers {
   const headers = new Headers(init.headers);
 
-  if (init.body !== undefined && !headers.has('Content-Type')) {
+  // A FormData body must carry the browser's own multipart Content-Type,
+  // complete with its boundary — setting application/json would make the
+  // server unable to parse it.
+  const isFormData = typeof FormData !== 'undefined' && init.body instanceof FormData;
+
+  if (init.body !== undefined && !isFormData && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
 
@@ -156,11 +161,45 @@ export async function request<T>(path: string, init: RequestInit = {}): Promise<
   return (await response.json()) as T;
 }
 
+/**
+ * A binary response — an export or an attachment download.
+ *
+ * Goes through the same request path so the Authorization header, the
+ * single-flight refresh, and the retry all still apply. A plain anchor tag
+ * would arrive unauthenticated.
+ */
+export async function requestBlob(path: string): Promise<Blob> {
+  let response = await send(path, { method: 'GET' });
+
+  if (response.status === 401) {
+    const refreshed = await refreshOnce();
+
+    if (!refreshed) {
+      throw await toApiError(response);
+    }
+
+    response = await send(path, { method: 'GET' });
+  }
+
+  if (!response.ok) {
+    throw await toApiError(response);
+  }
+
+  return response.blob();
+}
+
 export const http = {
   get: <T>(path: string) => request<T>(path, { method: 'GET' }),
+  getBlob: (path: string) => requestBlob(path),
   post: <T>(path: string, body?: unknown) => withBody<T>('POST', path, body),
   patch: <T>(path: string, body?: unknown) => withBody<T>('PATCH', path, body),
   put: <T>(path: string, body?: unknown) => withBody<T>('PUT', path, body),
+  delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
+  /**
+   * Multipart upload. The body is a FormData, so Content-Type must NOT be set
+   * — the browser adds it with the boundary the server needs to parse.
+   */
+  postForm: <T>(path: string, form: FormData) => request<T>(path, { method: 'POST', body: form }),
 };
 
 function withBody<T>(method: 'POST' | 'PATCH' | 'PUT', path: string, body?: unknown): Promise<T> {
