@@ -7,7 +7,7 @@ export default tseslint.config(
   {
     // CommonJS sequelize-cli migration/seeder files live outside the TS project
     // on purpose (research.md D9), so they are not linted as TS ESM.
-    ignores: ['**/dist/**', '**/node_modules/**', 'backend/src/db/**/*.cjs'],
+    ignores: ['**/dist/**', '**/node_modules/**', '**/coverage/**', 'backend/src/db/**/*.cjs'],
   },
   js.configs.recommended,
   tseslint.configs.recommended,
@@ -22,6 +22,15 @@ export default tseslint.config(
         ecmaVersion: 'latest',
         sourceType: 'module',
       },
+    },
+  },
+  {
+    // TypeScript already reports undefined identifiers, and it knows about DOM
+    // lib types that ESLint's environment does not. Leaving no-undef on here
+    // means every `document` or `HTMLElement` reference is a false positive.
+    files: ['**/*.ts', '**/*.vue'],
+    rules: {
+      'no-undef': 'off',
     },
   },
   {

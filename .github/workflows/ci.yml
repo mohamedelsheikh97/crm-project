@@ -8,7 +8,38 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     # Makes the "pipeline step times out" edge case fail cleanly instead of hanging.
-    timeout-minutes: 10
+    timeout-minutes: 15
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: ci_root_password
+          MYSQL_DATABASE: crm_support_test
+          MYSQL_USER: crm
+          MYSQL_PASSWORD: crm_local_password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -u root -pci_root_password"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    env:
+      NODE_ENV: test
+      PORT: '3000'
+      DB_HOST: 127.0.0.1
+      DB_PORT: '3306'
+      DB_NAME: crm_support_test
+      DB_USER: crm
+      DB_PASSWORD: crm_local_password
+      # Two different values: startup rejects equal secrets.
+      JWT_ACCESS_SECRET: ci_access_secret_at_least_32_characters_long
+      JWT_REFRESH_SECRET: ci_refresh_secret_at_least_32_characters_long
+      CORS_ORIGIN: http://localhost:5173
+      LOG_LEVEL: silent
+      VITE_API_BASE_URL: http://localhost:3000/api
 
     steps:
       - uses: actions/checkout@v4
@@ -19,17 +50,17 @@ jobs:
           cache: 'npm'
 
       # Root install: exercises the workspace wiring, so a broken workspace
-      # fails CI immediately (research.md D12).
+      # fails CI immediately (Phase 0 research.md D12).
       - name: Install dependencies
         run: npm ci
 
       - name: Lint
         run: npm run lint
 
+      # Phase 0's FR-016 forbade a test stage because no framework existed.
+      # One exists from Phase 1, so the prohibition no longer applies.
+      - name: Test
+        run: npm test
+
       - name: Build both workspaces
         run: npm run build
-        env:
-          VITE_API_BASE_URL: http://localhost:3000/api
-
-      # No test step: FR-016 forbids blocking on a stage that does not exist.
-      # Do not add one "for later".

@@ -2,6 +2,7 @@ import type { CookieOptions, NextFunction, Request, Response } from 'express';
 
 import { env } from '../config/env.js';
 import { unauthenticated } from '../errors/app-error.js';
+import * as auditService from '../services/audit.service.js';
 import * as authService from '../services/auth.service.js';
 import { ACCESS_TOKEN_TTL_SECONDS, REFRESH_TOKEN_TTL_SECONDS } from '../services/token.service.js';
 
@@ -17,7 +18,10 @@ const refreshCookieOptions: CookieOptions = {
 export async function login(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const { email, password } = req.body ?? {};
-    const { user, accessToken, refreshToken } = await authService.login(email, password);
+    const { user, accessToken, refreshToken } = await authService.login(email, password, {
+      ipAddress: req.ip ?? null,
+      userAgent: req.headers['user-agent'] ?? null,
+    });
 
     res.cookie(REFRESH_COOKIE_NAME, refreshToken, {
       ...refreshCookieOptions,
@@ -50,18 +54,67 @@ export async function refresh(req: Request, res: Response, next: NextFunction): 
   }
 }
 
-export function logout(_req: Request, res: Response): void {
-  // Same path and options as the cookie that was set, or the browser will not
-  // clear it. Succeeds even with no cookie present — logout is idempotent.
-  res.clearCookie(REFRESH_COOKIE_NAME, refreshCookieOptions);
-  res.status(204).send();
+export async function logout(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    // Same path and options as the cookie that was set, or the browser will
+    // not clear it. Succeeds even with no cookie — logout is idempotent.
+    res.clearCookie(REFRESH_COOKIE_NAME, refreshCookieOptions);
+
+    if (req.user) {
+      await auditService.recordAuthEvent({
+        action: auditService.AUDIT_ACTIONS.LOGOUT,
+        actorUserId: req.user.id,
+        actorEmail: req.user.email,
+        ...auditService.auditContextFrom(req),
+      });
+    }
+
+    res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
 }
 
-export function me(req: Request, res: Response, next: NextFunction): void {
-  if (!req.user) {
-    next(unauthenticated());
-    return;
-  }
+export async function me(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    if (!req.user) {
+      next(unauthenticated());
+      return;
+    }
 
-  res.status(200).json({ id: req.user.id, email: req.user.email });
+    const current = await authService.getCurrentUser(req.user.id);
+
+    if (!current) {
+      next(unauthenticated());
+      return;
+    }
+
+    res.status(200).json(current);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function changePassword(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    if (!req.user) {
+      next(unauthenticated());
+      return;
+    }
+
+    const body = req.body ?? {};
+
+    await authService.changePassword(req.user.id, body.currentPassword, body.newPassword, {
+      ipAddress: req.ip ?? null,
+      userAgent: req.headers['user-agent'] ?? null,
+    });
+
+    res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
 }

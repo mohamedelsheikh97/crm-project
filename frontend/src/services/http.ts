@@ -132,9 +132,14 @@ export async function request<T>(path: string, init: RequestInit = {}): Promise<
 
 export const http = {
   get: <T>(path: string) => request<T>(path, { method: 'GET' }),
-  post: <T>(path: string, body?: unknown) =>
-    request<T>(path, {
-      method: 'POST',
-      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-    }),
+  post: <T>(path: string, body?: unknown) => withBody<T>('POST', path, body),
+  patch: <T>(path: string, body?: unknown) => withBody<T>('PATCH', path, body),
+  put: <T>(path: string, body?: unknown) => withBody<T>('PUT', path, body),
 };
+
+function withBody<T>(method: 'POST' | 'PATCH' | 'PUT', path: string, body?: unknown): Promise<T> {
+  return request<T>(path, {
+    method,
+    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+  });
+}
