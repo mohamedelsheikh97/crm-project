@@ -143,7 +143,7 @@ correct at this point.
 
 ### The load-bearing library
 
-- [ ] T008 Create `backend/src/lib/phone.ts` — **the single normalisation site** (rule 1,
+- [X] T008 Create `backend/src/lib/phone.ts` — **the single normalisation site** (rule 1,
       research.md D1). Export `normalisePhone(raw: string): string` returning E.164 via
       `libphonenumber-js` parsed against `env.DEFAULT_PHONE_REGION`, falling back to digits-only when
       the number will not parse (an unparseable number is still stored and still searchable);
@@ -151,7 +151,7 @@ correct at this point.
       `normaliseContact(kind, raw)` dispatching between them. Pure functions, no model access, no
       business rules — which is why this lives in `lib/` and not `services/`.
 
-- [ ] T009 [P] Create `backend/tests/customers/phone.test.ts` (quickstart **B2**) — a table of real
+- [X] T009 [P] Create `backend/tests/customers/phone.test.ts` (quickstart **B2**) — a table of real
       formats asserting which pairs normalise to the same value: `+20 100 123 4567` vs
       `01001234567` vs `0100-123-4567` vs `+201001234567`; an international number that must **not**
       collide with a local one sharing a digit tail; an extension; and unparseable input that must
@@ -160,100 +160,100 @@ correct at this point.
 
 ### Migrations
 
-- [ ] T010 Create `backend/src/db/migrations/20260827000001-create-customers.cjs` (**CommonJS**)
+- [X] T010 Create `backend/src/db/migrations/20260827000001-create-customers.cjs` (**CommonJS**)
       creating `customers` per data-model.md: `id`, `display_name`, `company`, `address` (TEXT),
       `is_active` (default true), `created_by_user_id` (nullable FK → `users.id`), `version`
       (default 0), timestamps. Indexes on `is_active`, `display_name`, `company`. `down` drops the
       table.
 
-- [ ] T011 Create `backend/src/db/migrations/20260827000002-create-customer-contacts.cjs` creating
+- [X] T011 Create `backend/src/db/migrations/20260827000002-create-customer-contacts.cjs` creating
       `customer_contacts`: `id`, `customer_id` (FK, cascade), `kind` ENUM('phone','email'),
       `value_raw`, `value_normalised`, `is_primary`, timestamps. **Index `value_normalised`** — every
       duplicate check and contact search is a lookup against it — plus `customer_id` and composite
       `(customer_id, kind)`. **Deliberately NOT unique**: FR-023 requires a shared number to be
       enterable after an explicit decision.
 
-- [ ] T012 [P] Create `backend/src/db/migrations/20260827000003-create-customer-notes.cjs` creating
+- [X] T012 [P] Create `backend/src/db/migrations/20260827000003-create-customer-notes.cjs` creating
       `customer_notes`: `id`, `customer_id` (FK, cascade), `author_user_id` (FK), `body` (TEXT),
       `edited_at` (nullable), timestamps. Composite index `(customer_id, created_at)`. **No
       visibility column** (rule 14).
 
-- [ ] T013 [P] Create `backend/src/db/migrations/20260827000004-create-customer-attachments.cjs`
+- [X] T013 [P] Create `backend/src/db/migrations/20260827000004-create-customer-attachments.cjs`
       creating `customer_attachments`: `id`, `customer_id` (FK, cascade), `uploaded_by_user_id` (FK),
       `original_name`, `storage_key` (**unique**), `content_type`, `size_bytes`, `created_at` only —
       an attachment is written once, so there is no `updated_at`. Composite index
       `(customer_id, created_at)`. **No scan-state column** (rule 14).
 
-- [ ] T014 [P] Create `backend/src/db/migrations/20260827000005-create-duplicate-overrides.cjs`
+- [X] T014 [P] Create `backend/src/db/migrations/20260827000005-create-duplicate-overrides.cjs`
       creating `customer_duplicate_overrides`: `id`, `customer_id` (FK), `matched_customer_id` (FK),
       `decided_by_user_id` (FK), `matched_on` ENUM, `matched_value`, `created_at`. Indexes on both
       customer columns.
 
-- [ ] T015 Run `npm run db:migrate`, then `npm run db:migrate:undo` five times, then re-apply.
+- [X] T015 Run `npm run db:migrate`, then `npm run db:migrate:undo` five times, then re-apply.
       **Verify**: all five tables appear and every `down` works. Phase 1 found three migration bugs
       this way — assuming `down` works is how they hid.
 
 ### Models
 
-- [ ] T016 [P] Create `backend/src/models/customer.model.ts` with `version: true` for optimistic
+- [X] T016 [P] Create `backend/src/models/customer.model.ts` with `version: true` for optimistic
       locking (FR-045), mirroring the pattern `user.model.ts` established. **No destroy path** — no
       delete method, no endpoint, nothing (rule 14).
 
-- [ ] T017 [P] Create `backend/src/models/customer-contact.model.ts`. A setter on `value_raw` must
+- [X] T017 [P] Create `backend/src/models/customer-contact.model.ts`. A setter on `value_raw` must
       **not** rewrite what the user typed; `value_normalised` is set explicitly by the service using
       `lib/phone.ts` (rules 1 and 3).
 
-- [ ] T018 [P] Create `backend/src/models/customer-note.model.ts`.
+- [X] T018 [P] Create `backend/src/models/customer-note.model.ts`.
 
-- [ ] T019 [P] Create `backend/src/models/customer-attachment.model.ts` with `timestamps: true,
+- [X] T019 [P] Create `backend/src/models/customer-attachment.model.ts` with `timestamps: true,
       updatedAt: false`.
 
-- [ ] T020 [P] Create `backend/src/models/duplicate-override.model.ts`.
+- [X] T020 [P] Create `backend/src/models/duplicate-override.model.ts`.
 
-- [ ] T021 Update `backend/src/models/index.ts` with all five models and their associations, declared
+- [X] T021 Update `backend/src/models/index.ts` with all five models and their associations, declared
       in one place as Phase 1 did.
 
 ### File storage mechanism
 
-- [ ] T022 Create `backend/src/lib/file-storage.ts` implementing research.md D2. Export
+- [X] T022 Create `backend/src/lib/file-storage.ts` implementing research.md D2. Export
       `store(buffer, extension): Promise<{ storageKey, absolutePath }>` which generates a UUID-based
       key — **never the user's filename** (rule 4) — and writes under `env.ATTACHMENT_STORAGE_PATH`;
       `readStream(storageKey)`; `remove(storageKey)`; and `resolvePath(storageKey)` which **rejects
       any key that is not a plain generated identifier**, so a crafted key cannot escape the
       directory. Creates the directory on first use. Pure mechanism, no model access.
 
-- [ ] T023 Create `backend/src/middleware/upload.ts` wrapping `multer` with memory storage and
+- [X] T023 Create `backend/src/middleware/upload.ts` wrapping `multer` with memory storage and
       `limits.fileSize` set from `env.ATTACHMENT_MAX_BYTES`, so an oversized upload is refused
       **before anything reaches disk** (FR-031). Translate multer's limit error into the project's
       `413` response rather than letting it surface raw.
 
 ### Duplicate detection
 
-- [ ] T024 Create `backend/src/services/duplicate.service.ts` — **the single detector** (rule 2).
+- [X] T024 Create `backend/src/services/duplicate.service.ts` — **the single detector** (rule 2).
       Export `findDuplicates({ contacts, excludeCustomerId })` returning every match as
       `{ matchedOn, matchedValue, customer }`. It normalises through `lib/phone.ts`, queries
       `customer_contacts.value_normalised`, **includes deactivated customers** (FR-019), returns
       **all** matches rather than the first (FR-022), and excludes the customer being edited.
 
-- [ ] T025 Add a `duplicateCustomer(matches)` factory to `backend/src/errors/app-error.ts` producing
+- [X] T025 Add a `duplicateCustomer(matches)` factory to `backend/src/errors/app-error.ts` producing
       a `409` with code `DUPLICATE_CUSTOMER` and carrying the matches. Extend the error handler in
       `backend/src/middleware/error-handler.ts` to serialise them as a **sibling** of `error`, never
       inside `details` (rule 8). Every other response shape is unchanged.
 
 ### Routing and frontend plumbing
 
-- [ ] T026 Create `backend/src/routes/customers/index.ts` applying `authenticate` and
+- [X] T026 Create `backend/src/routes/customers/index.ts` applying `authenticate` and
       `requirePasswordChange` once for the group, and register it in `backend/src/routes/index.ts`
       under `/customers` — **top level, not under `/admin`** (customers are everyday Agent work).
 
-- [ ] T027 [P] Create `frontend/src/services/customers.service.ts` with typed `list`, `get`,
+- [X] T027 [P] Create `frontend/src/services/customers.service.ts` with typed `list`, `get`,
       `create`, `update`, `deactivate`, `reactivate`, and `checkDuplicates`, delegating to `http.ts`.
       The `create`/`update` error path must surface the `duplicates` sibling so callers can act on it.
 
-- [ ] T028 [P] Create `frontend/src/stores/customers.store.ts` holding the current search term,
+- [X] T028 [P] Create `frontend/src/stores/customers.store.ts` holding the current search term,
       filters, page, and loading state. No token handling.
 
-- [ ] T029 Add `/customers` routes to `frontend/src/router/index.ts` per
+- [X] T029 Add `/customers` routes to `frontend/src/router/index.ts` per
       [contracts/customer-ui.md](./contracts/customer-ui.md), each with `meta.titleKey` and
       `meta.permission`. Add a Customers entry to `frontend/src/layouts/DefaultLayout.vue`, shown
       when the user holds `customers:view`.

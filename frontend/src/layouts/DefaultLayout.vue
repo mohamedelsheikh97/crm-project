@@ -10,7 +10,7 @@ import { useAuthStore } from '../stores/auth.store';
 const { t } = useI18n();
 const router = useRouter();
 const auth = useAuthStore();
-const { canAny } = usePermissions();
+const { can, canAny } = usePermissions();
 
 /**
  * The administration area is not offered at all to a user holding none of its
@@ -77,6 +77,15 @@ async function signOut(): Promise<void> {
             active-class="font-medium"
           >
             {{ t('nav.home') }}
+          </RouterLink>
+        </li>
+        <li v-if="can('customers:view')">
+          <RouterLink
+            :to="{ name: 'customer-list' }"
+            class="rounded-md px-2 py-1 text-slate-700 hover:bg-slate-100"
+            active-class="font-medium"
+          >
+            {{ t('nav.customers') }}
           </RouterLink>
         </li>
         <li v-if="canAny(ADMIN_PERMISSIONS)">

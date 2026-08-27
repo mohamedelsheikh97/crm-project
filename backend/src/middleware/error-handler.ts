@@ -1,6 +1,6 @@
 import type { ErrorRequestHandler, RequestHandler } from 'express';
 
-import { AppError, notFound } from '../errors/app-error.js';
+import { AppError, DuplicateCustomerError, notFound } from '../errors/app-error.js';
 
 export const notFoundHandler: RequestHandler = (_req, _res, next) => {
   next(notFound());
@@ -11,6 +11,16 @@ export const notFoundHandler: RequestHandler = (_req, _res, next) => {
  * NEVER appear in a response body in any environment, development included.
  */
 export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
+  if (err instanceof DuplicateCustomerError) {
+    // `duplicates` is a SIBLING of `error`, not part of it. The envelope's
+    // error object is untouched, so every existing consumer keeps working.
+    res.status(err.status).json({
+      error: { code: err.code, message: err.message, details: err.details },
+      duplicates: err.duplicates,
+    });
+    return;
+  }
+
   if (err instanceof AppError) {
     res.status(err.status).json({
       error: { code: err.code, message: err.message, details: err.details },

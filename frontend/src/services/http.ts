@@ -14,12 +14,28 @@ export class ApiError extends Error {
   readonly status: number;
   readonly details: ApiErrorDetail[];
 
-  constructor(status: number, code: string, message: string, details: ApiErrorDetail[] = []) {
+  /**
+   * Sibling keys the server sent alongside `error`.
+   *
+   * Phase 2 adds one: a `409 DUPLICATE_CUSTOMER` carries the matching records
+   * in `duplicates`. They travel beside the envelope rather than inside
+   * `details`, which is `{field, message}` pairs with a defined meaning.
+   */
+  readonly payload: Record<string, unknown>;
+
+  constructor(
+    status: number,
+    code: string,
+    message: string,
+    details: ApiErrorDetail[] = [],
+    payload: Record<string, unknown> = {},
+  ) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.code = code;
     this.details = details;
+    this.payload = payload;
   }
 }
 
@@ -53,7 +69,17 @@ async function toApiError(response: Response): Promise<ApiError> {
     const error = body?.error;
 
     if (error?.code) {
-      return new ApiError(response.status, error.code, error.message ?? '', error.details ?? []);
+      // Keep everything the server sent beside `error`, so a caller can read a
+      // sibling key without this wrapper needing to know about it.
+      const { error: _envelope, ...siblings } = body as Record<string, unknown>;
+
+      return new ApiError(
+        response.status,
+        error.code,
+        error.message ?? '',
+        error.details ?? [],
+        siblings,
+      );
     }
   } catch {
     // Fall through to the generic error below.
