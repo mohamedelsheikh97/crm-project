@@ -273,23 +273,23 @@ confirm partial matching works and a non-match offers to create.
 
 **Maps to**: FR-010–FR-016 · SC-001, SC-002, SC-010 · PLAN.md Definition of done part 1
 
-- [ ] T030 [P] [US1] Create `backend/tests/customers/search.test.ts` (**B7**): one term finds by
+- [X] T030 [P] [US1] Create `backend/tests/customers/search.test.ts` (**B7**): one term finds by
       name, company, phone, and email; partial name matching; phone found regardless of formatting on
       either side; **an Arabic name found by partial search** (B8 overlaps here); deactivated
       excluded by default and included on request; `pageSize=10000` clamped to 100.
 
-- [ ] T031 [US1] Create `backend/src/services/customer.service.ts` with `list({ search, company,
+- [X] T031 [US1] Create `backend/src/services/customer.service.ts` with `list({ search, company,
       isActive, page, pageSize })` implementing research.md D3: normalise the term through
       `lib/phone.ts` and match phone/email **exactly** against the indexed `value_normalised`, and
       name/company by substring. Merge and rank exact contact matches above substring name matches.
       Clamp `pageSize` to 100. Exclude inactive by default (FR-008). Also `getById` returning the
       full record with contacts.
 
-- [ ] T032 [US1] Create `backend/src/controllers/customers/customers.controller.ts` with `list` and
+- [X] T032 [US1] Create `backend/src/controllers/customers/customers.controller.ts` with `list` and
       `get`. HTTP concerns only. Return `matchedOn` per row so the interface can show **why** a record
       matched — searching a number and getting unexplained names is disorienting.
 
-- [ ] T033 [US1] Create `backend/src/routes/customers/customers.routes.ts` with
+- [X] T033 [US1] Create `backend/src/routes/customers/customers.routes.ts` with
       `GET /` and `GET /:id` behind `requirePermission('customers:view')`, registered in the group
       router. **Verify**: an Agent gets `200`, and the matrix probe for `customers:view` now passes.
 
@@ -324,26 +324,26 @@ email, by a differently-formatted phone, and against a deactivated customer.
 **Maps to**: FR-003, FR-017–FR-023 · SC-003, SC-004, SC-005 · **PLAN.md Definition of done part 3 —
 the clause this phase exists for**
 
-- [ ] T038 [P] [US2] Create `backend/tests/customers/duplicate-create.test.ts` (**B3**): same phone,
+- [X] T038 [P] [US2] Create `backend/tests/customers/duplicate-create.test.ts` (**B3**): same phone,
       same email, **differently-formatted same phone**, and a match against a **deactivated**
       customer are each flagged with `409 DUPLICATE_CUSTOMER`; **all** matches returned when several
       exist; `duplicates` is a sibling of `error` and `details` is untouched.
 
-- [ ] T039 [P] [US2] Create `backend/tests/customers/duplicate-override.test.ts` (**B5**): an
+- [X] T039 [P] [US2] Create `backend/tests/customers/duplicate-override.test.ts` (**B5**): an
       acknowledged save succeeds, writes one override row **per match shown**, and the decision is
       retrievable from the audit log afterwards (SC-005).
 
-- [ ] T040 [P] [US2] Create `backend/tests/customers/contact-required.test.ts` (**B6**): creating
+- [X] T040 [P] [US2] Create `backend/tests/customers/contact-required.test.ts` (**B6**): creating
       with no contact method is refused with a message on the right field (FR-003).
 
-- [ ] T041 [US2] Add `create(input, actor, context)` to `backend/src/services/customer.service.ts`:
+- [X] T041 [US2] Add `create(input, actor, context)` to `backend/src/services/customer.service.ts`:
       validate name and at least one contact (FR-003), normalise each contact through `lib/phone.ts`,
       call `duplicateService.findDuplicates`, and throw `duplicateCustomer(matches)` unless
       `acknowledgeDuplicates` is set. On an acknowledged save, write the customer, its contacts, one
       `customer_duplicate_overrides` row per match, and the audit entries — **all in one transaction**
       (rule 10).
 
-- [ ] T042 [US2] Add `create` and `checkDuplicates` handlers to
+- [X] T042 [US2] Add `create` and `checkDuplicates` handlers to
       `backend/src/controllers/customers/customers.controller.ts`, and `POST /` plus
       `POST /check-duplicates` behind `customers:create` in the routes file. Document in a comment
       that `check-duplicates` is an **aid for live feedback, not the barrier** — a match can appear
@@ -387,28 +387,28 @@ edit a phone into one another customer holds, and deactivate.
 **Maps to**: FR-002, FR-007, FR-008, FR-021, FR-045 · SC-006, SC-014 · PLAN.md Definition of done
 part 2
 
-- [ ] T048 [P] [US3] Create `backend/tests/customers/duplicate-edit.test.ts` (**B4**) — **the test
+- [X] T048 [P] [US3] Create `backend/tests/customers/duplicate-edit.test.ts` (**B4**) — **the test
       the spec's checklist flagged as easy to overlook**. Editing a customer's contact into one
       another customer holds must be refused identically to creation, and must call the **same**
       detector. Also assert a customer is never flagged against itself.
 
-- [ ] T049 [P] [US3] Create `backend/tests/customers/deactivation.test.ts`: a deactivated customer
+- [X] T049 [P] [US3] Create `backend/tests/customers/deactivation.test.ts`: a deactivated customer
       disappears from default search, remains fetchable by id, still matches the duplicate check
       (FR-019), and reactivation restores them. Assert `DELETE /api/customers/:id` returns **404** at
       every path (**B17**, rule 14).
 
-- [ ] T050 [P] [US3] Create `backend/tests/customers/optimistic-locking.test.ts` (**B14**): a stale
+- [X] T050 [P] [US3] Create `backend/tests/customers/optimistic-locking.test.ts` (**B14**): a stale
       `version` returns `409 CONFLICT` and the first write survives.
 
-- [ ] T051 [US3] Add `update(id, input, actor, context)` to `backend/src/services/customer.service.ts`: require `version`
+- [X] T051 [US3] Add `update(id, input, actor, context)` to `backend/src/services/customer.service.ts`: require `version`
       and throw `staleRecord()` on mismatch; replace the contact set wholesale when supplied; refuse
       removing the last contact (FR-003); and **call the same `duplicateService.findDuplicates`**
       with `excludeCustomerId` set (rule 2, FR-021). Audit inside the transaction.
 
-- [ ] T052 [US3] Add `setActive(id, active, actor, context)` to `backend/src/services/customer.service.ts` writing
+- [X] T052 [US3] Add `setActive(id, active, actor, context)` to `backend/src/services/customer.service.ts` writing
       `customer.deactivated` / `customer.reactivated` audit entries. **Add no delete method.**
 
-- [ ] T053 [US3] Add `update`, `deactivate`, and `reactivate` handlers to
+- [X] T053 [US3] Add `update`, `deactivate`, and `reactivate` handlers to
       `backend/src/controllers/customers/customers.controller.ts` and routes to
       `backend/src/routes/customers/customers.routes.ts`:
       `PATCH /:id` behind `customers:update`, `POST /:id/deactivate` and `POST /:id/reactivate` both

@@ -24,6 +24,20 @@ export const AUDIT_ACTIONS = {
   USER_REACTIVATED: 'user.reactivated',
   USER_ROLE_CHANGED: 'user.role.changed',
   ROLE_PERMISSIONS_CHANGED: 'role.permissions.changed',
+  // Phase 2 — customer events.
+  CUSTOMER_CREATED: 'customer.created',
+  CUSTOMER_UPDATED: 'customer.updated',
+  CUSTOMER_DEACTIVATED: 'customer.deactivated',
+  CUSTOMER_REACTIVATED: 'customer.reactivated',
+  CUSTOMER_DUPLICATE_OVERRIDDEN: 'customer.duplicate.overridden',
+  CUSTOMER_NOTE_CREATED: 'customer.note.created',
+  CUSTOMER_NOTE_UPDATED: 'customer.note.updated',
+  CUSTOMER_NOTE_DELETED: 'customer.note.deleted',
+  CUSTOMER_ATTACHMENT_UPLOADED: 'customer.attachment.uploaded',
+  CUSTOMER_ATTACHMENT_DELETED: 'customer.attachment.deleted',
+
+  // Defined in Phase 1 with no caller; Phase 2 is the first phase that
+  // exports business records, so this finally acquires one.
   DATA_EXPORTED: 'data.exported',
   RECORD_DELETED: 'record.deleted',
 } as const;
