@@ -24,7 +24,10 @@ afterAll(async () => {
  * rather than hand-listed, so a module added in a later phase without a matrix
  * entry fails here instead of shipping unverified.
  */
-const PROBES: Record<PermissionKey, { method: 'get' | 'post' | 'patch' | 'put'; path: string }> = {
+const PROBES: Record<
+  PermissionKey,
+  { method: 'get' | 'post' | 'patch' | 'put' | 'delete'; path: string }
+> = {
   'users:view': { method: 'get', path: '/api/admin/users' },
   'users:create': { method: 'post', path: '/api/admin/users' },
   'users:update': { method: 'patch', path: '/api/admin/users/999999' },
@@ -34,9 +37,37 @@ const PROBES: Record<PermissionKey, { method: 'get' | 'post' | 'patch' | 'put'; 
   'roles:update_permissions': { method: 'put', path: '/api/admin/roles/999999/permissions' },
   'audit:view': { method: 'get', path: '/api/admin/audit' },
   'settings:view': { method: 'get', path: '/api/admin/settings' },
+
+  // Phase 2 — customers sit at the top level, not under /api/admin: they are
+  // everyday Agent work rather than administration.
+  'customers:view': { method: 'get', path: '/api/customers' },
+  'customers:create': { method: 'post', path: '/api/customers' },
+  'customers:update': { method: 'patch', path: '/api/customers/999999' },
+  'customers:deactivate': { method: 'post', path: '/api/customers/999999/deactivate' },
+  'customers:export': { method: 'get', path: '/api/customers/export' },
+  'notes:create': { method: 'post', path: '/api/customers/999999/notes' },
+  'notes:manage': { method: 'patch', path: '/api/customers/999999/notes/999999' },
+  'attachments:upload': { method: 'post', path: '/api/customers/999999/attachments' },
+  'attachments:delete': { method: 'delete', path: '/api/customers/999999/attachments/999999' },
 };
 
 const ROLE_KEYS = ['agent', 'supervisor', 'admin'] as const;
+
+/**
+ * Permissions that are NOT a route gate.
+ *
+ * `notes:manage` is conditional: the route requires `notes:create`, and the
+ * service additionally demands `notes:manage` only when the note belongs to
+ * someone else (FR-027). A route-level probe cannot express "allowed for your
+ * own, refused for another's", so asserting one here would either pass
+ * vacuously or fail for the wrong reason.
+ *
+ * These are still enforced and still tested — by the named tests listed
+ * below, which cover the condition the matrix cannot.
+ */
+const CONDITIONAL_PERMISSIONS: Record<string, string> = {
+  'notes:manage': 'backend/tests/customers/notes.test.ts',
+};
 
 interface RegisteredRoute {
   path: string;
@@ -89,6 +120,11 @@ describe('permission matrix (SC-003)', () => {
       ROLE_KEYS.map((roleKey) => ({ key: permission.key as PermissionKey, roleKey })),
     ),
   )('$roleKey against $key', async ({ key, roleKey }) => {
+    if (key in CONDITIONAL_PERMISSIONS) {
+      // Covered by a named test instead — see CONDITIONAL_PERMISSIONS.
+      return;
+    }
+
     const { agent } = await agentAs(roleKey);
     const role = await Role.findOne({ where: { key: roleKey } });
     const granted = await import('../src/services/authorization.service.js').then((m) =>
@@ -125,6 +161,16 @@ describe('permission matrix (SC-003)', () => {
     const unguarded = adminRoutes.filter((route) => route.handlerCount < 2);
 
     expect(unguarded).toEqual([]);
+  });
+
+  it('every conditional permission names the test that covers it', () => {
+    // A conditional permission is exempt from the route probe, so it must
+    // point at where it IS covered. Exempt and untested is the failure this
+    // prevents.
+    for (const [key, coveredBy] of Object.entries(CONDITIONAL_PERMISSIONS)) {
+      expect(PERMISSIONS.map((p) => p.key)).toContain(key);
+      expect(coveredBy).toMatch(/.test.ts$/);
+    }
   });
 
   it('every catalog key is enforced by some route', () => {

@@ -31,12 +31,17 @@ function seeder(file: string): { up: (qi: unknown) => Promise<void> } {
   return require(path.join(backendRoot, 'src/db/seeders', file));
 }
 
+// Every seeder that grants permissions or creates the development account.
+// A new phase adding grants MUST add its seeder here, or every test in that
+// phase fails with 403 for a reason that looks like a permission bug.
 const ROLE_PERMISSIONS_SEEDER = '20260826000007-role-permissions.cjs';
+const CUSTOMER_PERMISSIONS_SEEDER = '20260827000001-customer-permissions.cjs';
 const ADMIN_USER_SEEDER = '20260825000002-admin-user.cjs';
 
 async function reseed(): Promise<void> {
   const queryInterface = sequelize.getQueryInterface();
   await seeder(ROLE_PERMISSIONS_SEEDER).up(queryInterface);
+  await seeder(CUSTOMER_PERMISSIONS_SEEDER).up(queryInterface);
   await seeder(ADMIN_USER_SEEDER).up(queryInterface);
 }
 

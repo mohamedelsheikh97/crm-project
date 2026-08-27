@@ -6,6 +6,7 @@ export type ErrorCode =
   | 'FORBIDDEN'
   | 'NOT_FOUND'
   | 'CONFLICT'
+  | 'DUPLICATE_CUSTOMER'
   | 'INTERNAL_ERROR';
 
 export interface ErrorDetail {
@@ -76,4 +77,33 @@ export function conflict(message: string, details: ErrorDetail[] = []): AppError
 /** The optimistic-locking failure (research.md D11). */
 export function staleRecord(): AppError {
   return conflict('This record changed since you loaded it. Reload and try again.');
+}
+
+/**
+ * A save that would introduce a duplicate customer.
+ *
+ * The matches travel on the error itself so the handler can serialise them as
+ * a SIBLING of the error envelope, never inside details[] — that field is
+ * {field, message} pairs with a defined meaning, and a customer summary does
+ * not fit it (research.md D5).
+ *
+ * This is a QUESTION, not a refusal (FR-023). Resubmitting with
+ * acknowledgeDuplicates succeeds and records the decision.
+ */
+export class DuplicateCustomerError extends AppError {
+  readonly duplicates: unknown[];
+
+  constructor(duplicates: unknown[]) {
+    super(
+      'DUPLICATE_CUSTOMER',
+      409,
+      'One or more contact details already belong to an existing customer.',
+    );
+    this.name = 'DuplicateCustomerError';
+    this.duplicates = duplicates;
+  }
+}
+
+export function duplicateCustomer(duplicates: unknown[]): DuplicateCustomerError {
+  return new DuplicateCustomerError(duplicates);
 }

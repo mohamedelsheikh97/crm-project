@@ -6,6 +6,9 @@ import AdminLayout from '../layouts/AdminLayout.vue';
 import ChangePasswordView from '../views/ChangePasswordView.vue';
 import HomeView from '../views/HomeView.vue';
 import LoginView from '../views/LoginView.vue';
+import CustomerFormView from '../views/customers/CustomerFormView.vue';
+import CustomerListView from '../views/customers/CustomerListView.vue';
+import CustomerProfileView from '../views/customers/CustomerProfileView.vue';
 import NotFoundView from '../views/NotFoundView.vue';
 import AuditLogView from '../views/admin/AuditLogView.vue';
 import RolesView from '../views/admin/RolesView.vue';
@@ -36,6 +39,48 @@ const router = createRouter({
       name: 'change-password',
       component: ChangePasswordView,
       meta: { titleKey: 'route.changePassword.title', requiresAuth: true },
+    },
+    // Customers sit at the top level, not under /admin: they are everyday Agent
+    // work rather than administration.
+    {
+      path: '/customers',
+      name: 'customer-list',
+      component: CustomerListView,
+      meta: {
+        titleKey: 'route.customers.list.title',
+        requiresAuth: true,
+        permission: 'customers:view',
+      },
+    },
+    {
+      path: '/customers/new',
+      name: 'customer-new',
+      component: CustomerFormView,
+      meta: {
+        titleKey: 'route.customers.form.title',
+        requiresAuth: true,
+        permission: 'customers:create',
+      },
+    },
+    {
+      path: '/customers/:id',
+      name: 'customer-profile',
+      component: CustomerProfileView,
+      meta: {
+        titleKey: 'route.customers.profile.title',
+        requiresAuth: true,
+        permission: 'customers:view',
+      },
+    },
+    {
+      path: '/customers/:id/edit',
+      name: 'customer-edit',
+      component: CustomerFormView,
+      meta: {
+        titleKey: 'route.customers.form.title',
+        requiresAuth: true,
+        permission: 'customers:update',
+      },
     },
     {
       path: '/admin',
