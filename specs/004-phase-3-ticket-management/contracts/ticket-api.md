@@ -3,9 +3,16 @@
 **Feature**: `004-phase-3-ticket-management` | **Date**: 2026-08-28
 
 All routes are mounted under `/api/tickets`, require authentication, and carry a permission enforced
-by the route-level `authorize()` middleware. Envelopes follow the shape fixed in Phase 1: success is
-`{ "data": ... }`, failure is `{ "error": { "code", "message", "details" } }`. Sibling keys alongside
-`error` are permitted (Phase 2 established this with `duplicates`); Phase 3 adds none.
+by the route-level `requirePermission()` middleware.
+
+Envelopes follow the shape the codebase actually fixed in Phases 1 and 2: a successful read returns
+the resource directly, a list returns `{ items, page, pageSize, total }`, and a failure returns
+`{ "error": { "code", "message", "details" } }` where `details` is `{ field, message }` pairs.
+
+**Sibling keys** alongside `error` carry structure a caller must act on — Phase 2 established this
+with `duplicates`, because `details` has a defined meaning that a customer summary does not fit.
+Phase 3 adds **two**: `transition` on a `TRANSITION_NOT_ALLOWED`, and `merged` on a `TICKET_MERGED`.
+A reachable status set does not fit `{ field, message }` either.
 
 Every state-changing route writes an audit entry **and** a ticket-history entry inside the request's
 transaction (FR-052).
@@ -61,7 +68,7 @@ not become a customer export.
 Sorting by `priority` sorts by the taxonomy's **numeric rank**, not alphabetically. Alphabetical
 order puts `urgent` below `normal`, which is precisely backwards.
 
-Response `{ "data": [...], "meta": { "page", "pageSize", "total", "totalPages" } }`.
+Response `{ "items": [...], "page": 1, "pageSize": 20, "total": 137 }`.
 
 ### `POST /api/tickets`
 
@@ -98,7 +105,7 @@ Accepts `subject`, `description`, `category`, `priority`, and requires `version`
 - `status` is **not** accepted here — status changes go through the transition routes, so the
   lifecycle cannot be bypassed by an edit (FR-017).
 - Refused when the ticket is `closed` (FR-009): `TICKET_CLOSED`.
-- Refused when the ticket is merged (FR-043): `TICKET_MERGED`, naming the survivor.
+- Refused when the ticket is merged (FR-043): `TICKET_MERGED`, naming the survivor it resolves to.
 - Each changed field produces its own history entry with previous and new values (FR-033).
 
 ### `GET /api/tickets/:id/transitions`
@@ -116,7 +123,7 @@ The interface renders its buttons from this and holds no copy of the table.
 { "to": "resolved", "version": 4, "note": "optional" }
 ```
 
-- Illegal pair returns `422 TRANSITION_NOT_ALLOWED` with `details.allowed` (FR-017).
+- Illegal pair returns `422 TRANSITION_NOT_ALLOWED` with a sibling `transition` key (FR-017).
 - Missing edge permission returns `403 FORBIDDEN`.
 - `to: "escalated"` requires `reason` (FR-029); `VALIDATION_ERROR` without it.
 - `to: "closed"` is additionally gated on ownership unless the caller holds `tickets:manage_any`.
@@ -149,13 +156,13 @@ second-precision and several events land in the same second.
 
 ```json
 {
-  "data": [
+  "items": [
     { "id": 11, "event": "ticket.created", "actorName": "Omar", "field": null,
       "previousValue": null, "newValue": null, "note": null, "createdAt": "..." },
     { "id": 12, "event": "ticket.status.changed", "actorName": "Sara", "field": "status",
       "previousValue": "new", "newValue": "open", "note": null, "createdAt": "..." }
   ],
-  "meta": { "page": 1, "pageSize": 50, "total": 2, "totalPages": 1 }
+  "page": 1, "pageSize": 50, "total": 2
 }
 ```
 
@@ -210,8 +217,8 @@ history exists to preserve.
 | `NOT_FOUND` | 404 | No such ticket, or a non-numeric id |
 | `CONFLICT` | 409 | Version mismatch (FR-010) |
 | `TICKET_CLOSED` | 422 | Editing a closed ticket (FR-009) |
-| `TICKET_MERGED` | 422 | Any workable action on a merged ticket (FR-043); `details.survivorId` names where to go |
-| `TRANSITION_NOT_ALLOWED` | 422 | Pair absent from the lifecycle table; `details.allowed` lists what is |
+| `TICKET_MERGED` | 422 | Any workable action on a merged ticket (FR-043); the sibling `merged.survivorId` names where to go |
+| `TRANSITION_NOT_ALLOWED` | 422 | Pair absent from the lifecycle table; the sibling `transition.allowed` lists what is |
 | `CUSTOMER_INACTIVE` | 422 | Creating against a deactivated customer (FR-007) |
 
 Messages are resolved server-side from the request's language (FR-056), as since Phase 1. A code is

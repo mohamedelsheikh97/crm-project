@@ -49,6 +49,16 @@ const PROBES: Record<
   'notes:manage': { method: 'patch', path: '/api/customers/999999/notes/999999' },
   'attachments:upload': { method: 'post', path: '/api/customers/999999/attachments' },
   'attachments:delete': { method: 'delete', path: '/api/customers/999999/attachments/999999' },
+
+  // Phase 3 — tickets sit at the top level for the same reason customers do:
+  // they are the everyday work this system exists for, not administration.
+  'tickets:view': { method: 'get', path: '/api/tickets' },
+  'tickets:create': { method: 'post', path: '/api/tickets' },
+  'tickets:update': { method: 'patch', path: '/api/tickets/999999' },
+  'tickets:transition': { method: 'post', path: '/api/tickets/999999/transitions' },
+  'tickets:assign': { method: 'put', path: '/api/tickets/999999/assignee' },
+  'tickets:merge': { method: 'post', path: '/api/tickets/999999/merge' },
+  'tickets:link': { method: 'post', path: '/api/tickets/999999/links' },
 };
 
 const ROLE_KEYS = ['agent', 'supervisor', 'admin'] as const;
@@ -67,6 +77,19 @@ const ROLE_KEYS = ['agent', 'supervisor', 'admin'] as const;
  */
 const CONDITIONAL_PERMISSIONS: Record<string, string> = {
   'notes:manage': 'backend/tests/customers/notes.test.ts',
+
+  // Phase 3. `tickets:close` is conditional in the same way: the route gate is
+  // tickets:transition, and the lifecycle service demands tickets:close for the
+  // resolved -> closed edge, plus tickets:manage_any when the ticket belongs to
+  // someone else (Clarifications Q2).
+  'tickets:close': 'backend/tests/tickets/transitions.test.ts',
+  // `tickets:reopen` gates ONE edge, closed -> open. A route probe would have
+  // to first create a closed ticket, which is a lifecycle test, not a matrix
+  // one — the matrix would either pass vacuously or fail for the wrong reason.
+  'tickets:reopen': 'backend/tests/ticket-lifecycle.matrix.test.ts',
+  // `tickets:manage_any` is never a route gate at all: it is only ever an
+  // additional allowance the service consults.
+  'tickets:manage_any': 'backend/tests/tickets/transitions.test.ts',
 };
 
 interface RegisteredRoute {
@@ -145,8 +168,13 @@ describe('permission matrix (SC-003)', () => {
     }
   });
 
-  it('every catalog key has a probe, so nothing is silently untested', () => {
-    const missing = PERMISSIONS.map((p) => p.key).filter((key) => !(key in PROBES));
+  it('every catalog key has a probe or a named conditional test', () => {
+    // Coverage is a probe OR a conditional entry — never neither. A conditional
+    // entry is not an escape hatch: the test below requires it to name the file
+    // that covers the condition a route probe cannot express.
+    const missing = PERMISSIONS.map((p) => p.key).filter(
+      (key) => !(key in PROBES) && !(key in CONDITIONAL_PERMISSIONS),
+    );
 
     expect(missing).toEqual([]);
   });
@@ -176,8 +204,8 @@ describe('permission matrix (SC-003)', () => {
   it('every catalog key is enforced by some route', () => {
     // A permission nothing checks is dead: it can be granted, it appears in the
     // roles screen, and it protects nothing.
-    const probed = new Set(Object.keys(PROBES));
-    const orphaned = PERMISSIONS.map((p) => p.key).filter((key) => !probed.has(key));
+    const covered = new Set([...Object.keys(PROBES), ...Object.keys(CONDITIONAL_PERMISSIONS)]);
+    const orphaned = PERMISSIONS.map((p) => p.key).filter((key) => !covered.has(key));
 
     expect(orphaned).toEqual([]);
   });

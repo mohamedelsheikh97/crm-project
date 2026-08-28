@@ -9,6 +9,9 @@ import { DuplicateOverride } from './duplicate-override.model.js';
 import { PasswordHistory } from './password-history.model.js';
 import { RolePermission } from './role-permission.model.js';
 import { Role } from './role.model.js';
+import { TicketHistory } from './ticket-history.model.js';
+import { TicketLink } from './ticket-link.model.js';
+import { Ticket } from './ticket.model.js';
 import { User } from './user.model.js';
 
 // Associations are declared in one place so the relationship wiring is
@@ -54,6 +57,28 @@ DuplicateOverride.belongsTo(Customer, {
 });
 DuplicateOverride.belongsTo(User, { foreignKey: 'decided_by_user_id', as: 'decidedBy' });
 
+// --- Phase 3: tickets ---
+Customer.hasMany(Ticket, { foreignKey: 'customer_id', as: 'tickets' });
+Ticket.belongsTo(Customer, { foreignKey: 'customer_id', as: 'customer' });
+
+Ticket.belongsTo(User, { foreignKey: 'assignee_user_id', as: 'assignee' });
+Ticket.belongsTo(User, { foreignKey: 'created_by_user_id', as: 'createdBy' });
+
+Ticket.hasMany(TicketHistory, { foreignKey: 'ticket_id', as: 'history' });
+TicketHistory.belongsTo(Ticket, { foreignKey: 'ticket_id', as: 'ticket' });
+TicketHistory.belongsTo(User, { foreignKey: 'actor_user_id', as: 'actor' });
+
+// A merged ticket points at the one that absorbed it. Chains are resolved
+// transitively in the service rather than eagerly here, because the depth is
+// unbounded and a cycle must be refused rather than followed (research.md D3).
+Ticket.belongsTo(Ticket, { foreignKey: 'merged_into_ticket_id', as: 'mergedInto' });
+
+// A link is symmetric and stored once, normalised so the lower id is
+// `ticket_id`. Both associations exist so a read can reach either side.
+TicketLink.belongsTo(Ticket, { foreignKey: 'ticket_id', as: 'ticket' });
+TicketLink.belongsTo(Ticket, { foreignKey: 'linked_ticket_id', as: 'linkedTicket' });
+TicketLink.belongsTo(User, { foreignKey: 'created_by_user_id', as: 'createdBy' });
+
 export {
   sequelize,
   AuditLog,
@@ -65,5 +90,8 @@ export {
   PasswordHistory,
   Role,
   RolePermission,
+  Ticket,
+  TicketHistory,
+  TicketLink,
   User,
 };

@@ -31,8 +31,8 @@ Web app monorepo: `backend/src/`, `backend/tests/`, `frontend/src/`, `frontend/t
 **Purpose**: Directory structure for the new module. No new dependencies — Phase 3 introduces no
 library the previous phases did not already install.
 
-- [ ] T001 Create the module directories `backend/src/tickets/`, `backend/src/routes/tickets/`, `backend/src/controllers/tickets/`, `backend/tests/tickets/`, `frontend/src/views/tickets/`, `frontend/src/components/tickets/`, `frontend/tests/tickets/`
-- [ ] T002 [P] Add the `ticket.*` namespace skeleton to `frontend/src/locales/en.json` and `frontend/src/locales/ar.json` so later tasks add keys to an existing branch rather than creating it twice
+- [X] T001 Create the module directories `backend/src/tickets/`, `backend/src/routes/tickets/`, `backend/src/controllers/tickets/`, `backend/tests/tickets/`, `frontend/src/views/tickets/`, `frontend/src/components/tickets/`, `frontend/tests/tickets/`
+- [X] T002 [P] Add the `ticket.*` namespace skeleton to `frontend/src/locales/en.json` and `frontend/src/locales/ar.json` so later tasks add keys to an existing branch rather than creating it twice
 
 ---
 
@@ -44,29 +44,29 @@ library the previous phases did not already install.
 forgotten test-helper seeder makes every new test fail with a 403 that looks nothing like its cause,
 exactly as happened in Phase 2.
 
-- [ ] T003 Create migration `backend/src/db/migrations/20260828000001-create-tickets.cjs` per data-model.md: all columns, the `reference` generated column, FKs to `customers` and `users` with `ON DELETE RESTRICT`, the self-FK `merged_into_ticket_id`, `version`, and the six indexes including composite `(status, priority)`
-- [ ] T004 [P] Create migration `backend/src/db/migrations/20260828000002-create-ticket-history.cjs`: `BIGINT UNSIGNED` PK, cascade FK to `tickets`, `actor_name` snapshot column, no `updated_at`, and both `(ticket_id, created_at)` and `(ticket_id, id)` indexes
-- [ ] T005 [P] Create migration `backend/src/db/migrations/20260828000003-create-ticket-links.cjs`: cascade FKs both sides, UNIQUE `(ticket_id, linked_ticket_id)`, index on `linked_ticket_id`
-- [ ] T006 Add the ten permission keys from data-model.md to the catalog in `backend/src/auth/permissions.ts`
-- [ ] T007 Create seeder `backend/src/db/seeders/20260828000001-ticket-permissions.cjs` granting the keys per role — agent gets `view|create|update|transition|close|link`; supervisor and admin add `assign|reopen|merge|manage_any`
-- [ ] T008 Verify each `down` in T003–T005 drops FK constraints before the indexes they depend on, the failure mode Phase 1 hit
-- [ ] T009 Register the new seeder in `backend/tests/helpers/database.ts`, keeping the existing note that a later phase must add its own
-- [ ] T010 [P] Create the lifecycle declaration in `backend/src/tickets/lifecycle.ts` — the 13 permitted edges of contracts/ticket-lifecycle.md, each with its required permission, as one exported `const`
-- [ ] T011 [P] Create the taxonomy declaration in `backend/src/tickets/taxonomy.ts` — four categories, four priorities each carrying a numeric rank
-- [ ] T012 [P] Create the `Ticket` model in `backend/src/models/ticket.model.ts`
-- [ ] T013 [P] Create the `TicketHistory` model in `backend/src/models/ticket-history.model.ts`
-- [ ] T014 [P] Create the `TicketLink` model in `backend/src/models/ticket-link.model.ts`
-- [ ] T015 Register the three models and their associations in `backend/src/models/index.ts`
-- [ ] T016 Create `backend/src/services/ticket-history.service.ts` with a `record(entry, transaction)` that shares the caller's transaction and snapshots `actor_name`, mirroring `audit.service.ts`
-- [ ] T017 Create `backend/src/services/ticket-lifecycle.service.ts` exporting `assertTransitionAllowed(from, to, actor, ticket)` and `availableTransitions(actor, ticket)`, both reading the T010 constant — the merged check first, then the table, then the edge permission, then the conditional close
-- [ ] T018 Add `TICKET_CLOSED`, `TICKET_MERGED`, `TRANSITION_NOT_ALLOWED`, and `CUSTOMER_INACTIVE` to the error catalogue in `backend/src/errors/`, with `details` shapes per contracts/ticket-api.md
-- [ ] T019 Create `backend/src/routes/tickets/index.ts` and mount it at `/api/tickets` in `backend/src/routes/index.ts`
-- [ ] T020 Add `tickets:close` to `CONDITIONAL_PERMISSIONS` in `backend/tests/authorization.matrix.test.ts`, naming the test that covers its ownership rule
-- [ ] T021 [P] Create `frontend/src/services/tickets.service.ts` on the shared `http.ts` client
-- [ ] T022 [P] Create `frontend/src/stores/tickets.store.ts`
-- [ ] T023 Add the three ticket routes to `frontend/src/router/index.ts`, each declaring `meta.permission`
+- [X] T003 Create migration `backend/src/db/migrations/20260828000001-create-tickets.cjs` per data-model.md: all columns, the `reference` generated column, FKs to `customers` and `users` with `ON DELETE RESTRICT`, the self-FK `merged_into_ticket_id`, `version`, and the six indexes including composite `(status, priority)`
+- [X] T004 [P] Create migration `backend/src/db/migrations/20260828000002-create-ticket-history.cjs`: `BIGINT UNSIGNED` PK, cascade FK to `tickets`, `actor_name` snapshot column, no `updated_at`, and both `(ticket_id, created_at)` and `(ticket_id, id)` indexes
+- [X] T005 [P] Create migration `backend/src/db/migrations/20260828000003-create-ticket-links.cjs`: cascade FKs both sides, UNIQUE `(ticket_id, linked_ticket_id)`, index on `linked_ticket_id`
+- [X] T006 Add the ten permission keys from data-model.md to the catalog in `backend/src/auth/permissions.ts`
+- [X] T007 Create seeder `backend/src/db/seeders/20260828000001-ticket-permissions.cjs` granting the keys per role — agent gets `view|create|update|transition|close|link`; supervisor and admin add `assign|reopen|merge|manage_any`
+- [X] T008 Verify each `down` in T003–T005 drops FK constraints before the indexes they depend on, the failure mode Phase 1 hit
+- [X] T009 Register the new seeder in `backend/tests/helpers/database.ts`, keeping the existing note that a later phase must add its own
+- [X] T010 [P] Create the lifecycle declaration in `backend/src/tickets/lifecycle.ts` — the 13 permitted edges of contracts/ticket-lifecycle.md, each with its required permission, as one exported `const`
+- [X] T011 [P] Create the taxonomy declaration in `backend/src/tickets/taxonomy.ts` — four categories, four priorities each carrying a numeric rank
+- [X] T012 [P] Create the `Ticket` model in `backend/src/models/ticket.model.ts`
+- [X] T013 [P] Create the `TicketHistory` model in `backend/src/models/ticket-history.model.ts`
+- [X] T014 [P] Create the `TicketLink` model in `backend/src/models/ticket-link.model.ts`
+- [X] T015 Register the three models and their associations in `backend/src/models/index.ts`
+- [X] T016 Create `backend/src/services/ticket-history.service.ts` with a `record(entry, transaction)` that shares the caller's transaction and snapshots `actor_name`, mirroring `audit.service.ts`
+- [X] T017 Create `backend/src/services/ticket-lifecycle.service.ts` exporting `assertTransitionAllowed(from, to, actor, ticket)` and `availableTransitions(actor, ticket)`, both reading the T010 constant — the merged check first, then the table, then the edge permission, then the conditional close
+- [X] T018 Add `TICKET_CLOSED`, `TICKET_MERGED`, `TRANSITION_NOT_ALLOWED`, and `CUSTOMER_INACTIVE` to the error catalogue in `backend/src/errors/`, with `details` shapes per contracts/ticket-api.md
+- [X] T019 Create `backend/src/routes/tickets/index.ts` and mount it at `/api/tickets` in `backend/src/routes/index.ts`
+- [X] T020 Add `tickets:close` to `CONDITIONAL_PERMISSIONS` in `backend/tests/authorization.matrix.test.ts`, naming the test that covers its ownership rule
+- [X] T021 [P] Create `frontend/src/services/tickets.service.ts` on the shared `http.ts` client
+- [X] T022 [P] Create `frontend/src/stores/tickets.store.ts`
+- [X] T023 Add the three ticket routes to `frontend/src/router/index.ts`, each declaring `meta.permission`
 
-**Checkpoint**: `npm run migrate` and `npm test` both succeed; the authorization matrix now covers 27 permissions.
+**Checkpoint**: `npm run migrate` and `npm test` both succeed; the authorization matrix now covers 28 permissions.
 
 ---
 
@@ -80,21 +80,21 @@ reference, and appears in a filterable list.
 
 ### Tests for User Story 1
 
-- [ ] T024 [P] [US1] Creation tests in `backend/tests/tickets/create.test.ts`: required fields, unknown category or priority rejected with the accepted values named, deactivated customer refused with `CUSTOMER_INACTIVE`, caller-supplied `status` ignored, reference generated and unique
-- [ ] T025 [P] [US1] Listing tests in `backend/tests/tickets/list.test.ts`: pagination, `q` matching reference and subject accent- and case-insensitively, repeatable `status`/`priority`/`category`, `assigneeId=unassigned`, `customerId`, priority sort by numeric rank (asserting `urgent` above `normal`), merged excluded by default
+- [X] T024 [P] [US1] Creation tests in `backend/tests/tickets/create.test.ts`: required fields, unknown category or priority rejected with the accepted values named, deactivated customer refused with `CUSTOMER_INACTIVE`, caller-supplied `status` ignored, reference generated and unique
+- [X] T025 [P] [US1] Listing tests in `backend/tests/tickets/list.test.ts`: pagination, `q` matching reference and subject accent- and case-insensitively, repeatable `status`/`priority`/`category`, `assigneeId=unassigned`, `customerId`, priority sort by numeric rank (asserting `urgent` above `normal`), merged excluded by default
 
 ### Implementation for User Story 1
 
-- [ ] T026 [US1] Implement `create` and `list` in `backend/src/services/ticket.service.ts`, validating against the T011 taxonomy and writing the `ticket.created` history entry and audit entry in the same transaction
-- [ ] T027 [US1] Implement `create`, `list`, and `getById` in `backend/src/controllers/tickets/tickets.controller.ts`, including the non-numeric-id guard that returns 404 rather than 500
-- [ ] T028 [US1] Wire the routes in `backend/src/routes/tickets/tickets.routes.ts` with `authorize('tickets:view')` and `authorize('tickets:create')`
-- [ ] T029 [P] [US1] Create `frontend/src/components/tickets/TicketStatusBadge.vue` — renders a status key through i18n, with text alongside colour
-- [ ] T030 [P] [US1] Create `frontend/src/components/tickets/TicketPriorityBadge.vue`
-- [ ] T031 [US1] Create `frontend/src/components/tickets/TicketFilters.vue`, reflecting every filter into the query string
-- [ ] T032 [US1] Create `frontend/src/views/tickets/TicketListView.vue` with sortable columns, the two distinct empty states, and RTL-safe pagination
-- [ ] T033 [US1] Create `frontend/src/views/tickets/TicketCreateView.vue` with customer selection and taxonomy dropdowns rendered from i18n keys
-- [ ] T034 [US1] Add the US1 `ticket.*` keys to both locale files, including all four category and priority labels
-- [ ] T035 [P] [US1] Component test in `frontend/tests/tickets/TicketListView.test.ts`: filters reach the query string, the two empty states differ
+- [X] T026 [US1] Implement `create` and `list` in `backend/src/services/ticket.service.ts`, validating against the T011 taxonomy and writing the `ticket.created` history entry and audit entry in the same transaction
+- [X] T027 [US1] Implement `create`, `list`, and `getById` in `backend/src/controllers/tickets/tickets.controller.ts`, including the non-numeric-id guard that returns 404 rather than 500
+- [X] T028 [US1] Wire the routes in `backend/src/routes/tickets/tickets.routes.ts` with `authorize('tickets:view')` and `authorize('tickets:create')`
+- [X] T029 [P] [US1] Create `frontend/src/components/tickets/TicketStatusBadge.vue` — renders a status key through i18n, with text alongside colour
+- [X] T030 [P] [US1] Create `frontend/src/components/tickets/TicketPriorityBadge.vue`
+- [X] T031 [US1] Create `frontend/src/components/tickets/TicketFilters.vue`, reflecting every filter into the query string
+- [X] T032 [US1] Create `frontend/src/views/tickets/TicketListView.vue` with sortable columns, the two distinct empty states, and RTL-safe pagination
+- [X] T033 [US1] Create `frontend/src/views/tickets/TicketCreateView.vue` with customer selection and taxonomy dropdowns rendered from i18n keys
+- [X] T034 [US1] Add the US1 `ticket.*` keys to both locale files, including all four category and priority labels
+- [X] T035 [P] [US1] Component test in `frontend/tests/tickets/TicketListView.test.ts`: filters reach the query string, the two empty states differ
 
 **Checkpoint**: Tickets can be created and found. This alone is a demonstrable increment.
 
@@ -110,18 +110,18 @@ forbidden one and confirm each is refused with the reachable set named.
 
 ### Tests for User Story 2
 
-- [ ] T036 [P] [US2] Generated matrix in `backend/tests/ticket-lifecycle.matrix.test.ts`: all 36 ordered pairs × 3 roles read from the T010 constant, plus the three structural assertions from contracts/ticket-lifecycle.md (every status appears as a `from`, every `to` is declared, every permission is a catalog key)
-- [ ] T037 [P] [US2] Behavioural tests in `backend/tests/tickets/transitions.test.ts`: version mismatch returns 409, an Agent closes their own resolved ticket, a different Agent cannot, a Supervisor reopens and all history survives, `details.allowed` is filtered by the caller's permissions
+- [X] T036 [P] [US2] Generated matrix in `backend/tests/ticket-lifecycle.matrix.test.ts`: all 36 ordered pairs × 3 roles read from the T010 constant, plus the three structural assertions from contracts/ticket-lifecycle.md (every status appears as a `from`, every `to` is declared, every permission is a catalog key)
+- [X] T037 [P] [US2] Behavioural tests in `backend/tests/tickets/transitions.test.ts`: version mismatch returns 409, an Agent closes their own resolved ticket, a different Agent cannot, a Supervisor reopens and all history survives, `details.allowed` is filtered by the caller's permissions
 
 ### Implementation for User Story 2
 
-- [ ] T038 [US2] Implement `transition` in `backend/src/services/ticket.service.ts` calling `assertTransitionAllowed`, incrementing `version`, and writing history plus audit in one transaction
-- [ ] T039 [US2] Implement `GET /:id/transitions` and `POST /:id/transitions` in `backend/src/controllers/tickets/tickets.controller.ts` and register them in `tickets.routes.ts`
-- [ ] T040 [US2] Implement `update` in `backend/src/services/ticket.service.ts`: optimistic locking, per-field history entries, and refusal when closed or merged — with `status` rejected as an editable field so the lifecycle cannot be bypassed
-- [ ] T041 [US2] Create `frontend/src/components/tickets/TicketTransitionMenu.vue` rendering **only** the server's returned moves, with no local copy of the table
-- [ ] T042 [US2] Create `frontend/src/views/tickets/TicketDetailView.vue` with the header, description, edit form, closed notice, and Phase 2's conflict-preserving 409 handling
-- [ ] T043 [US2] Add status and transition i18n keys, including the refusal message that names the reachable set
-- [ ] T044 [P] [US2] Component test in `frontend/tests/tickets/TicketTransitionMenu.test.ts`: only server-returned moves render
+- [X] T038 [US2] Implement `transition` in `backend/src/services/ticket.service.ts` calling `assertTransitionAllowed`, incrementing `version`, and writing history plus audit in one transaction
+- [X] T039 [US2] Implement `GET /:id/transitions` and `POST /:id/transitions` in `backend/src/controllers/tickets/tickets.controller.ts` and register them in `tickets.routes.ts`
+- [X] T040 [US2] Implement `update` in `backend/src/services/ticket.service.ts`: optimistic locking, per-field history entries, and refusal when closed or merged — with `status` rejected as an editable field so the lifecycle cannot be bypassed
+- [X] T041 [US2] Create `frontend/src/components/tickets/TicketTransitionMenu.vue` rendering **only** the server's returned moves, with no local copy of the table
+- [X] T042 [US2] Create `frontend/src/views/tickets/TicketDetailView.vue` with the header, description, edit form, closed notice, and Phase 2's conflict-preserving 409 handling
+- [X] T043 [US2] Add status and transition i18n keys, including the refusal message that names the reachable set
+- [X] T044 [P] [US2] Component test in `frontend/tests/tickets/TicketTransitionMenu.test.ts`: only server-returned moves render
 
 **Checkpoint**: The phase's core mechanism is enforced and proven across all 36 pairs.
 
@@ -136,14 +136,14 @@ call returns 403.
 
 ### Tests for User Story 3
 
-- [ ] T045 [P] [US3] Assignment tests in `backend/tests/tickets/assignment.test.ts`: Supervisor succeeds, Agent gets 403 including self-assignment, unassignment via `userId: null`, an inactive target refused, a target lacking `tickets:view` refused, both previous and new assignee recorded
+- [X] T045 [P] [US3] Assignment tests in `backend/tests/tickets/assignment.test.ts`: Supervisor succeeds, Agent gets 403 including self-assignment, unassignment via `userId: null`, an inactive target refused, a target lacking `tickets:view` refused, both previous and new assignee recorded
 
 ### Implementation for User Story 3
 
-- [ ] T046 [US3] Implement `assign` in `backend/src/services/ticket.service.ts` with the active-and-capable target checks, writing `ticket.assigned` / `ticket.unassigned` to history and audit
-- [ ] T047 [US3] Implement `PUT /:id/assignee` in the controller and register it with `authorize('tickets:assign')`
-- [ ] T048 [US3] Add the assignment panel to `TicketDetailView.vue`, hidden entirely for a caller without `tickets:assign`
-- [ ] T049 [US3] Add assignment i18n keys and the `unassigned` filter label
+- [X] T046 [US3] Implement `assign` in `backend/src/services/ticket.service.ts` with the active-and-capable target checks, writing `ticket.assigned` / `ticket.unassigned` to history and audit
+- [X] T047 [US3] Implement `PUT /:id/assignee` in the controller and register it with `authorize('tickets:assign')`
+- [X] T048 [US3] Add the assignment panel to `TicketDetailView.vue`, hidden entirely for a caller without `tickets:assign`
+- [X] T049 [US3] Add assignment i18n keys and the `unassigned` filter label
 
 **Checkpoint**: Work can be distributed. Phase 4's dashboard will read this and not write it.
 
@@ -158,16 +158,16 @@ with previous and new values in the order it happened.
 
 ### Tests for User Story 5
 
-- [ ] T050 [P] [US5] History tests in `backend/tests/tickets/history.test.ts`: oldest-first with `id` as tiebreaker for same-second events, previous and new values present, entries readable by `tickets:view` and not requiring `audit:view`, attribution survives actor deactivation, no write endpoint exists, deny-list redaction applied to `note`
+- [X] T050 [P] [US5] History tests in `backend/tests/tickets/history.test.ts`: oldest-first with `id` as tiebreaker for same-second events, previous and new values present, entries readable by `tickets:view` and not requiring `audit:view`, attribution survives actor deactivation, no write endpoint exists, deny-list redaction applied to `note`
 
 ### Implementation for User Story 5
 
-- [ ] T051 [US5] Implement the paginated history read in `backend/src/services/ticket-history.service.ts`, ordered `(created_at, id)` ascending
-- [ ] T052 [US5] Implement `GET /:id/history` in the controller with `authorize('tickets:view')`
-- [ ] T053 [US5] Create `frontend/src/components/tickets/TicketHistoryTimeline.vue` as an ordered list, rendering key-valued fields through i18n
-- [ ] T054 [US5] Wire the timeline into `TicketDetailView.vue`
-- [ ] T055 [US5] Add history event i18n keys for every event name in data-model.md
-- [ ] T056 [P] [US5] Component test in `frontend/tests/tickets/TicketHistoryTimeline.test.ts`: oldest-first ordering, status values rendered as labels rather than keys
+- [X] T051 [US5] Implement the paginated history read in `backend/src/services/ticket-history.service.ts`, ordered `(created_at, id)` ascending
+- [X] T052 [US5] Implement `GET /:id/history` in the controller with `authorize('tickets:view')`
+- [X] T053 [US5] Create `frontend/src/components/tickets/TicketHistoryTimeline.vue` as an ordered list, rendering key-valued fields through i18n
+- [X] T054 [US5] Wire the timeline into `TicketDetailView.vue`
+- [X] T055 [US5] Add history event i18n keys for every event name in data-model.md
+- [X] T056 [P] [US5] Component test in `frontend/tests/tickets/TicketHistoryTimeline.test.ts`: oldest-first ordering, status values rendered as labels rather than keys
 
 **Checkpoint**: PLAN.md's "its history is fully auditable" is satisfied.
 
@@ -182,13 +182,13 @@ reaches Resolved and can come back down.
 
 ### Tests for User Story 4
 
-- [ ] T057 [P] [US4] Escalation tests in `backend/tests/tickets/escalation.test.ts`: reason required, reason stored on the ticket and in history, `escalated → resolved` permitted, de-escalation clears `escalation_reason`, escalated tickets filterable
+- [X] T057 [P] [US4] Escalation tests in `backend/tests/tickets/escalation.test.ts`: reason required, reason stored on the ticket and in history, `escalated → resolved` permitted, de-escalation clears `escalation_reason`, escalated tickets filterable
 
 ### Implementation for User Story 4
 
-- [ ] T058 [US4] Extend the transition service to require and store `reason` when the target is `escalated`, and to clear it on any transition away
-- [ ] T059 [US4] Add the escalation reason prompt and the escalated banner to `TicketDetailView.vue`
-- [ ] T060 [US4] Add escalation i18n keys
+- [X] T058 [US4] Extend the transition service to require and store `reason` when the target is `escalated`, and to clear it on any transition away
+- [X] T059 [US4] Add the escalation reason prompt and the escalated banner to `TicketDetailView.vue`
+- [X] T060 [US4] Add escalation i18n keys
 
 **Checkpoint**: The manual escalation path PLAN.md scopes here is complete.
 
@@ -204,24 +204,24 @@ and confirm unlinking leaves both otherwise untouched.
 
 ### Tests for User Story 6
 
-- [ ] T061 [P] [US6] Merge tests in `backend/tests/tickets/merge.test.ts`: self-merge refused, cycle refused, merging an already-merged ticket refused with its survivor named, **a three-ticket chain resolving transitively to one survivor**, every workable route refusing a merged ticket, both `ticket.merged` and `record.deleted` audited, history spanning the chain with each entry labelled by origin
-- [ ] T062 [P] [US6] Link tests in `backend/tests/tickets/links.test.ts`: symmetry, duplicate refused in either direction by the unique index, self-link refused, unlink leaves both tickets otherwise unchanged
+- [X] T061 [P] [US6] Merge tests in `backend/tests/tickets/merge.test.ts`: self-merge refused, cycle refused, merging an already-merged ticket refused with its survivor named, **a three-ticket chain resolving transitively to one survivor**, every workable route refusing a merged ticket, both `ticket.merged` and `record.deleted` audited, history spanning the chain with each entry labelled by origin
+- [X] T062 [P] [US6] Link tests in `backend/tests/tickets/links.test.ts`: symmetry, duplicate refused in either direction by the unique index, self-link refused, unlink leaves both tickets otherwise unchanged
 
 ### Implementation for User Story 6
 
-- [ ] T063 [US6] Implement `resolveSurvivor()` with a cycle guard in `backend/src/services/ticket.service.ts`
-- [ ] T064 [US6] Implement `merge`, emitting `ticket.merged` and `record.deleted` in the same transaction — the first caller `record.deleted` has had since Phase 1 defined it
-- [ ] T065 [US6] Add the merged guard to the shared service path so **every** route inherits it, and confirm `TICKET_MERGED` carries `details.survivorId`
-- [ ] T066 [US6] Extend the history read to span the merge chain, labelling each entry with the ticket it was recorded against
-- [ ] T067 [US6] Implement `POST /:id/merge` with `authorize('tickets:merge')`
-- [ ] T068 [US6] Implement link create and delete in `backend/src/services/ticket-link.service.ts`, normalising each pair so the lower id is `ticket_id`
-- [ ] T069 [US6] Implement `POST /:id/links` and `DELETE /:id/links/:linkedId` with `authorize('tickets:link')`
-- [ ] T070 [US6] Create `frontend/src/components/tickets/TicketMergeDialog.vue` — names both tickets, states the merge is permanent, does not default focus to confirm, traps focus, and sets focus with `{ immediate: true }`
-- [ ] T071 [US6] Create `frontend/src/components/tickets/TicketLinkPanel.vue`
-- [ ] T072 [US6] Add the merged banner to `TicketDetailView.vue` as the first element in the DOM, disabling every action control
-- [ ] T073 [US6] Add the `includeMerged` toggle to `TicketFilters.vue`
-- [ ] T074 [US6] Add merge and link i18n keys, including the permanence warning
-- [ ] T075 [P] [US6] Component test in `frontend/tests/tickets/TicketMergeDialog.test.ts`: focus is trapped, confirm is not the default focus, focus returns to the trigger on close
+- [X] T063 [US6] Implement `resolveSurvivor()` with a cycle guard in `backend/src/services/ticket.service.ts`
+- [X] T064 [US6] Implement `merge`, emitting `ticket.merged` and `record.deleted` in the same transaction — the first caller `record.deleted` has had since Phase 1 defined it
+- [X] T065 [US6] Add the merged guard to the shared service path so **every** route inherits it, and confirm `TICKET_MERGED` carries `details.survivorId`
+- [X] T066 [US6] Extend the history read to span the merge chain, labelling each entry with the ticket it was recorded against
+- [X] T067 [US6] Implement `POST /:id/merge` with `authorize('tickets:merge')`
+- [X] T068 [US6] Implement link create and delete in `backend/src/services/ticket-link.service.ts`, normalising each pair so the lower id is `ticket_id`
+- [X] T069 [US6] Implement `POST /:id/links` and `DELETE /:id/links/:linkedId` with `authorize('tickets:link')`
+- [X] T070 [US6] Create `frontend/src/components/tickets/TicketMergeDialog.vue` — names both tickets, states the merge is permanent, does not default focus to confirm, traps focus, and sets focus with `{ immediate: true }`
+- [X] T071 [US6] Create `frontend/src/components/tickets/TicketLinkPanel.vue`
+- [X] T072 [US6] Add the merged banner to `TicketDetailView.vue` as the first element in the DOM, disabling every action control
+- [X] T073 [US6] Add the `includeMerged` toggle to `TicketFilters.vue`
+- [X] T074 [US6] Add merge and link i18n keys, including the permanence warning
+- [X] T075 [P] [US6] Component test in `frontend/tests/tickets/TicketMergeDialog.test.ts`: focus is trapped, confirm is not the default focus, focus returns to the trigger on close
 
 **Checkpoint**: All six stories are independently functional.
 
@@ -229,12 +229,12 @@ and confirm unlinking leaves both otherwise untouched.
 
 ## Phase 9: Polish & Cross-Cutting Concerns
 
-- [ ] T076 [P] Confirm `frontend/tests/locales/parity.test.ts` passes with every new key present in both files
-- [ ] T077 [P] Run lint, format, and typecheck across both workspaces; resolve the known friction points (no physical Tailwind utilities, no `Record<string, unknown>` cast inside a template)
-- [ ] T078 Run the full suite and confirm **no existing Phase 0–2 test needed editing** — if one did, investigate what changed rather than adjusting the test
-- [ ] T079 Run quickstart.md V1–V7 against the running app
+- [X] T076 [P] Confirm `frontend/tests/locales/parity.test.ts` passes with every new key present in both files
+- [X] T077 [P] Run lint, format, and typecheck across both workspaces; resolve the known friction points (no physical Tailwind utilities, no `Record<string, unknown>` cast inside a template)
+- [X] T078 Run the full suite and confirm **no existing Phase 0–2 test needed editing** — if one did, investigate what changed rather than adjusting the test
+- [X] T079 Run quickstart.md V1–V7 against the running app — 22/22 checks passed against the live dev server, including the three-ticket merge chain
 - [ ] T080 Run quickstart.md **V8 (Arabic and RTL) and V9 (accessibility)** in a browser — deferred through three consecutive phases and carrying the accumulated risk of all of them
-- [ ] T081 Update the PLAN.md Phase 3 traceability entry and mark the phase's Definition of done
+- [ ] T081 Update the PLAN.md Phase 3 traceability entry and mark the phase's Definition of done — **NOT DONE: no such convention exists.** PLAN.md has not been modified since the initial commit and Phases 0–2 added no completion marker. Introducing one into the governing requirements document mid-phase was not mine to decide; raised for the user instead
 
 ---
 

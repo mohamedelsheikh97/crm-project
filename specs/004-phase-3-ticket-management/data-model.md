@@ -15,7 +15,7 @@ Per Clarifications Q1 there are no category or priority tables — both are code
 | Column | Type | Constraints | Notes |
 |---|---|---|---|
 | `id` | `INTEGER UNSIGNED` | PK, auto-increment | |
-| `reference` | `VARCHAR(20)` | **UNIQUE**, NOT NULL | `TKT-000123`, derived from `id` (research.md D5). Unique by construction, with nothing to contend over |
+| _(no column)_ | — | — | `reference` is DERIVED at read time from `id` — see the note below |
 | `customer_id` | `INTEGER UNSIGNED` | NOT NULL, FK → `customers.id`, `ON DELETE RESTRICT` | Permanent: Phase 2 chose deactivation over deletion precisely so this reference cannot dangle |
 | `subject` | `VARCHAR(255)` | NOT NULL | Arabic-safe |
 | `description` | `TEXT` | NULL | The longest free text this system accepts |
@@ -42,6 +42,13 @@ composite `(status, priority)` for the common "open work, most urgent first" lis
   stays workable if its customer is later deactivated (FR-008).
 - Editing is refused when `status = 'closed'` (FR-009) or `merged_into_ticket_id` is set (FR-043).
   **Both checks live in the service**, so every route inherits them.
+
+**The reference is derived, not stored** — `backend/src/tickets/reference.ts`. D5 called for a stored
+generated column; **MySQL forbids a generated column expression that refers to an `AUTO_INCREMENT`
+column**, so that was not available. Deriving at read time keeps the property D5 was actually after —
+the reference is a presentation of the primary key — and is the better end of the constraint: there
+is no window in which a row exists without a reference, no uniqueness to enforce beyond the primary
+key's own, and searching by reference becomes an **exact id lookup** rather than a `LIKE`.
 
 **No delete path.** Tickets are merged or closed, never deleted. `record.deleted` is emitted on
 merge as the security-relevant fact (research.md D8), but the row is retained so every reference to

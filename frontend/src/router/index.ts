@@ -10,6 +10,9 @@ import CustomerFormView from '../views/customers/CustomerFormView.vue';
 import CustomerListView from '../views/customers/CustomerListView.vue';
 import CustomerProfileView from '../views/customers/CustomerProfileView.vue';
 import NotFoundView from '../views/NotFoundView.vue';
+import TicketCreateView from '../views/tickets/TicketCreateView.vue';
+import TicketDetailView from '../views/tickets/TicketDetailView.vue';
+import TicketListView from '../views/tickets/TicketListView.vue';
 import AuditLogView from '../views/admin/AuditLogView.vue';
 import RolesView from '../views/admin/RolesView.vue';
 import SettingsShellView from '../views/admin/SettingsShellView.vue';
@@ -80,6 +83,38 @@ const router = createRouter({
         titleKey: 'route.customers.form.title',
         requiresAuth: true,
         permission: 'customers:update',
+      },
+    },
+    // Tickets sit alongside customers at the top level: this is the everyday
+    // work the system exists for, not administration.
+    {
+      path: '/tickets',
+      name: 'ticket-list',
+      component: TicketListView,
+      meta: {
+        titleKey: 'route.tickets.list.title',
+        requiresAuth: true,
+        permission: 'tickets:view',
+      },
+    },
+    {
+      path: '/tickets/new',
+      name: 'ticket-new',
+      component: TicketCreateView,
+      meta: {
+        titleKey: 'route.tickets.create.title',
+        requiresAuth: true,
+        permission: 'tickets:create',
+      },
+    },
+    {
+      path: '/tickets/:id',
+      name: 'ticket-detail',
+      component: TicketDetailView,
+      meta: {
+        titleKey: 'route.tickets.detail.title',
+        requiresAuth: true,
+        permission: 'tickets:view',
       },
     },
     {

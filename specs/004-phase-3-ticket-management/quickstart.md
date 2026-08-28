@@ -41,7 +41,7 @@ cause.
 ```powershell
 npm test                                    # full suite, both projects
 npm test -- ticket-lifecycle.matrix         # all 36 ordered status pairs
-npm test -- authorization.matrix            # catalog x roles, now 27 permissions
+npm test -- authorization.matrix            # catalog x roles, now 28 permissions
 npm test -- ticket-merge                    # including the three-ticket chain
 ```
 

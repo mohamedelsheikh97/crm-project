@@ -36,9 +36,29 @@ export const AUDIT_ACTIONS = {
   CUSTOMER_ATTACHMENT_UPLOADED: 'customer.attachment.uploaded',
   CUSTOMER_ATTACHMENT_DELETED: 'customer.attachment.deleted',
 
+  // Phase 3 — ticket events. Closing and reopening get their own keys rather
+  // than folding into ticket.status.changed, so an administrator scanning for
+  // "what was undone" does not have to read the values of every status change.
+  TICKET_CREATED: 'ticket.created',
+  TICKET_UPDATED: 'ticket.updated',
+  TICKET_STATUS_CHANGED: 'ticket.status.changed',
+  TICKET_ASSIGNED: 'ticket.assigned',
+  TICKET_UNASSIGNED: 'ticket.unassigned',
+  TICKET_ESCALATED: 'ticket.escalated',
+  TICKET_DEESCALATED: 'ticket.deescalated',
+  TICKET_CLOSED: 'ticket.closed',
+  TICKET_REOPENED: 'ticket.reopened',
+  TICKET_MERGED: 'ticket.merged',
+  TICKET_LINKED: 'ticket.linked',
+  TICKET_UNLINKED: 'ticket.unlinked',
+
   // Defined in Phase 1 with no caller; Phase 2 is the first phase that
   // exports business records, so this finally acquires one.
   DATA_EXPORTED: 'data.exported',
+  // Phase 3 gives this one a caller too: a merge permanently removes a record
+  // a user created from active use, which is exactly what the key means. The
+  // row is retained so references stay valid — the deletion is of its
+  // workability, not of its bytes (research.md D8).
   RECORD_DELETED: 'record.deleted',
 } as const;
 

@@ -75,10 +75,10 @@ invisibly broken.
 
 ## Enforcement
 
-**One function**, `assertTransitionAllowed(from, to, actor, ticket)`, in
-`backend/src/services/ticket-lifecycle.service.ts`. Every path that changes a status calls it: the
-generic transition endpoint, the escalate endpoint, the close endpoint, the reopen endpoint. There is
-no second place a status is written.
+**One function**, `assertTransitionAllowed(ticket, to, actor)`, in
+`backend/src/services/ticket-lifecycle.service.ts`. There is exactly ONE endpoint that changes a
+status, so there is exactly one caller — and `update` refuses `status` as an editable field, so no
+second path exists to forget the check.
 
 The function checks, in order:
 
@@ -99,13 +99,15 @@ The function checks, in order:
   "error": {
     "code": "TRANSITION_NOT_ALLOWED",
     "message": "A ticket in status 'new' cannot move to 'resolved'.",
-    "details": { "from": "new", "to": "resolved", "allowed": ["open"] }
-  }
+    "details": []
+  },
+  "transition": { "from": "new", "to": "resolved", "allowed": ["open"] }
 }
 ```
 
-`details.allowed` is the reachable set **after** permission filtering — an Agent looking at a resolved
-ticket sees `["open", "closed"]` only if they may actually close it. Offering a move the user cannot
+`transition` is a SIBLING of the envelope, because `details` is {field, message} pairs and a
+reachable status set is not one. `transition.allowed` is the set **after** permission filtering — an
+Agent looking at a resolved ticket sees `["open", "closed"]` only if they may actually close it. Offering a move the user cannot
 make is the interface lying about authority, which Phase 1 rejected.
 
 ---
@@ -116,7 +118,7 @@ make is the interface lying about authority, which Phase 1 rejected.
 ticket**, computed by the same service from the same table.
 
 ```json
-{ "data": { "status": "resolved", "transitions": [{ "to": "open", "permitted": true }, { "to": "closed", "permitted": true }] } }
+{ "status": "resolved", "transitions": ["open", "closed"] }
 ```
 
 The interface renders buttons from this response and never from a hardcoded list. This is how the

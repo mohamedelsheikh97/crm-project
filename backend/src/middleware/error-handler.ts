@@ -1,6 +1,12 @@
 import type { ErrorRequestHandler, RequestHandler } from 'express';
 
-import { AppError, DuplicateCustomerError, notFound } from '../errors/app-error.js';
+import {
+  AppError,
+  DuplicateCustomerError,
+  TicketMergedError,
+  TransitionNotAllowedError,
+  notFound,
+} from '../errors/app-error.js';
 
 export const notFoundHandler: RequestHandler = (_req, _res, next) => {
   next(notFound());
@@ -17,6 +23,24 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
     res.status(err.status).json({
       error: { code: err.code, message: err.message, details: err.details },
       duplicates: err.duplicates,
+    });
+    return;
+  }
+
+  // Phase 3 follows the same rule: structured data a caller must act on rides
+  // BESIDE the envelope, never inside details[].
+  if (err instanceof TransitionNotAllowedError) {
+    res.status(err.status).json({
+      error: { code: err.code, message: err.message, details: err.details },
+      transition: err.transition,
+    });
+    return;
+  }
+
+  if (err instanceof TicketMergedError) {
+    res.status(err.status).json({
+      error: { code: err.code, message: err.message, details: err.details },
+      merged: err.merged,
     });
     return;
   }

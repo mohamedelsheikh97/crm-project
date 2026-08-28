@@ -190,6 +190,32 @@ transition check ends up skipped on one path.
 | **Merge spans histories rather than moving rows** (D3) | FR-041 requires the survivor to carry the merged ticket's history. Provenance — which ticket an entry originally belonged to — is exactly what the reader needs | *Reassign `ticket_id` on the merged entries*: simpler query, and loses the distinction between "this happened to this ticket" and "this happened to a ticket that was merged in". An agent reading the result could not tell the two apart. *Copy the entries*: duplicates rows and doubles the write |
 | **The reference is derived from the ticket's own identifier** (D5) | FR-004 requires a unique, stable, readable reference. Deriving it from the primary key is unique by construction, with no counter to contend over | *A separate counter table*: needs a row lock per creation, which serialises ticket creation for no gain. *A random or opaque reference*: unique, and unreadable aloud — which is the one thing FR-004 asks for. **Accepted cost**: the reference reveals roughly how many tickets exist. For an internal support system that is not sensitive, and the alternative costs either contention or readability |
 
+### Changed during implementation
+
+Three things the design got slightly wrong, found by building it. Recorded here rather than quietly
+corrected, because the reasoning is what a later phase inherits.
+
+- **The reference is derived at read time, not stored** (D5). The decision called for a stored
+  generated column; **MySQL forbids a generated column expression that refers to an `AUTO_INCREMENT`
+  column**, so that form was never available. Deriving it in `backend/src/tickets/reference.ts` keeps
+  the property D5 was actually after — the reference is a presentation of the primary key — and is
+  the better end of the constraint: there is no window in which a row exists without a reference, no
+  uniqueness to enforce beyond the primary key's own, and searching by reference becomes an exact id
+  lookup rather than a `LIKE`. data-model.md and contracts/ticket-api.md were corrected to match.
+
+- **`TRANSITION_NOT_ALLOWED` and `TICKET_MERGED` carry their structure as SIBLING keys**, not inside
+  `details`. The contracts were drafted as `details.allowed` and `details.survivorId`. The codebase's
+  `details` is `{ field, message }` pairs with a defined meaning, and Phase 2 had already established
+  the sibling pattern for `duplicates` for exactly this reason. Following the existing envelope beat
+  changing it for one phase.
+
+- **Three permissions are conditional, not one.** `tickets:close` was anticipated. `tickets:reopen`
+  gates a single edge a route probe cannot reach without first constructing a closed ticket, and
+  `tickets:manage_any` is never a route gate at all — it is only ever an additional allowance the
+  service consults. The matrix test's two coverage assertions were widened to accept a named
+  conditional test as coverage. That is not a loosening: the existing "every conditional permission
+  names the test that covers it" assertion still holds, so exempt-and-untested remains impossible.
+
 ### Non-violations worth recording
 
 - **No new dependencies.** The first phase since Phase 0 to add none — this is domain logic over

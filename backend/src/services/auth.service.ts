@@ -315,6 +315,9 @@ async function recordFailure(
 export interface SessionContext {
   id: number;
   email: string;
+  /** Snapshotted into ticket history so an entry stays attributed once the
+   *  actor is deactivated (Phase 3 FR-038). The row is already loaded here. */
+  fullName: string;
   roleId: number;
   isActive: boolean;
   mustChangePassword: boolean;
@@ -339,6 +342,7 @@ export async function getSessionContext(id: number): Promise<SessionContext | nu
   return {
     id: user.id,
     email: user.email,
+    fullName: user.full_name,
     roleId: user.role_id,
     isActive: user.is_active,
     mustChangePassword: user.must_change_password,
