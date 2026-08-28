@@ -100,13 +100,13 @@ no claim action (Q3).
 As the assigned Agent, close your own resolved ticket. As a different Agent, confirm you **cannot**
 close it. As Supervisor, reopen it and confirm **all prior history is still present** (FR-022).
 
-### V5 — History (US4)
+### V5 — History (US5)
 
 Open the history. Confirm oldest-first ordering, previous and new values on each change, and that
 actor names remain readable. Deactivate the actor and confirm the entries stay attributed (FR-038).
 Confirm no write endpoint exists.
 
-### V6 — Merge (US5)
+### V6 — Merge (US6)
 
 Merge B into A. Confirm B shows a permanent banner naming A, that every action on B is refused
 through the interface **and** through a direct API call, and that A's history now spans both.
