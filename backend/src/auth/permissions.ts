@@ -58,6 +58,24 @@ export const PERMISSIONS = [
 
   define('attachments', 'upload'),
   define('attachments', 'delete'),
+
+  // Phase 3 — Ticket Management. The lifecycle actions are separated because
+  // they carry different authority: transitioning is everyday work, closing
+  // finishes a piece of it, and reopening undoes something already finished
+  // (Clarifications Q2). Assignment is Supervisor-only (Q3), which is why it is
+  // its own key rather than part of tickets:update.
+  define('tickets', 'view'),
+  define('tickets', 'create'),
+  define('tickets', 'update'),
+  define('tickets', 'transition'),
+  define('tickets', 'close'),
+  define('tickets', 'reopen'),
+  define('tickets', 'assign'),
+  define('tickets', 'merge'),
+  define('tickets', 'link'),
+  // Act on a ticket assigned to someone else. Conditional by nature: it is
+  // never a route gate, only an additional allowance the service consults.
+  define('tickets', 'manage_any'),
 ] as const satisfies readonly PermissionDefinition[];
 
 export type PermissionKey = (typeof PERMISSIONS)[number]['key'];

@@ -8,6 +8,7 @@ declare module 'express-serve-static-core' {
     user?: {
       id: number;
       email: string;
+      fullName: string;
       roleId: number;
       isActive: boolean;
       mustChangePassword: boolean;

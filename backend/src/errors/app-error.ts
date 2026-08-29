@@ -7,6 +7,10 @@ export type ErrorCode =
   | 'NOT_FOUND'
   | 'CONFLICT'
   | 'DUPLICATE_CUSTOMER'
+  | 'TICKET_CLOSED'
+  | 'TICKET_MERGED'
+  | 'TRANSITION_NOT_ALLOWED'
+  | 'CUSTOMER_INACTIVE'
   | 'INTERNAL_ERROR';
 
 export interface ErrorDetail {
@@ -106,4 +110,73 @@ export class DuplicateCustomerError extends AppError {
 
 export function duplicateCustomer(duplicates: unknown[]): DuplicateCustomerError {
   return new DuplicateCustomerError(duplicates);
+}
+
+/**
+ * Phase 3 refusals that carry structure a caller must act on.
+ *
+ * `details` is {field, message} pairs with a defined meaning, and a reachable
+ * status set does not fit it. So these travel as a SIBLING of the error
+ * envelope, exactly as Phase 2 established with `duplicates` (research.md D5).
+ * contracts/ticket-api.md describes them as `details.*`; this is the same data
+ * in the place the existing envelope has room for it.
+ */
+export class TransitionNotAllowedError extends AppError {
+  readonly transition: { from: string; to: string; allowed: string[] };
+
+  constructor(from: string, to: string, allowed: string[]) {
+    super('TRANSITION_NOT_ALLOWED', 422, `A ticket in status '${from}' cannot move to '${to}'.`);
+    this.name = 'TransitionNotAllowedError';
+    this.transition = { from, to, allowed };
+  }
+}
+
+/**
+ * A refusal that names nothing leaves the user guessing. `allowed` is the
+ * reachable set AFTER permission filtering, so the message never offers a move
+ * the caller could not make (FR-017).
+ */
+export function transitionNotAllowed(
+  from: string,
+  to: string,
+  allowed: string[],
+): TransitionNotAllowedError {
+  return new TransitionNotAllowedError(from, to, allowed);
+}
+
+/** Every workable action on a merged ticket is refused, and says where to go. */
+export class TicketMergedError extends AppError {
+  readonly merged: { survivorId: number; survivorReference: string };
+
+  constructor(survivorId: number, survivorReference: string) {
+    super(
+      'TICKET_MERGED',
+      422,
+      `This ticket was merged into ${survivorReference} and can no longer be worked on.`,
+    );
+    this.name = 'TicketMergedError';
+    this.merged = { survivorId, survivorReference };
+  }
+}
+
+export function ticketMerged(survivorId: number, survivorReference: string): TicketMergedError {
+  return new TicketMergedError(survivorId, survivorReference);
+}
+
+/** Editing a closed ticket (FR-009). Reopening is the way back, not an edit. */
+export function ticketClosed(): AppError {
+  return new AppError(
+    'TICKET_CLOSED',
+    422,
+    'This ticket is closed. Reopen it before making changes.',
+  );
+}
+
+/** Creating a ticket against a deactivated customer (FR-007). */
+export function customerInactive(): AppError {
+  return new AppError(
+    'CUSTOMER_INACTIVE',
+    422,
+    'This customer is deactivated and cannot have new tickets raised against them.',
+  );
 }

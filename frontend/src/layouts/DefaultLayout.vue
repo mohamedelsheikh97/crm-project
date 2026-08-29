@@ -88,6 +88,15 @@ async function signOut(): Promise<void> {
             {{ t('nav.customers') }}
           </RouterLink>
         </li>
+        <li v-if="can('tickets:view')">
+          <RouterLink
+            :to="{ name: 'ticket-list' }"
+            class="rounded-md px-2 py-1 text-slate-700 hover:bg-slate-100"
+            active-class="font-medium"
+          >
+            {{ t('nav.tickets') }}
+          </RouterLink>
+        </li>
         <li v-if="canAny(ADMIN_PERMISSIONS)">
           <RouterLink
             :to="{ name: 'admin-users' }"
