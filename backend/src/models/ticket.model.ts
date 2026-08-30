@@ -31,6 +31,18 @@ export class Ticket extends Model<InferAttributes<Ticket>, InferCreationAttribut
   /** Non-null means merged: a redirect, unworkable by every route (FR-043). */
   declare merged_into_ticket_id: CreationOptional<number | null>;
   declare escalation_reason: CreationOptional<string | null>;
+  /**
+   * Set manually in this phase (Phase 4, Clarifications Q1). Nothing computes
+   * it. Phase 6 replaces the SOURCE with a computed SLA target — FR-028 means
+   * no consumer may assume a human set it.
+   */
+  declare due_at: CreationOptional<Date | null>;
+  /**
+   * The due date value already warned about — not a flag, not the time the
+   * warning was sent. `due_warning_sent_for <> due_at` is FR-045 in full: a
+   * re-saved date does not re-fire, a rescheduled one arms a new warning.
+   */
+  declare due_warning_sent_for: CreationOptional<Date | null>;
   declare version: CreationOptional<number>;
   declare readonly created_at: CreationOptional<Date>;
   declare readonly updated_at: CreationOptional<Date>;
@@ -61,6 +73,8 @@ Ticket.init(
     created_by_user_id: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false },
     merged_into_ticket_id: { type: DataTypes.INTEGER.UNSIGNED, allowNull: true },
     escalation_reason: { type: DataTypes.TEXT, allowNull: true },
+    due_at: { type: DataTypes.DATE, allowNull: true },
+    due_warning_sent_for: { type: DataTypes.DATE, allowNull: true },
     version: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false, defaultValue: 0 },
     created_at: DataTypes.DATE,
     updated_at: DataTypes.DATE,

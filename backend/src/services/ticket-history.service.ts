@@ -31,6 +31,18 @@ export const TICKET_EVENTS = {
   MERGE_RECEIVED: 'ticket.merge.received',
   LINKED: 'ticket.linked',
   UNLINKED: 'ticket.unlinked',
+
+  // Phase 4. A due date is a field like any other, so its changes belong in the
+  // history with previous and new value (FR-022). Three events rather than one
+  // because "someone put a date on this" and "someone took the date off" read
+  // differently to the person catching up on the ticket.
+  DUE_DATE_SET: 'ticket.due_date.set',
+  DUE_DATE_CHANGED: 'ticket.due_date.changed',
+  DUE_DATE_CLEARED: 'ticket.due_date.cleared',
+
+  // Records THAT a note happened, never its body (FR-078). The history stays a
+  // change log; it does not become a second copy of the conversation.
+  NOTE_ADDED: 'ticket.note.added',
 } as const;
 
 export type TicketEvent = (typeof TICKET_EVENTS)[keyof typeof TICKET_EVENTS];

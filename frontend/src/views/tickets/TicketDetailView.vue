@@ -3,7 +3,11 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 
+import CustomerContextPanel from '../../components/tickets/CustomerContextPanel.vue';
+import DueDateControl from '../../components/tickets/DueDateControl.vue';
 import TicketHistoryTimeline from '../../components/tickets/TicketHistoryTimeline.vue';
+import TicketNoteComposer from '../../components/tickets/TicketNoteComposer.vue';
+import TicketNoteThread from '../../components/tickets/TicketNoteThread.vue';
 import TicketLinkPanel from '../../components/tickets/TicketLinkPanel.vue';
 import TicketMergeDialog from '../../components/tickets/TicketMergeDialog.vue';
 import TicketPriorityBadge from '../../components/tickets/TicketPriorityBadge.vue';
@@ -12,6 +16,10 @@ import TicketTransitionMenu from '../../components/tickets/TicketTransitionMenu.
 import { usePermissions } from '../../composables/usePermissions';
 import * as adminUsersService from '../../services/admin-users.service';
 import { ApiError } from '../../services/http';
+import * as dashboardService from '../../services/dashboard.service';
+import * as ticketNotesService from '../../services/ticket-notes.service';
+import type { TicketNote } from '../../services/ticket-notes.service';
+import { useAuthStore } from '../../stores/auth.store';
 import * as ticketsService from '../../services/tickets.service';
 import {
   TICKET_CATEGORIES,
@@ -98,10 +106,78 @@ onMounted(async () => {
 
 watch(ticketId, load);
 
+// --- Phase 4: notes, mentions, and the due date -------------------------
+
+const auth = useAuthStore();
+
+const notes = ref<TicketNote[]>([]);
+const notesLoading = ref(false);
+const savingNote = ref(false);
+const composer = ref<InstanceType<typeof TicketNoteComposer> | null>(null);
+const savingDueDate = ref(false);
+
+async function loadNotes(): Promise<void> {
+  if (!ticket.value) return;
+
+  notesLoading.value = true;
+
+  try {
+    notes.value = (await ticketNotesService.fetchNotes(ticket.value.id)).items;
+  } finally {
+    notesLoading.value = false;
+  }
+}
+
+async function addNote(body: string): Promise<void> {
+  if (!ticket.value) return;
+
+  savingNote.value = true;
+
+  try {
+    await ticketNotesService.createNote(ticket.value.id, body);
+    composer.value?.clear();
+    await loadNotes();
+    // A note produces a history entry, so the timeline is stale until reloaded.
+    void timeline.value?.reload();
+  } catch (error) {
+    // Handed to the composer rather than shown as a page error: it keeps the
+    // text the agent wrote and names the mention that was refused. Losing a
+    // paragraph would be a worse failure than the rejection itself.
+    composer.value?.reportError(error);
+  } finally {
+    savingNote.value = false;
+  }
+}
+
+async function saveDueDate(dueAt: string | null): Promise<void> {
+  if (!ticket.value) return;
+
+  savingDueDate.value = true;
+
+  try {
+    applyUpdate(await dashboardService.setDueDate(ticket.value.id, dueAt, ticket.value.version));
+  } catch (error) {
+    editError.value = error instanceof ApiError ? error.message : 'error.unexpected';
+  } finally {
+    savingDueDate.value = false;
+  }
+}
+
+/**
+ * Follow-ups still open on a ticket that was just closed (FR-064).
+ *
+ * The server sends these only on the response to such a close. It is a NOTICE,
+ * never a refusal — the ticket is already closed by the time this renders. The
+ * person closing may well know the task is moot, and blocking them would teach
+ * everyone to stop recording follow-ups.
+ */
+const outstandingOnClose = ref<NonNullable<Ticket['outstandingTasks']>>([]);
+
 function applyUpdate(updated: Ticket): void {
   ticket.value = updated;
   resetForm();
   editing.value = false;
+  outstandingOnClose.value = updated.outstandingTasks ?? [];
   void timeline.value?.reload();
 }
 
@@ -235,18 +311,14 @@ const formatter = computed(
         <strong>{{ t('ticket.escalation.current') }}:</strong> {{ ticket.escalationReason }}
       </p>
 
-      <section v-if="ticket.customer">
-        <h2 class="text-lg font-semibold">{{ t('ticket.detail.customer') }}</h2>
-        <RouterLink
-          :to="{ name: 'customer-profile', params: { id: ticket.customer.id } }"
-          class="text-blue-700 underline dark:text-blue-300"
-        >
-          {{ ticket.customer.displayName }}
-        </RouterLink>
-        <span v-if="!ticket.customer.isActive" class="ms-2 text-sm">
-          ({{ t('customers.status.inactive') }})
-        </span>
-      </section>
+      <!-- Phase 4 replaces the bare customer link with the full context panel:
+           identity, contacts, other tickets, and recent notes, all beside the
+           ticket rather than one click behind it. That is PLAN.md's "without
+           navigating away" (FR-013).
+
+           It renders nothing at all for a caller without `customers:view`, and
+           the ticket around it stays fully workable (FR-018). -->
+      <CustomerContextPanel :ticket-id="ticket.id" />
 
       <section>
         <h2 class="text-lg font-semibold">{{ t('ticket.detail.description') }}</h2>
@@ -352,6 +424,20 @@ const formatter = computed(
       <section v-if="!isMerged">
         <h2 class="text-lg font-semibold">{{ t('ticket.detail.actions') }}</h2>
         <TicketTransitionMenu :ticket="ticket" @moved="applyUpdate" />
+
+        <!-- FR-064. Surfaced, not blocking: the close has already happened.
+             role="status" so it is announced without interrupting anything —
+             the same politeness the notification live region uses. -->
+        <div
+          v-if="outstandingOnClose.length > 0"
+          role="status"
+          class="mt-3 rounded-md bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-100"
+        >
+          <p class="font-medium">{{ t('task.outstandingOnClose') }}</p>
+          <ul class="mt-1 list-inside list-disc">
+            <li v-for="task in outstandingOnClose" :key="task.id">{{ task.title }}</li>
+          </ul>
+        </div>
       </section>
 
       <!-- Hidden ENTIRELY for a caller without tickets:assign. An Agent cannot
@@ -403,6 +489,40 @@ const formatter = computed(
         >
           {{ t('ticket.merge.open') }}
         </button>
+      </section>
+
+      <!-- Phase 4. The due date sits with the ticket's other fields; the note
+           thread is what turns this screen from a record view into a place
+           colleagues talk. -->
+      <section v-if="!isMerged">
+        <DueDateControl
+          :due-at="ticket.dueAt ?? null"
+          :can-edit="can('tickets:set_due_date')"
+          :saving="savingDueDate"
+          @save="saveDueDate"
+        />
+      </section>
+
+      <section>
+        <h2 class="text-lg font-semibold">{{ t('ticketNote.title') }}</h2>
+        <p class="mb-2 text-sm text-slate-600 dark:text-slate-400">
+          {{ t('ticketNote.internalNotice') }}
+        </p>
+
+        <TicketNoteThread
+          :notes="notes"
+          :loading="notesLoading"
+          :current-user-id="auth.user?.id ?? 0"
+        />
+
+        <TicketNoteComposer
+          v-if="can('ticket_notes:create') && !isMerged"
+          ref="composer"
+          class="mt-3"
+          :ticket-id="ticket.id"
+          :submitting="savingNote"
+          @submit="addNote"
+        />
       </section>
 
       <TicketHistoryTimeline

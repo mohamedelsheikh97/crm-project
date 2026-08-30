@@ -76,6 +76,12 @@ const envSchema = z
       .regex(/^[A-Z]{2}$/, 'must be a two-letter uppercase region code, e.g. EG')
       .optional()
       .default('EG'),
+
+    // Agent dashboard (Phase 4, research.md D3). How long before a ticket's
+    // due date its assignee is warned. ONE system-wide value on purpose: the
+    // spec's Assumptions fix it as system-wide, and per-priority or
+    // per-customer thresholds are Phase 6's SLA policy, not this phase's.
+    DUE_WARNING_LEAD_MINUTES: z.coerce.number().int().positive().optional().default(60),
   })
   .superRefine((value, ctx) => {
     // Equal secrets would silently defeat the access/refresh type separation.

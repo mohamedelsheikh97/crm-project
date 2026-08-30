@@ -52,6 +52,15 @@ export const AUDIT_ACTIONS = {
   TICKET_LINKED: 'ticket.linked',
   TICKET_UNLINKED: 'ticket.unlinked',
 
+  // Phase 4 — the reply-template library. ONLY the library is audited (FR-077):
+  // changing a template changes what every agent says to customers, which is a
+  // configuration change. Ordinary note, task, and notification activity is
+  // deliberately absent — flooding the log an investigator reads would make it
+  // useless for the events it exists to record.
+  TEMPLATE_CREATED: 'template.created',
+  TEMPLATE_UPDATED: 'template.updated',
+  TEMPLATE_RETIRED: 'template.retired',
+
   // Defined in Phase 1 with no caller; Phase 2 is the first phase that
   // exports business records, so this finally acquires one.
   DATA_EXPORTED: 'data.exported',

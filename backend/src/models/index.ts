@@ -6,11 +6,16 @@ import { CustomerContact } from './customer-contact.model.js';
 import { CustomerNote } from './customer-note.model.js';
 import { Customer } from './customer.model.js';
 import { DuplicateOverride } from './duplicate-override.model.js';
+import { Notification } from './notification.model.js';
 import { PasswordHistory } from './password-history.model.js';
+import { ReplyTemplate } from './reply-template.model.js';
 import { RolePermission } from './role-permission.model.js';
 import { Role } from './role.model.js';
+import { Task } from './task.model.js';
 import { TicketHistory } from './ticket-history.model.js';
 import { TicketLink } from './ticket-link.model.js';
+import { TicketNoteMention } from './ticket-note-mention.model.js';
+import { TicketNote } from './ticket-note.model.js';
 import { Ticket } from './ticket.model.js';
 import { User } from './user.model.js';
 
@@ -79,6 +84,37 @@ TicketLink.belongsTo(Ticket, { foreignKey: 'ticket_id', as: 'ticket' });
 TicketLink.belongsTo(Ticket, { foreignKey: 'linked_ticket_id', as: 'linkedTicket' });
 TicketLink.belongsTo(User, { foreignKey: 'created_by_user_id', as: 'createdBy' });
 
+// --- Phase 4: dashboard, notes, notifications, tasks, templates ---
+
+// Internal notes. Separate from CustomerNote on purpose (research.md D5).
+Ticket.hasMany(TicketNote, { foreignKey: 'ticket_id', as: 'notes' });
+TicketNote.belongsTo(Ticket, { foreignKey: 'ticket_id', as: 'ticket' });
+TicketNote.belongsTo(User, { foreignKey: 'author_user_id', as: 'author' });
+
+// The mention rows are what the interface renders `@[user:12]` tokens from, so
+// a rename or deactivation never misattributes a note (FR-035, FR-041).
+TicketNote.hasMany(TicketNoteMention, { foreignKey: 'note_id', as: 'mentions' });
+TicketNoteMention.belongsTo(TicketNote, { foreignKey: 'note_id', as: 'note' });
+TicketNoteMention.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
+// Tasks are personal (Clarifications Q3): one owner, no assignee association,
+// because there is no such action.
+User.hasMany(Task, { foreignKey: 'owner_user_id', as: 'tasks' });
+Task.belongsTo(User, { foreignKey: 'owner_user_id', as: 'owner' });
+Task.belongsTo(Ticket, { foreignKey: 'ticket_id', as: 'ticket' });
+Task.belongsTo(Customer, { foreignKey: 'customer_id', as: 'customer' });
+
+// A notification belongs to its RECIPIENT. `actor` is nullable because
+// task.reminder and ticket.due_soon are system-generated — nobody caused them.
+User.hasMany(Notification, { foreignKey: 'user_id', as: 'notifications' });
+Notification.belongsTo(User, { foreignKey: 'user_id', as: 'recipient' });
+Notification.belongsTo(User, { foreignKey: 'actor_user_id', as: 'actor' });
+Notification.belongsTo(Ticket, { foreignKey: 'ticket_id', as: 'ticket' });
+Notification.belongsTo(Task, { foreignKey: 'task_id', as: 'task' });
+Notification.belongsTo(TicketNote, { foreignKey: 'note_id', as: 'note' });
+
+ReplyTemplate.belongsTo(User, { foreignKey: 'created_by_user_id', as: 'createdBy' });
+
 export {
   sequelize,
   AuditLog,
@@ -87,11 +123,16 @@ export {
   CustomerContact,
   CustomerNote,
   DuplicateOverride,
+  Notification,
   PasswordHistory,
+  ReplyTemplate,
   Role,
   RolePermission,
+  Task,
   Ticket,
   TicketHistory,
   TicketLink,
+  TicketNote,
+  TicketNoteMention,
   User,
 };

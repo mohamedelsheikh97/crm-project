@@ -4,6 +4,7 @@ import i18n from '../i18n';
 import { useAuthStore } from '../stores/auth.store';
 import AdminLayout from '../layouts/AdminLayout.vue';
 import ChangePasswordView from '../views/ChangePasswordView.vue';
+import DashboardView from '../views/DashboardView.vue';
 import HomeView from '../views/HomeView.vue';
 import LoginView from '../views/LoginView.vue';
 import CustomerFormView from '../views/customers/CustomerFormView.vue';
@@ -15,6 +16,7 @@ import TicketDetailView from '../views/tickets/TicketDetailView.vue';
 import TicketListView from '../views/tickets/TicketListView.vue';
 import AuditLogView from '../views/admin/AuditLogView.vue';
 import RolesView from '../views/admin/RolesView.vue';
+import TemplatesView from '../views/admin/TemplatesView.vue';
 import SettingsShellView from '../views/admin/SettingsShellView.vue';
 import UserFormView from '../views/admin/UserFormView.vue';
 import UsersListView from '../views/admin/UsersListView.vue';
@@ -30,6 +32,18 @@ const router = createRouter({
       // An i18n key, never a literal — navigation is translatable from the
       // first route onward (Phase 0 frontend-shell.md).
       meta: { titleKey: 'route.home.title' },
+    },
+    // The screen an agent lives in. Top level, like customers and tickets: it
+    // is everyday work rather than administration.
+    {
+      path: '/dashboard',
+      name: 'dashboard',
+      component: DashboardView,
+      meta: {
+        titleKey: 'route.dashboard.title',
+        requiresAuth: true,
+        permission: 'dashboard:view',
+      },
     },
     {
       path: '/login',
@@ -152,6 +166,14 @@ const router = createRouter({
           name: 'admin-audit',
           component: AuditLogView,
           meta: { titleKey: 'route.admin.audit.title', permission: 'audit:view' },
+        },
+        // Managing the library is administration; USING a template needs no
+        // route at all — the picker lives inside the note composer.
+        {
+          path: 'templates',
+          name: 'admin-templates',
+          component: TemplatesView,
+          meta: { titleKey: 'route.templates.title', permission: 'templates:manage' },
         },
         {
           path: 'settings',

@@ -17,9 +17,28 @@ const defaultRoutes: RouteRecordRaw[] = [
  */
 export function mountWithPlugins<C extends Component>(
   component: C,
-  options: ComponentMountingOptions<C> & { locale?: 'en' | 'ar'; routes?: RouteRecordRaw[] } = {},
+  options: ComponentMountingOptions<C> & {
+    locale?: 'en' | 'ar';
+    routes?: RouteRecordRaw[];
+    /**
+     * An existing Pinia instance, for a test that needs to SEED a store before
+     * mounting.
+     *
+     * Without this the helper creates its own, and a store the test populated
+     * beforehand is a different instance from the one the component resolves —
+     * so the component renders an empty state and the test fails for a reason
+     * that has nothing to do with what it is checking.
+     */
+    pinia?: ReturnType<typeof createPinia>;
+  } = {},
 ) {
-  const { locale = 'en', routes = defaultRoutes, global = {}, ...rest } = options;
+  const {
+    locale = 'en',
+    routes = defaultRoutes,
+    pinia = createPinia(),
+    global = {},
+    ...rest
+  } = options;
 
   const i18n = createI18n({ legacy: false, locale, fallbackLocale: 'en', messages: { en, ar } });
   const router = createRouter({ history: createMemoryHistory(), routes });
@@ -28,7 +47,7 @@ export function mountWithPlugins<C extends Component>(
     ...rest,
     global: {
       ...global,
-      plugins: [createPinia(), i18n, router, ...(global.plugins ?? [])],
+      plugins: [pinia, i18n, router, ...(global.plugins ?? [])],
     },
   } as ComponentMountingOptions<C>);
 }

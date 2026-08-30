@@ -28,6 +28,10 @@ export async function seedTicket(
     description?: string | null;
     mergedInto?: Ticket | null;
     escalationReason?: string | null;
+    /** Phase 4. Null and undefined both mean "no due date". */
+    dueAt?: Date | null;
+    /** The due date already warned about — see ticket-due.service.ts. */
+    dueWarningSentFor?: Date | null;
   } = {},
 ): Promise<Ticket> {
   const customer = options.customer ?? (await seedCustomer());
@@ -47,6 +51,8 @@ export async function seedTicket(
     created_by_user_id: options.createdBy.id,
     merged_into_ticket_id: options.mergedInto?.id ?? null,
     escalation_reason: options.escalationReason ?? null,
+    due_at: options.dueAt ?? null,
+    due_warning_sent_for: options.dueWarningSentFor ?? null,
   });
 }
 

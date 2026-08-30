@@ -1,5 +1,6 @@
 import { Router } from 'express';
 
+import * as dashboardController from '../../controllers/dashboard/dashboard.controller.js';
 import * as ticketsController from '../../controllers/tickets/tickets.controller.js';
 import { requirePermission } from '../../middleware/require-permission.js';
 
@@ -31,6 +32,25 @@ router.post(
 // Supervisor-only (Clarifications Q3). There is deliberately no claim route: an
 // Agent cannot assign a ticket to anyone, including themselves.
 router.put('/:id/assignee', requirePermission('tickets:assign'), ticketsController.assign);
+
+// Phase 4. Its OWN permission, not tickets:update: reading a queue must never
+// imply the authority to change what is late (FR-075). PUT because the whole
+// value is replaced and a null `dueAt` is a deliberate clear (FR-026).
+router.put(
+  '/:id/due-date',
+  requirePermission('tickets:set_due_date'),
+  ticketsController.setDueDate,
+);
+
+// The customer context panel: ONE call for the whole panel, because three
+// round-trips would make "without navigating away" feel like navigating away.
+// Requires customers:view IN ADDITION to the group's authentication; a caller
+// without it gets no panel and loses no ticket action (FR-018).
+router.get(
+  '/:id/context',
+  requirePermission('customers:view'),
+  dashboardController.customerContext,
+);
 
 // tickets:view, NOT audit:view. The per-ticket history is everyday working
 // context; the audit log is administration (FR-037).

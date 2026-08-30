@@ -37,13 +37,28 @@ function seeder(file: string): { up: (qi: unknown) => Promise<void> } {
 const ROLE_PERMISSIONS_SEEDER = '20260826000007-role-permissions.cjs';
 const CUSTOMER_PERMISSIONS_SEEDER = '20260827000001-customer-permissions.cjs';
 const TICKET_PERMISSIONS_SEEDER = '20260828000001-ticket-permissions.cjs';
+const DASHBOARD_PERMISSIONS_SEEDER = '20260829000001-dashboard-permissions.cjs';
 const ADMIN_USER_SEEDER = '20260825000002-admin-user.cjs';
 
+/**
+ * Only GRANT seeders and the development account run here.
+ *
+ * Phase 4's `20260829000002-starter-templates.cjs` is deliberately NOT in this
+ * list, even though it ships with the application. It attributes each template
+ * to the seeded administrator through a `RESTRICT` foreign key, which makes
+ * that account undeletable — and several existing tests delete it to construct
+ * a "last administrator" scenario. Seeding content here would break them for a
+ * reason having nothing to do with what they test.
+ *
+ * The rule this settles for later phases: this helper seeds PERMISSIONS, not
+ * CONTENT. A test that needs a template creates its own.
+ */
 async function reseed(): Promise<void> {
   const queryInterface = sequelize.getQueryInterface();
   await seeder(ROLE_PERMISSIONS_SEEDER).up(queryInterface);
   await seeder(CUSTOMER_PERMISSIONS_SEEDER).up(queryInterface);
   await seeder(TICKET_PERMISSIONS_SEEDER).up(queryInterface);
+  await seeder(DASHBOARD_PERMISSIONS_SEEDER).up(queryInterface);
   await seeder(ADMIN_USER_SEEDER).up(queryInterface);
 }
 

@@ -3,6 +3,8 @@ import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 
 import LanguageToggle from '../components/LanguageToggle.vue';
+import NotificationBell from '../components/notifications/NotificationBell.vue';
+import { useNotificationStream } from '../composables/useNotificationStream';
 import { usePermissions } from '../composables/usePermissions';
 import * as authService from '../services/auth.service';
 import { useAuthStore } from '../stores/auth.store';
@@ -18,6 +20,16 @@ const { can, canAny } = usePermissions();
  * enforces independently.
  */
 const ADMIN_PERMISSIONS = ['users:view', 'roles:view', 'audit:view', 'settings:view'];
+
+/**
+ * Opened HERE rather than on the dashboard, because the unread count has to be
+ * visible from every screen (FR-048) — a notification an agent only sees when
+ * they happen to open one particular screen is not a notification.
+ *
+ * The stream is an accelerant, never a dependency: if it never connects, every
+ * notification still arrives on load and on the next navigation (FR-054).
+ */
+useNotificationStream();
 
 async function signOut(): Promise<void> {
   await authService.logout();
@@ -62,6 +74,8 @@ async function signOut(): Promise<void> {
             {{ t('login.submit') }}
           </RouterLink>
 
+          <NotificationBell v-if="auth.isAuthenticated" />
+
           <LanguageToggle />
         </div>
       </div>
@@ -77,6 +91,15 @@ async function signOut(): Promise<void> {
             active-class="font-medium"
           >
             {{ t('nav.home') }}
+          </RouterLink>
+        </li>
+        <li v-if="can('dashboard:view')">
+          <RouterLink
+            :to="{ name: 'dashboard' }"
+            class="rounded-md px-2 py-1 text-slate-700 hover:bg-slate-100"
+            active-class="font-medium"
+          >
+            {{ t('nav.dashboard') }}
           </RouterLink>
         </li>
         <li v-if="can('customers:view')">

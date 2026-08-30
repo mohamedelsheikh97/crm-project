@@ -76,6 +76,38 @@ export const PERMISSIONS = [
   // Act on a ticket assigned to someone else. Conditional by nature: it is
   // never a route gate, only an additional allowance the service consults.
   define('tickets', 'manage_any'),
+
+  // Phase 4 — Agent Dashboard.
+  //
+  // `dashboard:view` covers a user's OWN queue, notifications, and tasks;
+  // `view_any` is what lets a Supervisor look at someone else's queue (FR-010).
+  //
+  // There is deliberately NO `notifications:view` key. A permission every role
+  // holds unconditionally, and that can therefore never refuse anything, is not
+  // a gate — it is noise on the roles screen and a matrix row that cannot fail.
+  // Notifications and tasks are scoped by OWNERSHIP, enforced in the service
+  // and verified by tests/ownership.matrix.test.ts (FR-076, SC-012). Same
+  // reasoning `tickets:manage_any` above already applies.
+  define('dashboard', 'view'),
+  define('dashboard', 'view_any'),
+
+  // Separate from tickets:update because reading a queue must never imply the
+  // authority to change what is late (FR-075).
+  define('tickets', 'set_due_date'),
+
+  // Mirrors the customer `notes` split: "may add a note" is grantable without
+  // "may edit someone else's". Anyone holding ticket_notes:create may always
+  // edit their own.
+  define('ticket_notes', 'create'),
+  define('ticket_notes', 'manage'),
+
+  // Own tasks only. Tasks are personal (Clarifications Q3) — there is no key
+  // for acting on another user's task, because there is no such action.
+  define('tasks', 'manage'),
+
+  // Using the library is everyday work; changing it for everyone is not.
+  define('templates', 'use'),
+  define('templates', 'manage'),
 ] as const satisfies readonly PermissionDefinition[];
 
 export type PermissionKey = (typeof PERMISSIONS)[number]['key'];
