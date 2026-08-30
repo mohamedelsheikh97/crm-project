@@ -3,6 +3,7 @@ import type { ErrorRequestHandler, RequestHandler } from 'express';
 import {
   AppError,
   DuplicateCustomerError,
+  MentionNotVisibleError,
   TicketMergedError,
   TransitionNotAllowedError,
   notFound,
@@ -41,6 +42,17 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
     res.status(err.status).json({
       error: { code: err.code, message: err.message, details: err.details },
       merged: err.merged,
+    });
+    return;
+  }
+
+  // Phase 4, same rule again. The composer has to tell the author WHICH person
+  // it refused and why, and a list of user summaries does not fit the
+  // {field, message} shape `details` has a defined meaning for.
+  if (err instanceof MentionNotVisibleError) {
+    res.status(err.status).json({
+      error: { code: err.code, message: err.message, details: err.details },
+      mentions: err.mentions,
     });
     return;
   }

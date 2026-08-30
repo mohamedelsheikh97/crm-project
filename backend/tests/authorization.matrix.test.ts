@@ -59,6 +59,14 @@ const PROBES: Record<
   'tickets:assign': { method: 'put', path: '/api/tickets/999999/assignee' },
   'tickets:merge': { method: 'post', path: '/api/tickets/999999/merge' },
   'tickets:link': { method: 'post', path: '/api/tickets/999999/links' },
+
+  // Phase 4 — the agent's workspace. Top level for the same reason again.
+  'dashboard:view': { method: 'get', path: '/api/dashboard/queue' },
+  'tickets:set_due_date': { method: 'put', path: '/api/tickets/999999/due-date' },
+  'ticket_notes:create': { method: 'post', path: '/api/tickets/999999/notes' },
+  'tasks:manage': { method: 'post', path: '/api/tasks' },
+  'templates:use': { method: 'get', path: '/api/templates' },
+  'templates:manage': { method: 'post', path: '/api/templates' },
 };
 
 const ROLE_KEYS = ['agent', 'supervisor', 'admin'] as const;
@@ -90,6 +98,16 @@ const CONDITIONAL_PERMISSIONS: Record<string, string> = {
   // `tickets:manage_any` is never a route gate at all: it is only ever an
   // additional allowance the service consults.
   'tickets:manage_any': 'backend/tests/tickets/transitions.test.ts',
+
+  // Phase 4. `dashboard:view_any` is conditional in exactly the way
+  // `notes:manage` is: the route gate is dashboard:view, and the service
+  // additionally demands view_any only when `userId` names someone else
+  // (FR-010). A route probe cannot express "allowed for your own queue, refused
+  // for another's".
+  'dashboard:view_any': 'backend/tests/dashboard/queue.test.ts',
+  // Same shape: ticket_notes:create gates the route, and the service demands
+  // ticket_notes:manage only when the note belongs to someone else (FR-034).
+  'ticket_notes:manage': 'backend/tests/ticket-notes/notes.test.ts',
 };
 
 interface RegisteredRoute {
@@ -199,6 +217,27 @@ describe('permission matrix (SC-003)', () => {
       expect(PERMISSIONS.map((p) => p.key)).toContain(key);
       expect(coveredBy).toMatch(/.test.ts$/);
     }
+  });
+
+  it('every catalog key is granted to at least one role', async () => {
+    // The trap this project has hit at every phase boundary, stated as an
+    // assertion: a key added to the catalog without a matching grant in a
+    // seeder is refused for EVERYONE, and the resulting 403 looks like a
+    // permission bug rather than a missing seeder. Administrators hold the
+    // whole catalog, so an ungranted key here means the seeder was forgotten.
+    const { roleHasPermission } = await import('../src/services/authorization.service.js');
+    const roles = await Role.findAll();
+    const ungranted: string[] = [];
+
+    for (const permission of PERMISSIONS) {
+      const held = await Promise.all(
+        roles.map((role) => roleHasPermission(role.id, permission.key as PermissionKey)),
+      );
+
+      if (!held.some(Boolean)) ungranted.push(permission.key);
+    }
+
+    expect(ungranted).toEqual([]);
   });
 
   it('every catalog key is enforced by some route', () => {

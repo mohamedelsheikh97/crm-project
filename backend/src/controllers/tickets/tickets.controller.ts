@@ -4,6 +4,7 @@ import { notFound, unauthenticated } from '../../errors/app-error.js';
 import { auditContextFrom } from '../../services/audit.service.js';
 import * as historyService from '../../services/ticket-history.service.js';
 import * as linkService from '../../services/ticket-link.service.js';
+import * as ticketDueService from '../../services/ticket-due.service.js';
 import * as ticketService from '../../services/ticket.service.js';
 
 /**
@@ -169,6 +170,36 @@ export async function assign(req: Request, res: Response, next: NextFunction): P
           auditContextFrom(req),
         ),
       );
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Set, change, or clear a due date (Phase 4, FR-019).
+ *
+ * PUT rather than PATCH because the whole value is replaced every time, and
+ * `dueAt: null` is a clear rather than an omission — a distinction PATCH
+ * semantics blur.
+ */
+export async function setDueDate(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const body = (req.body ?? {}) as { dueAt?: unknown; version?: unknown };
+
+    res.status(200).json(
+      await ticketDueService.setDueDate(
+        ticketId(req),
+        {
+          // Anything that is not a string is treated as a clear. The service
+          // rejects an unparseable string, so a malformed date still fails
+          // loudly rather than silently clearing.
+          dueAt: typeof body.dueAt === 'string' ? body.dueAt : null,
+          version: body.version,
+        },
+        actorFrom(req),
+        auditContextFrom(req),
+      ),
+    );
   } catch (error) {
     next(error);
   }

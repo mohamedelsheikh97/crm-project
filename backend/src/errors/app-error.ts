@@ -11,6 +11,11 @@ export type ErrorCode =
   | 'TICKET_MERGED'
   | 'TRANSITION_NOT_ALLOWED'
   | 'CUSTOMER_INACTIVE'
+  // Phase 4 — Agent Dashboard.
+  | 'MENTION_NOT_VISIBLE'
+  | 'MENTION_LIMIT'
+  | 'TEMPLATE_LANGUAGE_REQUIRED'
+  | 'TEMPLATE_RETIRED'
   | 'INTERNAL_ERROR';
 
 export interface ErrorDetail {
@@ -179,4 +184,61 @@ export function customerInactive(): AppError {
     422,
     'This customer is deactivated and cannot have new tickets raised against them.',
   );
+}
+
+/**
+ * A note named someone who cannot open the ticket (Phase 4, FR-037).
+ *
+ * Refused at COMPOSITION time rather than accepted-and-silently-dropped. The
+ * alternative leaves the author believing they asked a colleague for help who
+ * was never told — the worst possible outcome for a collaboration feature.
+ *
+ * `mentions` rides BESIDE the envelope, not inside `details`, for the reason
+ * Phase 2 established with `duplicates`: `{field, message}` has a defined
+ * meaning that a list of user summaries does not fit.
+ */
+export interface MentionSummary {
+  id: number;
+  fullName: string;
+  isActive: boolean;
+}
+
+export class MentionNotVisibleError extends AppError {
+  readonly mentions: MentionSummary[];
+
+  constructor(mentions: MentionSummary[]) {
+    super('MENTION_NOT_VISIBLE', 400, 'One or more mentioned users cannot view this ticket.');
+    this.name = 'MentionNotVisibleError';
+    this.mentions = mentions;
+  }
+}
+
+export function mentionNotVisible(mentions: MentionSummary[]): MentionNotVisibleError {
+  return new MentionNotVisibleError(mentions);
+}
+
+/** More people named in one note than the limit allows (FR-038). */
+export function mentionLimit(limit: number): AppError {
+  return new AppError('MENTION_LIMIT', 400, `A note may mention at most ${limit} people.`, [
+    { field: 'body', message: `ticketNote.error.mentionLimit:${limit}` },
+  ]);
+}
+
+/**
+ * A template with neither a complete English nor a complete Arabic pair
+ * (Phase 4, FR-070). Validated here rather than in the schema so the message
+ * can say which half is missing.
+ */
+export function templateLanguageRequired(details: ErrorDetail[] = []): AppError {
+  return new AppError(
+    'TEMPLATE_LANGUAGE_REQUIRED',
+    400,
+    'A template needs a title and body in at least one language.',
+    details,
+  );
+}
+
+/** Retired templates leave the picker; they do not come back through the API. */
+export function templateRetired(): AppError {
+  return new AppError('TEMPLATE_RETIRED', 409, 'This template has been retired.');
 }

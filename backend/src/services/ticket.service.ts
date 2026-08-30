@@ -24,6 +24,9 @@ import {
 
 import * as auditService from './audit.service.js';
 import * as authorizationService from './authorization.service.js';
+import * as notificationService from './notification.service.js';
+import * as taskService from './task.service.js';
+import type { TaskView } from './task.service.js';
 import * as historyService from './ticket-history.service.js';
 import * as lifecycleService from './ticket-lifecycle.service.js';
 
@@ -77,6 +80,12 @@ export interface TicketDetail extends TicketSummary {
   links: TicketLinkView[];
   /** Where a merged ticket redirects to, resolved through the whole chain. */
   survivor: { id: number; reference: string } | null;
+  /**
+   * Phase 4 (FR-064). Present ONLY on the response to a close that left open
+   * follow-ups behind, so the interface can surface them. Its absence means
+   * there were none — it is a notice, never a refusal.
+   */
+  outstandingTasks?: TaskView[];
 }
 
 type Loaded = Ticket & { customer?: Customer; assignee?: User | null; createdBy?: User | null };
@@ -662,7 +671,21 @@ export async function transition(
 
   // Reopening RETAINS ALL HISTORY (FR-022) — nothing above deletes anything,
   // which is the whole implementation of that requirement.
-  return getById(ticket.id);
+  const detail = await getById(ticket.id);
+
+  // Phase 4 (FR-064). Closing a ticket that still has open follow-ups SURFACES
+  // them; it never refuses. The person closing may well know the task is moot,
+  // and blocking them would teach everyone to stop recording follow-ups. This
+  // reports so they can decide.
+  if (ticket.status === 'closed') {
+    const outstanding = await taskService.outstandingForTicket(ticket.id);
+
+    if (outstanding.length > 0) {
+      return { ...detail, outstandingTasks: outstanding };
+    }
+  }
+
+  return detail;
 }
 
 // --- Assignment ----------------------------------------------------------
@@ -758,6 +781,26 @@ export async function assign(
       },
       transaction,
     );
+
+    // Phase 4 (FR-042). Inside the transaction so the notification and the
+    // assignment commit together; the service emits to the live stream only
+    // after that commit, so nobody is ever told about an assignment that then
+    // rolled back.
+    //
+    // Only on assignment, not on unassignment: "this is no longer yours" is not
+    // news an agent needs pushed at them mid-task. A supervisor reassigning
+    // work is visible in the queue, which is where it belongs.
+    if (nextId !== null) {
+      await notificationService.create(
+        {
+          userId: nextId,
+          type: notificationService.NOTIFICATION_TYPES.TICKET_ASSIGNED,
+          actorUserId: actor.id,
+          ticketId: ticket.id,
+        },
+        transaction,
+      );
+    }
   });
 
   return getById(ticket.id);
@@ -821,6 +864,12 @@ export async function merge(
   await sequelize.transaction(async (transaction) => {
     ticket.merged_into_ticket_id = target.id;
     await ticket.save({ transaction });
+
+    // Phase 4 (FR-065). A follow-up someone committed to does not evaporate
+    // because the ticket it hung on was absorbed — it moves to the survivor,
+    // which is the ticket that is still workable. Done in the merge
+    // transaction so a task can never be left pointing at a redirect.
+    await taskService.repointToSurvivor(ticket.id, target.id, transaction);
 
     // Recorded against BOTH tickets. The absorbed ticket's history says where
     // it went; the survivor's says what it received. Neither row is moved —

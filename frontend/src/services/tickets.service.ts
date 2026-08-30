@@ -50,6 +50,20 @@ export interface TicketLinkView {
 
 export interface Ticket extends TicketSummary {
   description: string | null;
+  /**
+   * Phase 4. Set manually by a permitted user; null means none.
+   *
+   * Whether the ticket is OVERDUE is not derived from this in the browser —
+   * that comes from the server, so two agents in different timezones cannot
+   * disagree about what is late (FR-020).
+   */
+  dueAt?: string | null;
+  /**
+   * Present ONLY on the response to a close that left open follow-ups behind
+   * (FR-064). Its absence means there were none — it is a notice, never a
+   * refusal, and the close has already happened either way.
+   */
+  outstandingTasks?: Array<{ id: number; title: string; dueAt: string | null }>;
   escalationReason: string | null;
   createdBy: { id: number; fullName: string } | null;
   links: TicketLinkView[];
