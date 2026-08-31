@@ -6,6 +6,8 @@ import { useRoute } from 'vue-router';
 import CustomerContextPanel from '../../components/tickets/CustomerContextPanel.vue';
 import DueDateControl from '../../components/tickets/DueDateControl.vue';
 import TicketHistoryTimeline from '../../components/tickets/TicketHistoryTimeline.vue';
+import MessageThread from '../../components/messages/MessageThread.vue';
+import ReplyComposer from '../../components/messages/ReplyComposer.vue';
 import TicketNoteComposer from '../../components/tickets/TicketNoteComposer.vue';
 import TicketNoteThread from '../../components/tickets/TicketNoteThread.vue';
 import TicketLinkPanel from '../../components/tickets/TicketLinkPanel.vue';
@@ -17,6 +19,7 @@ import { usePermissions } from '../../composables/usePermissions';
 import * as adminUsersService from '../../services/admin-users.service';
 import { ApiError } from '../../services/http';
 import * as dashboardService from '../../services/dashboard.service';
+import * as messagesService from '../../services/messages.service';
 import * as ticketNotesService from '../../services/ticket-notes.service';
 import type { TicketNote } from '../../services/ticket-notes.service';
 import { useAuthStore } from '../../stores/auth.store';
@@ -69,6 +72,18 @@ async function load(): Promise<void> {
   try {
     ticket.value = await ticketsService.get(ticketId.value);
     resetForm();
+
+    // Notes and correspondence load WITH the ticket.
+    //
+    // `loadNotes` was previously only called after adding a note, so opening a
+    // ticket showed an empty note thread until you wrote one — a Phase 4 gap
+    // found while wiring the message thread beside it.
+    //
+    // Not awaited: the ticket itself is what the agent is waiting for, and
+    // holding the whole screen for two secondary lists makes it feel slower
+    // than it is. Each list carries its own loading state.
+    void loadNotes();
+    void loadMessages();
   } catch (cause) {
     error.value = cause instanceof ApiError ? cause.message : t('error.unexpected');
   } finally {
@@ -105,6 +120,53 @@ onMounted(async () => {
 });
 
 watch(ticketId, load);
+
+// --- Phase 5: customer correspondence -----------------------------------
+//
+// Held in state SEPARATE from notes, loaded by a separate service, rendered by
+// a separate component. The two composers below are never one component with a
+// flag: a wrong flag would send a colleague's private note to a customer, and
+// SC-006 requires that mistake to be unwritable rather than unlikely.
+
+const messages = ref<messagesService.TicketMessage[]>([]);
+const messagesLoading = ref(false);
+const sendingMessage = ref(false);
+const composerContext = ref<messagesService.ComposerContext | null>(null);
+
+async function loadMessages(): Promise<void> {
+  if (!ticket.value) return;
+
+  messagesLoading.value = true;
+
+  try {
+    const [page, context] = await Promise.all([
+      messagesService.fetchMessages(ticket.value.id),
+      messagesService.fetchComposerContext(ticket.value.id),
+    ]);
+
+    messages.value = page.items;
+    // Fetched with the thread rather than on focus, so an opt-out or a closed
+    // reply window is on screen before the agent starts writing (FR-051).
+    composerContext.value = context;
+  } finally {
+    messagesLoading.value = false;
+  }
+}
+
+async function sendMessage(body: string): Promise<void> {
+  if (!ticket.value) return;
+
+  sendingMessage.value = true;
+
+  try {
+    await messagesService.sendMessage(ticket.value.id, body);
+    await loadMessages();
+    // A sent reply writes a history entry, so the timeline is stale.
+    void timeline.value?.reload();
+  } finally {
+    sendingMessage.value = false;
+  }
+}
 
 // --- Phase 4: notes, mentions, and the due date -------------------------
 
@@ -500,6 +562,21 @@ const formatter = computed(
           :can-edit="can('tickets:set_due_date')"
           :saving="savingDueDate"
           @save="saveDueDate"
+        />
+      </section>
+
+      <!-- CORRESPONDENCE, above the internal notes. Deliberate: the customer's
+           own words are what an agent came to read, and the note thread is
+           commentary on them. -->
+      <section>
+        <MessageThread :messages="messages" :loading="messagesLoading" />
+
+        <ReplyComposer
+          v-if="can('messages:send') && !isMerged"
+          class="mt-3"
+          :context="composerContext"
+          :sending="sendingMessage"
+          @send="sendMessage"
         />
       </section>
 

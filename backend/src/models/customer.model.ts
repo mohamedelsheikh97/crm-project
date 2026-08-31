@@ -21,6 +21,20 @@ export class Customer extends Model<InferAttributes<Customer>, InferCreationAttr
   declare company: string | null;
   declare address: string | null;
   declare is_active: CreationOptional<boolean>;
+  /**
+   * TRUE means the SYSTEM created this record from an unrecognised sender and
+   * nobody has confirmed who it is (Phase 5, Clarifications Q2, FR-014b).
+   *
+   * A flag rather than a second table, so the Phase 4 queue, the context panel,
+   * the timeline and every existing query keep working untouched — only the
+   * places that must distinguish look at it.
+   *
+   * This is what makes `customers` the first table the outside world can cause
+   * rows in. The defence is FR-020 and the per-channel intake rate limit, not
+   * this column. Phase 10's reporting must not count a provisional customer as
+   * one somebody onboarded.
+   */
+  declare is_provisional: CreationOptional<boolean>;
   declare created_by_user_id: number | null;
   declare version: CreationOptional<number>;
   declare readonly created_at: CreationOptional<Date>;
@@ -46,6 +60,7 @@ Customer.init(
     },
     address: { type: DataTypes.TEXT, allowNull: true },
     is_active: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },
+    is_provisional: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
     created_by_user_id: { type: DataTypes.INTEGER.UNSIGNED, allowNull: true },
     version: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false, defaultValue: 0 },
     created_at: DataTypes.DATE,

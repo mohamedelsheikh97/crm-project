@@ -30,6 +30,11 @@ export async function login(email: string, password: string): Promise<SessionUse
   const user = await fetchMe();
   auth.setUser(user);
 
+  // A fresh sign-in IS a restored session, so record it as one. Without this
+  // the guard would re-ask /auth/me on the next navigation after a
+  // sign-out-then-sign-in, for an answer it already has.
+  markSessionRestored();
+
   return user;
 }
 
@@ -38,6 +43,9 @@ export async function logout(): Promise<void> {
     await http.post<void>('/auth/logout');
   } finally {
     useAuthStore().clear();
+    // Forget the cached restore, or signing back in within the same page load
+    // would be answered from a promise that resolved for the previous session.
+    resetSessionRestore();
   }
 }
 
@@ -71,4 +79,42 @@ export async function restoreSession(): Promise<boolean> {
     auth.clear();
     return false;
   }
+}
+
+/**
+ * The single restore attempt for this page load, shared by everyone who needs
+ * to know whether a session exists.
+ *
+ * THE ROUTER GUARD AWAITS THIS, and that is not belt-and-braces — it is the
+ * only thing that makes the guard correct. `app.use(router)` starts the initial
+ * navigation IMMEDIATELY, inside `install()`, rather than waiting for
+ * `app.mount()`. So the first `beforeEach` runs before any code that follows
+ * `app.use(router)` in main.ts, including the restore. Left to ordering, the
+ * first guard always saw a null access token — the token lives in memory only
+ * (D5/D6), so a page load starts with none — and bounced every `requiresAuth`
+ * route to the login screen despite a perfectly valid refresh cookie.
+ *
+ * Single-flight, so the guard and the bootstrap share one `/auth/me` rather
+ * than racing two.
+ */
+let restoreOnce: Promise<boolean> | null = null;
+
+export function ensureSessionRestored(): Promise<boolean> {
+  restoreOnce ??= restoreSession();
+  return restoreOnce;
+}
+
+/**
+ * Forgets the restore result, so the next call re-asks.
+ *
+ * Needed after signing out: without it, a user who signs out and signs back in
+ * within the same page load would be answered from a stale promise.
+ */
+export function resetSessionRestore(): void {
+  restoreOnce = null;
+}
+
+/** Records that the session is already known, without asking again. */
+export function markSessionRestored(): void {
+  restoreOnce = Promise.resolve(true);
 }

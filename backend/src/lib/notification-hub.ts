@@ -36,8 +36,25 @@ const emitter = new EventEmitter();
 // concurrent agent, which is a normal team size rather than a bug.
 emitter.setMaxListeners(0);
 
-function channel(userId: number): string {
+/**
+ * Channel keys are OPAQUE STRINGS (Phase 5, research.md D10).
+ *
+ * Phase 4 keyed everything by `user:{id}` because notifications were the only
+ * thing streamed. Phase 5 adds live chat, whose subscribers are website
+ * visitors holding a per-conversation capability rather than users — they have
+ * no id to key on, and must not be able to reach any channel but their own.
+ *
+ * Generalising the key rather than adding a second hub keeps ONE publish path,
+ * which is what makes the single-process limit below liftable in one place.
+ * The constructors are here so no caller writes the string format itself.
+ */
+export function userChannel(userId: number): string {
   return `user:${userId}`;
+}
+
+/** One chat conversation. The subscriber is a visitor, never a user. */
+export function conversationChannel(sessionId: number): string {
+  return `conversation:${sessionId}`;
 }
 
 /**
@@ -48,7 +65,18 @@ function channel(userId: number): string {
  * they will see it at next sign-in (FR-047).
  */
 export function publish(userId: number, payload: NotificationPayload): void {
-  emitter.emit(channel(userId), payload);
+  publishTo(userChannel(userId), payload);
+}
+
+/**
+ * Publish to any channel key. The ordering rule is unchanged and is the whole
+ * reason this file stays small: EVERYTHING PUBLISHES AFTER ITS TRANSACTION
+ * COMMITS. A row that exists but was never emitted is a latency bug the
+ * client's catch-up query fixes; an event emitted for a transaction that then
+ * rolls back is a lie no query can fix.
+ */
+export function publishTo(channelKey: string, payload: NotificationPayload): void {
+  emitter.emit(channelKey, payload);
 }
 
 /**
@@ -59,14 +87,24 @@ export function publish(userId: number, payload: NotificationPayload): void {
  * `close` leaks a listener per reconnect, and reconnects are routine here.
  */
 export function subscribe(userId: number, listener: Listener): () => void {
-  emitter.on(channel(userId), listener);
+  return subscribeTo(userChannel(userId), listener);
+}
+
+/** Subscribe to any channel key. Same detach contract as `subscribe`. */
+export function subscribeTo(channelKey: string, listener: Listener): () => void {
+  emitter.on(channelKey, listener);
 
   return () => {
-    emitter.off(channel(userId), listener);
+    emitter.off(channelKey, listener);
   };
 }
 
 /** Live connection count for a user. Used by tests, not by any decision. */
 export function listenerCount(userId: number): number {
-  return emitter.listenerCount(channel(userId));
+  return emitter.listenerCount(userChannel(userId));
+}
+
+/** Live connection count for any channel key. Tests only. */
+export function listenerCountFor(channelKey: string): number {
+  return emitter.listenerCount(channelKey);
 }

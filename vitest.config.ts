@@ -22,7 +22,13 @@ export default defineConfig({
           // Real database round-trips plus bcrypt at cost 12, which is
           // deliberately slow. The default 5s is not enough.
           testTimeout: 20_000,
-          hookTimeout: 30_000,
+          // `setupTestDatabase` shells out to `sequelize-cli db:migrate` once
+          // per file, so this budget grows with the migration count — Phase 5
+          // added eleven and pushed the slowest file past 30s. Raised rather
+          // than worked around: the setup genuinely takes this long, and a
+          // timeout tuned to yesterday's schema fails for a reason that has
+          // nothing to do with the test it kills.
+          hookTimeout: 90_000,
           // Integration tests share one database, so they must not interleave.
           fileParallelism: false,
         },

@@ -2,12 +2,14 @@ import type { ErrorRequestHandler, RequestHandler } from 'express';
 
 import {
   AppError,
+  ChannelWindowClosedError,
   DuplicateCustomerError,
   MentionNotVisibleError,
   TicketMergedError,
   TransitionNotAllowedError,
   notFound,
 } from '../errors/app-error.js';
+import { RateLimitedError } from '../lib/rate-limit.js';
 
 export const notFoundHandler: RequestHandler = (_req, _res, next) => {
   next(notFound());
@@ -53,6 +55,28 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
     res.status(err.status).json({
       error: { code: err.code, message: err.message, details: err.details },
       mentions: err.mentions,
+    });
+    return;
+  }
+
+  // Phase 5, same sibling rule. The composer has to know what the channel
+  // permits BEFORE the agent writes, so the permitted templates and the reopen
+  // time ride beside the envelope rather than inside details[].
+  if (err instanceof ChannelWindowClosedError) {
+    res.status(err.status).json({
+      error: { code: err.code, message: err.message, details: err.details },
+      window: err.window,
+    });
+    return;
+  }
+
+  // Retry-After is the header a well-behaved client already knows how to obey,
+  // and the public endpoints this guards are reached by things that are not our
+  // interface (FR-105).
+  if (err instanceof RateLimitedError) {
+    res.setHeader('Retry-After', String(err.retryAfterSeconds));
+    res.status(err.status).json({
+      error: { code: err.code, message: err.message, details: err.details },
     });
     return;
   }
