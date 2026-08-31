@@ -43,14 +43,34 @@ export const TICKET_EVENTS = {
   // Records THAT a note happened, never its body (FR-078). The history stays a
   // change log; it does not become a second copy of the conversation.
   NOTE_ADDED: 'ticket.note.added',
+
+  // Phase 5. Records THAT correspondence happened, never its body — the same
+  // rule NOTE_ADDED follows (FR-078). The history stays a change log; the
+  // conversation itself lives in `messages` and is read from there.
+  MESSAGE_RECEIVED: 'ticket.message.received',
+  MESSAGE_SENT: 'ticket.message.sent',
+  // Moving a conversation to the correct customer (FR-017).
+  REATTRIBUTED: 'ticket.reattributed',
 } as const;
 
 export type TicketEvent = (typeof TICKET_EVENTS)[keyof typeof TICKET_EVENTS];
 
+/**
+ * `id: null` is the SYSTEM (Phase 5): a message arrived and nobody caused it.
+ * `fullName` then carries an i18n KEY rather than a sentence, so an Arabic
+ * reader is not shown the English word "System" — the same rule Phase 4 applied
+ * to notification rows.
+ */
 export interface HistoryActor {
-  id: number;
+  id: number | null;
   fullName: string;
 }
+
+/** The actor for an event the system caused, rather than a person. */
+export const SYSTEM_ACTOR: HistoryActor = {
+  id: null,
+  fullName: 'ticket.history.actor.system',
+};
 
 export interface HistoryEntryInput {
   ticketId: number;

@@ -20,7 +20,12 @@ export class TicketLink extends Model<
   declare id: CreationOptional<number>;
   declare ticket_id: number;
   declare linked_ticket_id: number;
-  declare created_by_user_id: number;
+  /**
+   * NULL means the SYSTEM created this link — Phase 5's closed-ticket rule,
+   * where an inbound reply raises a new ticket and links it to the closed one
+   * it continues (research D8). No actor, so no creator.
+   */
+  declare created_by_user_id: number | null;
   declare readonly created_at: CreationOptional<Date>;
   declare readonly updated_at: CreationOptional<Date>;
 }
@@ -30,7 +35,7 @@ TicketLink.init(
     id: { type: DataTypes.INTEGER.UNSIGNED, primaryKey: true, autoIncrement: true },
     ticket_id: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false },
     linked_ticket_id: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false },
-    created_by_user_id: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false },
+    created_by_user_id: { type: DataTypes.INTEGER.UNSIGNED, allowNull: true },
     created_at: DataTypes.DATE,
     updated_at: DataTypes.DATE,
   },

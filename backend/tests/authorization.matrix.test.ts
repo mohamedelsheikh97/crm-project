@@ -67,6 +67,17 @@ const PROBES: Record<
   'tasks:manage': { method: 'post', path: '/api/tasks' },
   'templates:use': { method: 'get', path: '/api/templates' },
   'templates:manage': { method: 'post', path: '/api/templates' },
+
+  // Phase 5 — communication channels. Messages hang off the ticket path
+  // because correspondence belongs to a ticket; channels and forms are
+  // administration and sit at the top level.
+  //
+  // There is deliberately no probe for reading a thread or a timeline: both
+  // ride on permissions that already have one (tickets:view, customers:view).
+  'messages:send': { method: 'post', path: '/api/tickets/999999/messages' },
+  'messages:reattribute': { method: 'post', path: '/api/tickets/999999/reattribute' },
+  'channels:manage': { method: 'get', path: '/api/channels' },
+  'forms:manage': { method: 'post', path: '/api/forms' },
 };
 
 const ROLE_KEYS = ['agent', 'supervisor', 'admin'] as const;

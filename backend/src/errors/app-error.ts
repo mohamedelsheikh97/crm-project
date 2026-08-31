@@ -16,6 +16,12 @@ export type ErrorCode =
   | 'MENTION_LIMIT'
   | 'TEMPLATE_LANGUAGE_REQUIRED'
   | 'TEMPLATE_RETIRED'
+  // Phase 5 — Communication Channels.
+  | 'RATE_LIMITED'
+  | 'NO_REPLY_CHANNEL'
+  | 'RECIPIENT_OPTED_OUT'
+  | 'CHANNEL_WINDOW_CLOSED'
+  | 'CHANNEL_UNAVAILABLE'
   | 'INTERNAL_ERROR';
 
 export interface ErrorDetail {
@@ -241,4 +247,78 @@ export function templateLanguageRequired(details: ErrorDetail[] = []): AppError 
 /** Retired templates leave the picker; they do not come back through the API. */
 export function templateRetired(): AppError {
   return new AppError('TEMPLATE_RETIRED', 409, 'This template has been retired.');
+}
+
+// --- Phase 5: Communication Channels -------------------------------------
+
+/**
+ * The ticket has no conversation to reply to (FR-042).
+ *
+ * Distinct from a permission failure: the agent may correspond, there is simply
+ * nowhere to send. A ticket someone typed in by hand is the ordinary case.
+ */
+export function noReplyChannel(): AppError {
+  return new AppError(
+    'NO_REPLY_CHANNEL',
+    409,
+    'This ticket has no customer conversation to reply to.',
+  );
+}
+
+/** The recipient has asked not to be messaged on this channel (FR-051). */
+export function recipientOptedOut(): AppError {
+  return new AppError(
+    'RECIPIENT_OPTED_OUT',
+    409,
+    'This recipient has opted out of messages on this channel.',
+  );
+}
+
+/**
+ * The channel is switched off, or its provider is unconfigured (FR-005).
+ *
+ * 503 rather than 409: nothing about the request is wrong, and the same request
+ * will succeed once an administrator fixes the configuration.
+ */
+export function channelUnavailable(): AppError {
+  return new AppError(
+    'CHANNEL_UNAVAILABLE',
+    503,
+    'This channel is switched off or not configured.',
+  );
+}
+
+/**
+ * The channel does not permit a free-form reply right now (FR-057, FR-058).
+ *
+ * `window` rides BESIDE the envelope rather than inside `details`, following
+ * the precedent Phase 2 set with `duplicates` and Phase 3 with `transition`:
+ * `{field, message}` has a defined meaning that a description of what a channel
+ * currently allows does not fit.
+ *
+ * This is what lets the composer tell an agent what they MAY send, before they
+ * write it — rather than accepting a message and refusing it afterwards.
+ */
+export interface ReplyWindowSummary {
+  channel: string;
+  reopensAt: string | null;
+  allowedTemplates: string[];
+}
+
+export class ChannelWindowClosedError extends AppError {
+  readonly window: ReplyWindowSummary;
+
+  constructor(window: ReplyWindowSummary) {
+    super(
+      'CHANNEL_WINDOW_CLOSED',
+      409,
+      'This channel does not allow a free-form reply at the moment.',
+    );
+    this.name = 'ChannelWindowClosedError';
+    this.window = window;
+  }
+}
+
+export function channelWindowClosed(window: ReplyWindowSummary): ChannelWindowClosedError {
+  return new ChannelWindowClosedError(window);
 }

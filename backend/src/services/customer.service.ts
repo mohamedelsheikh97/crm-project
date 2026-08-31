@@ -60,6 +60,8 @@ export interface CustomerSummary {
   displayName: string;
   company: string | null;
   isActive: boolean;
+  /** Phase 5: created by the system from an unrecognised sender (FR-014b). */
+  isProvisional: boolean;
   primaryPhone: { raw: string; normalised: string } | null;
   primaryEmail: string | null;
   contactCount: number;
@@ -97,6 +99,11 @@ function toSummary(customer: WithContacts): CustomerSummary {
     displayName: customer.display_name,
     company: customer.company,
     isActive: customer.is_active,
+    // Phase 5, FR-014b. TRUE means the system created this record from an
+    // unrecognised sender and nobody has confirmed who it is. Surfaced
+    // wherever customers are listed, so a provisional record is never mistaken
+    // for one somebody onboarded.
+    isProvisional: customer.is_provisional,
     primaryPhone: phone ? { raw: phone.value_raw, normalised: phone.value_normalised } : null,
     primaryEmail: email ? email.value_raw : null,
     contactCount: contacts.length,

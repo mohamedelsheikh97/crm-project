@@ -2,7 +2,7 @@ import { createPinia, setActivePinia } from 'pinia';
 import { createApp } from 'vue';
 
 import App from './App.vue';
-import { restoreSession } from './services/auth.service';
+import { ensureSessionRestored } from './services/auth.service';
 import { applyDocumentLocale } from './composables/useDirection';
 import i18n from './i18n';
 import { resolveInitialLocale } from './i18n/locale-config';
@@ -23,9 +23,14 @@ app.use(router);
 
 applyDocumentLocale(resolveInitialLocale());
 
-// Restore any existing session BEFORE mounting, so the first route guard sees
-// the real authentication state. Mounting first would bounce a signed-in user
-// to the login screen for the moment it takes /auth/me to answer.
-restoreSession().finally(() => {
+// Restore any existing session before mounting, so the first paint is already
+// the right screen rather than a login form that vanishes.
+//
+// THE GUARD DOES NOT DEPEND ON THIS ORDERING, and must not: `app.use(router)`
+// above already started the initial navigation from inside `install()`, so the
+// first `beforeEach` ran before this line. Correctness lives in the guard,
+// which awaits the same single-flight promise; this call only makes sure the
+// work has started by the time we mount. Both share one `/auth/me`.
+ensureSessionRestored().finally(() => {
   app.mount('#app');
 });

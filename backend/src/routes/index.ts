@@ -2,10 +2,13 @@ import { Router } from 'express';
 
 import adminRoutes from './admin/index.js';
 import authRoutes from './auth.routes.js';
+import channelRoutes from './channels/index.js';
 import customerRoutes from './customers/index.js';
 import dashboardRoutes from './dashboard/index.js';
+import formRoutes from './forms/index.js';
 import healthRoutes from './health.routes.js';
 import notificationRoutes from './notifications/index.js';
+import publicRoutes from './public/index.js';
 import taskRoutes from './tasks/index.js';
 import templateRoutes from './templates/index.js';
 import ticketRoutes from './tickets/index.js';
@@ -30,5 +33,18 @@ router.use('/dashboard', dashboardRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/tasks', taskRoutes);
 router.use('/templates', templateRoutes);
+
+// Phase 5. Channel and form ADMINISTRATION — authenticated and permission
+// gated like everything above. Message routes are mounted under /tickets and
+// the timeline under /customers, because both hang off an existing record
+// rather than standing alone.
+router.use('/channels', channelRoutes);
+router.use('/forms', formRoutes);
+
+// THE ONLY UNAUTHENTICATED SURFACES IN THIS PROJECT (FR-105), gathered under
+// one prefix and one file so the whole public attack surface is reviewable at
+// a glance. Everything above this line requires a session; nothing below it
+// does. Mounted last so that ordering is impossible to miss when reading.
+router.use('/public', publicRoutes);
 
 export default router;

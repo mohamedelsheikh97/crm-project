@@ -61,6 +61,18 @@ export const AUDIT_ACTIONS = {
   TEMPLATE_UPDATED: 'template.updated',
   TEMPLATE_RETIRED: 'template.retired',
 
+  // Phase 5 — communication channels. Outbound correspondence is audited
+  // because it is information LEAVING the organisation in its name (FR-050).
+  // The body is deliberately not recorded: the audit log says that a message
+  // was sent, and `messages` is the content of record.
+  MESSAGE_SENT: 'message.sent',
+  // Moving a conversation between customer records (FR-017).
+  TICKET_REATTRIBUTED: 'ticket.reattributed',
+  // Switching a channel on points the outside world at this system.
+  CHANNEL_UPDATED: 'channel.updated',
+  FORM_CREATED: 'form.created',
+  FORM_UPDATED: 'form.updated',
+
   // Defined in Phase 1 with no caller; Phase 2 is the first phase that
   // exports business records, so this finally acquires one.
   DATA_EXPORTED: 'data.exported',

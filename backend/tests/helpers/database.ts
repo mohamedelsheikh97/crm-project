@@ -38,6 +38,7 @@ const ROLE_PERMISSIONS_SEEDER = '20260826000007-role-permissions.cjs';
 const CUSTOMER_PERMISSIONS_SEEDER = '20260827000001-customer-permissions.cjs';
 const TICKET_PERMISSIONS_SEEDER = '20260828000001-ticket-permissions.cjs';
 const DASHBOARD_PERMISSIONS_SEEDER = '20260829000001-dashboard-permissions.cjs';
+const CHANNEL_PERMISSIONS_SEEDER = '20260830000001-channel-permissions.cjs';
 const ADMIN_USER_SEEDER = '20260825000002-admin-user.cjs';
 
 /**
@@ -59,6 +60,7 @@ async function reseed(): Promise<void> {
   await seeder(CUSTOMER_PERMISSIONS_SEEDER).up(queryInterface);
   await seeder(TICKET_PERMISSIONS_SEEDER).up(queryInterface);
   await seeder(DASHBOARD_PERMISSIONS_SEEDER).up(queryInterface);
+  await seeder(CHANNEL_PERMISSIONS_SEEDER).up(queryInterface);
   await seeder(ADMIN_USER_SEEDER).up(queryInterface);
 }
 

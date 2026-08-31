@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 
 import i18n from '../i18n';
+import { ensureSessionRestored } from '../services/auth.service';
 import { useAuthStore } from '../stores/auth.store';
 import AdminLayout from '../layouts/AdminLayout.vue';
 import ChangePasswordView from '../views/ChangePasswordView.vue';
@@ -200,7 +201,20 @@ const router = createRouter({
  * server-side (FR-015, contracts/authorization.md). Removing this guard would
  * make the interface worse; it would not make anything reachable.
  */
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
+  // MUST come before any read of the store.
+  //
+  // `app.use(router)` starts the initial navigation from inside `install()`,
+  // not from `app.mount()`, so this guard runs before anything main.ts does
+  // afterwards. The access token lives in memory only (D5/D6), so a page load
+  // begins with none, and a guard that read the store first would send every
+  // `requiresAuth` route to the login screen on refresh — with a valid refresh
+  // cookie sitting in the browser.
+  //
+  // Single-flight and already resolved after the first navigation, so this
+  // costs one await per route change and no extra requests.
+  await ensureSessionRestored();
+
   const auth = useAuthStore();
 
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
