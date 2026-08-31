@@ -45,7 +45,8 @@ export interface TransitionEdge {
 }
 
 /**
- * 13 permitted edges of 36 ordered pairs.
+ * 14 permitted edges of 36 ordered pairs (13 from Phase 3, plus new -> escalated
+ * added in Phase 6 — see the `new` entry below).
  *
  * Two carry a permission different from the rest. `resolved -> closed` needs
  * tickets:close, which the service additionally conditions on ownership.
@@ -54,10 +55,23 @@ export interface TransitionEdge {
  * (Clarifications Q2).
  */
 export const TRANSITIONS: Readonly<Record<TicketStatus, readonly TransitionEdge[]>> = {
-  // Nothing is resolved, escalated, or pended before someone opens it (FR-018).
-  // This is the constraint a naive any-status-to-any-status implementation
-  // violates first.
-  new: [{ to: 'open', permission: 'tickets:transition' }],
+  // Nothing is resolved or pended before someone opens it (FR-018). This is the
+  // constraint a naive any-status-to-any-status implementation violates first.
+  //
+  // ESCALATED WAS ADDED IN PHASE 6 (research.md D11), and the reason is worth
+  // keeping: `new` previously had exactly ONE outgoing edge, which meant a
+  // ticket that arrived overnight and that NOBODY HAD OPENED could never be
+  // escalated when it blew its SLA target. The worst-handled tickets in the
+  // system would have been the only ones exempt from escalation — the phase's
+  // Definition of done failing for the case escalation most exists for.
+  //
+  // The human consequence is reasonable in its own right: a triager holding
+  // tickets:transition can now say "this one is a fire" without opening it
+  // first.
+  new: [
+    { to: 'open', permission: 'tickets:transition' },
+    { to: 'escalated', permission: 'tickets:transition' },
+  ],
   open: [
     { to: 'pending', permission: 'tickets:transition' },
     { to: 'escalated', permission: 'tickets:transition' },

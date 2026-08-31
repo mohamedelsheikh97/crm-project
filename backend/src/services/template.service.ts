@@ -5,7 +5,7 @@ import { now } from '../lib/clock.js';
 import { notFound, templateLanguageRequired, type ErrorDetail } from '../errors/app-error.js';
 import { ReplyTemplate } from '../models/index.js';
 import * as auditService from './audit.service.js';
-import type { Actor, AuditContext, Paged } from './ticket.service.js';
+import type { UserActor as Actor, AuditContext, Paged } from './ticket.service.js';
 import { clampPageSize } from './ticket.service.js';
 
 /**

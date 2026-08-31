@@ -2,7 +2,7 @@ import { Op, literal } from 'sequelize';
 
 import { sequelize } from '../config/database.js';
 import { notFound, staleRecord, validationError } from '../errors/app-error.js';
-import { Ticket } from '../models/index.js';
+import { Ticket, TicketSla } from '../models/index.js';
 import { toReference } from '../tickets/reference.js';
 import * as auditService from './audit.service.js';
 import * as historyService from './ticket-history.service.js';
@@ -14,14 +14,26 @@ import { getById } from './ticket.service.js';
  * Due dates: everything that reads or writes `tickets.due_at`.
  *
  * A SEPARATE SERVICE from ticket.service.ts on purpose, and not because that
- * file is long. This is the seam Phase 6 replaces (FR-028): in this phase a due
- * date is a promise a person made, and in Phase 6 it becomes a target a policy
- * computed. Everything downstream — the queue sort, the overdue indicator, the
- * warning sweep — reads `due_at` and nothing else, so Phase 6 changes where the
- * value comes from and rebuilds none of them.
+ * file is long. Phase 4 wrote: "This is the seam Phase 6 replaces (FR-028): in
+ * this phase a due date is a promise a person made, and in Phase 6 it becomes a
+ * target a policy computed."
  *
- * The one rule to preserve when that happens: NOTHING HERE OR DOWNSTREAM MAY
- * ASSUME A HUMAN SET THE DATE.
+ * PHASE 6 HAS NOW USED THAT SEAM, and it is worth recording exactly how,
+ * because the shape is not what the sentence above implies:
+ *
+ *   - The resolution target POPULATES `due_at`, written by
+ *     sla-target.service.ts, but ONLY while `due_source` is `policy`.
+ *   - A date a person sets here flips `due_source` to `manual` PERMANENTLY, and
+ *     no later policy evaluation touches it again (FR-024a). A commitment
+ *     negotiated with a customer outranks one a policy computed.
+ *   - Clearing a manual override returns the ticket to the computed target
+ *     rather than to no date at all (FR-024d).
+ *
+ * So the value has two possible authors rather than one, and `due_source`
+ * records which. Everything downstream — the queue sort, the overdue indicator,
+ * the warning sweep — still reads `due_at` and nothing else, and none of it was
+ * rebuilt. Phase 4's rule still stands and is now load-bearing rather than
+ * hypothetical: NOTHING HERE OR DOWNSTREAM MAY ASSUME A HUMAN SET THE DATE.
  */
 
 /**
@@ -150,7 +162,24 @@ export async function setDueDate(
         : historyService.TICKET_EVENTS.DUE_DATE_CHANGED;
 
   await sequelize.transaction(async (transaction) => {
-    ticket.due_at = next;
+    if (next === null) {
+      // Phase 6 (FR-024d): CLEARING AN OVERRIDE RETURNS THE TICKET TO ITS
+      // COMPUTED TARGET, not to no date at all. "I withdraw my own promise" and
+      // "this ticket has no commitment" are different intentions, and only the
+      // first is what clearing a manual date means once policies exist.
+      //
+      // A ticket that matches no policy still ends with no date, because the
+      // row does not exist — FR-014 again.
+      const computed = await TicketSla.findByPk(ticket.id, { transaction });
+
+      ticket.due_source = 'policy';
+      ticket.due_at = computed?.resolution_target_at ?? null;
+    } else {
+      // FR-024a: a date a person typed is a commitment they made. It outranks
+      // the policy from here on, and no recomputation will overwrite it.
+      ticket.due_source = 'manual';
+      ticket.due_at = next;
+    }
 
     // Moving the date to a genuinely new value ARMS A NEW WARNING; clearing it
     // leaves the marker harmlessly behind, because the sweep never matches a

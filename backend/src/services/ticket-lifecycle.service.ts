@@ -19,10 +19,15 @@ import * as authorizationService from './authorization.service.js';
  * correctly twice.
  */
 
+/**
+ * `id: null` means THE SYSTEM (Phase 6, research.md D8). See the `Actor`
+ * comment in ticket.service.ts for why the type widened rather than automation
+ * growing its own write path.
+ */
 export interface LifecycleActor {
-  id: number;
-  email: string;
-  roleId: number;
+  id: number | null;
+  email: string | null;
+  roleId: number | null;
 }
 
 /**
@@ -85,7 +90,17 @@ async function mayTakeEdge(
   actor: LifecycleActor,
   ticket: Ticket,
 ): Promise<boolean> {
-  if (!(await authorizationService.roleHasPermission(actor.roleId, permission))) {
+  // THE SYSTEM HOLDS NO ROLE, so there is no permission to look up (Phase 6,
+  // research D8). This is not a bypass and must not become one by accident:
+  // automation reaches here only through an action the closed catalog names,
+  // and the LIFECYCLE ITSELF still governs — an undeclared edge is refused
+  // below this function, for the system exactly as for a person. What is
+  // skipped is the ROLE question, which has no meaning without a role.
+  if (actor.id === null) {
+    return true;
+  }
+
+  if (!(await authorizationService.roleHasPermission(actor.roleId as number, permission))) {
     return false;
   }
 
@@ -93,7 +108,7 @@ async function mayTakeEdge(
     const isOwn = ticket.assignee_user_id === actor.id;
 
     if (!isOwn) {
-      return authorizationService.roleHasPermission(actor.roleId, 'tickets:manage_any');
+      return authorizationService.roleHasPermission(actor.roleId as number, 'tickets:manage_any');
     }
   }
 

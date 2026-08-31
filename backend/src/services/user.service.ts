@@ -1,6 +1,7 @@
 import { Op, type Transaction, type WhereOptions } from 'sequelize';
 
 import { sequelize } from '../config/database.js';
+import { normaliseContact } from '../lib/phone.js';
 import {
   conflict,
   forbidden,
@@ -41,6 +42,8 @@ export interface UserView {
   id: number;
   email: string;
   fullName: string;
+  /** Phase 6. An alert destination, never a contact number for customers. */
+  alertPhone: string | null;
   role: { key: string; nameKey: string };
   isActive: boolean;
   isLocked: boolean;
@@ -58,6 +61,7 @@ function toView(user: User & { role?: Role }): UserView {
     id: user.id,
     email: user.email,
     fullName: user.full_name,
+    alertPhone: user.alert_phone ?? null,
     role: { key: user.role.key, nameKey: user.role.name_key },
     isActive: user.is_active,
     // Derived from locked_until, not stored — no second field to keep in sync.
@@ -286,6 +290,13 @@ export async function create(
 export interface UpdateUserInput {
   fullName?: unknown;
   roleKey?: unknown;
+  /**
+   * Phase 6 (FR-072, FR-077). WHERE AN SMS ALERT REACHES THIS USER, and
+   * nothing else — it is never shown to a customer and is not a profile field.
+   * Null clears it, which makes the user SKIPPED for SMS alerts rather than
+   * failed: there is nothing to try, which is a different fact.
+   */
+  alertPhone?: unknown;
   version: unknown;
 }
 
@@ -326,12 +337,24 @@ export async function update(
     }
   }
 
-  const previousValue = { fullName: user.full_name, roleKey: previousRole?.key };
+  const previousValue = {
+    fullName: user.full_name,
+    alertPhone: user.alert_phone ?? null,
+    roleKey: previousRole?.key,
+  };
   const roleChanged = Boolean(nextRole && nextRole.key !== previousRole?.key);
 
   await sequelize.transaction(async (transaction) => {
     if (typeof input.fullName === 'string' && input.fullName.trim()) {
       user.full_name = input.fullName;
+    }
+
+    if (input.alertPhone !== undefined) {
+      const raw = input.alertPhone === null ? '' : String(input.alertPhone).trim();
+
+      // Normalised through the SAME helper Phase 2 uses for customer contacts,
+      // so one number written two ways is one number.
+      user.alert_phone = raw === '' ? null : normaliseContact('phone', raw);
     }
 
     if (nextRole) {

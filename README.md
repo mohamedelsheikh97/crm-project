@@ -5,9 +5,21 @@ phases; see [PLAN.md](./PLAN.md) for the full roadmap and
 [.specify/memory/constitution.md](./.specify/memory/constitution.md) for the rules every phase
 must follow.
 
-**Current phase**: Phase 2 — Customer Management. The customer record every later module attaches
-to: search, create, edit, deactivate, notes, attachments, and filtered export — with duplicates
-flagged rather than silently created. Tickets attach to these records in Phase 3.
+**Current phase**: Phase 6 — SLA & Automation. The system acquires a mandate: tickets carry service
+targets computed in working time against a configurable calendar, a missed target escalates and
+notifies the right people with nobody watching, unassigned work routes itself to an eligible agent,
+and a supervisor can add trigger-condition-action rules of their own from a screen.
+
+This is the first phase in which something other than a person can change the record, so three
+things are worth knowing before reading the code:
+
+- **Automation calls services, never models.** Every rule action goes through the same function a
+  person's request would, with a system actor, so the lifecycle and every existing guard apply to it
+  without being re-implemented.
+- **`tickets.due_at` is a seam, not a field.** Phase 4 reserved it; Phase 6 fills it from the SLA
+  resolution target, and `due_source` says whether a policy or a person put the value there.
+- **The escalation markers hold a target value, not a flag** — which is what makes "fire once,
+  never re-fire, re-arm on a reopen" a single comparison.
 
 ## Prerequisites
 
@@ -68,6 +80,35 @@ Run all of these from the repository root.
 | `npm run db:migrate` / `npm run db:migrate:undo` | Schema migrations                        |
 | `npm run db:seed`                                | Seed data (idempotent, development only) |
 
+### What seeding gives you
+
+`npm run db:seed` creates the development administrator, the permission grants, and — from Phase 6 —
+a working configuration you can raise a ticket against immediately:
+
+- **One business calendar**: Sunday–Thursday, 09:00–17:00, `Africa/Cairo`. **This is an assumption,
+  not a discovered fact**, and it is the first thing a real installation should change: every SLA
+  target is measured against it, so a wrong calendar makes every target wrong by the same amount,
+  silently.
+- **Four SLA policies**, one per priority — urgent 1h/4h, high 4h/1d, normal 8h/3d, low 1d/5d, in
+  **working** time. Editable like any other policy.
+- **Alert subscriptions**: in-app everywhere, email to supervisors on a breach, SMS nowhere. A fresh
+  installation should alert without shouting.
+- **Automatic assignment switched OFF.** It changes who does the work, so it is turned on
+  deliberately rather than by a seeder having run.
+
+Three environment knobs tune the behaviour and are not exposed on any screen — everything else about
+SLA and automation is a database row an administrator edits at runtime:
+
+| Variable                           | Default | Does                                               |
+| ---------------------------------- | ------- | -------------------------------------------------- |
+| `SLA_WARNING_LEAD_MINUTES`         | 60      | How far ahead of a target the at-risk alert fires  |
+| `AUTOMATION_MAX_DEPTH`             | 3       | How far a rule cascade may recurse before stopping |
+| `ALERT_MAX_PER_RECIPIENT_PER_HOUR` | 20      | Outbound alert ceiling per person                  |
+
+Note that the seeded `urgent` policy promises a 60-minute first response against a 60-minute warning
+lead, so **every urgent ticket starts "at risk"**. That is what a configurable lead means rather than
+a bug, but it is worth deciding on: lower the lead, or lengthen the target.
+
 ## Layout
 
 ```text
@@ -109,6 +150,34 @@ views, and layouts must never call `fetch` directly. `services/http.ts` already 
 
 **A new environment variable?** Add it to `.env.example`, then to the zod schema in
 `backend/src/config/env.ts`. That schema is the only place `process.env` is read.
+
+**Something the system should do on its own?** Add a sweep to
+`backend/src/lib/scheduler.ts`, and write it so that **missing a tick is harmless** — a state
+comparison, never a "since last run" ledger. All three existing sweeps follow that rule, which is
+why a target that expired while the process was down is still found on the next tick. There is one
+timer and no job queue.
+
+**An automation trigger, condition, or action?** One entry in
+`backend/src/automation/catalog.ts`, and one branch in the executor if it is an action. The
+catalog is read by the validator, the builder screen, and the executor, so a rule can never name
+something the system cannot do — that closure is what makes it safe to let a rule fire on a
+stranger's email. Do not add a free-text expression, a webhook, or a raw message body.
+
+### SLA and automation — what not to break
+
+- **`tickets.due_at` is the seam.** The SLA resolution target writes it; `due_source` says whether
+  a policy or a person did. Everything downstream (the queue sort, the overdue filter, the
+  approaching-due warning) reads `due_at` and must never assume a human set it.
+- **The escalation markers hold a target VALUE, not a flag.** `resolution_escalated_for =
+resolution_target_at` is what makes "fire once, do not re-fire after a manual de-escalation,
+  re-arm on a reopen" one comparison instead of three code paths. A boolean cannot tell a re-save
+  from a reschedule.
+- **Automation calls services, never models.** Every rule action goes through the same function a
+  person's request would, with a system actor, so the lifecycle, the assignee eligibility test, and
+  opt-out all apply to it for free. Writing a model directly creates a second enforcement path.
+- **Working time is not wall-clock time.** `lib/business-hours.ts` is the only place that knows the
+  difference. Comparing two timestamps to measure "how much of the target is left" is wrong across
+  any night or weekend.
 
 ### Authorization — read this before adding a protected endpoint
 

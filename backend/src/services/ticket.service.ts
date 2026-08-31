@@ -1,6 +1,7 @@
 import { Op, literal, type WhereOptions } from 'sequelize';
 
 import { sequelize } from '../config/database.js';
+import { env } from '../config/env.js';
 import {
   customerInactive,
   notFound,
@@ -9,7 +10,9 @@ import {
   validationError,
   type ErrorDetail,
 } from '../errors/app-error.js';
-import { Customer, Ticket, TicketLink, User } from '../models/index.js';
+import { now as clockNow } from '../lib/clock.js';
+import { logger } from '../middleware/request-logger.js';
+import { Customer, SlaPolicy, Ticket, TicketLink, TicketSla, User } from '../models/index.js';
 import { INITIAL_STATUS, type TicketStatus } from '../tickets/lifecycle.js';
 import { parseReference, toReference } from '../tickets/reference.js';
 import {
@@ -22,9 +25,11 @@ import {
   type TicketPriority,
 } from '../tickets/taxonomy.js';
 
+import * as automationEngine from './automation-engine.service.js';
 import * as auditService from './audit.service.js';
 import * as authorizationService from './authorization.service.js';
 import * as notificationService from './notification.service.js';
+import * as slaTargetService from './sla-target.service.js';
 import * as taskService from './task.service.js';
 import type { TaskView } from './task.service.js';
 import * as historyService from './ticket-history.service.js';
@@ -33,12 +38,77 @@ import * as lifecycleService from './ticket-lifecycle.service.js';
 export const DEFAULT_PAGE_SIZE = 20;
 export const MAX_PAGE_SIZE = 100;
 
+/**
+ * WHO IS ACTING — a person, or the system.
+ *
+ * `id: null` MEANS THE SYSTEM (Phase 6, research.md D8). Phase 5 already made
+ * the DATA nullable in three columns — `tickets.created_by_user_id`,
+ * `ticket_history.actor_user_id`, `ticket_links.created_by_user_id` — because
+ * intake raises tickets nobody typed. This is the last place the code still
+ * claimed every act has a person behind it.
+ *
+ * Widening it is what lets Phase 6's automation call THESE SERVICES rather than
+ * writing models directly. That is the whole point: a rule that changed a
+ * status by writing the model would bypass `TRANSITIONS`, and one that assigned
+ * by writing the model would bypass the active-and-permitted assignee check.
+ * A second enforcement path is precisely the failure Phase 3's generated matrix
+ * exists to catch.
+ *
+ * CONTROLLERS ARE UNAFFECTED: a request always carries a real actor. Only the
+ * scheduler, the intake path, and the rule executor pass a system actor.
+ *
+ * Permission-conditional branches treat a system actor as PERMITTED. That is
+ * not a bypass: automation's gate is the closed-ended action catalog
+ * (automation/catalog.ts) plus the authority of the user who configured the
+ * rule. There is no request, no role, and no route middleware in the path — so
+ * a role lookup on a null role would be asking a question with no meaning.
+ */
 export interface Actor {
+  id: number | null;
+  email: string | null;
+  fullName: string;
+  roleId: number | null;
+}
+
+/**
+ * A PERSON, REQUIRED.
+ *
+ * Some work has no meaning without one, and saying so in the type is better
+ * than checking for null in the body. A task belongs to its owner (Phase 4
+ * Clarifications Q3 made tasks personal), a note has an author, a template has
+ * an editor, a queue belongs to whoever is looking at it. The automation
+ * catalog deliberately contains no action that reaches any of them — there is
+ * no `create_task`, precisely because there is no such thing as a task the
+ * system owns.
+ *
+ * So these services keep demanding a person, and the compiler enforces it. That
+ * is the difference between a widened type and a weakened one.
+ */
+export interface UserActor {
   id: number;
   email: string;
   fullName: string;
   roleId: number;
 }
+
+/** True when the system is acting rather than a person. */
+export function isSystemActor(actor: { id: number | null }): boolean {
+  return actor.id === null;
+}
+
+/**
+ * The actor the scheduler, intake, and rule executor pass.
+ *
+ * `fullName` is an i18n KEY rather than a sentence, so an Arabic reader is not
+ * shown the English word "System" — the same rule Phase 5 applied to
+ * `SYSTEM_ACTOR` in ticket-history.service.ts, and Phase 4 to notification rows.
+ */
+export const SYSTEM_ACTOR: Actor = {
+  id: null,
+  email: null,
+  fullName: 'ticket.history.actor.system',
+  roleId: null,
+};
 
 export interface AuditContext {
   ipAddress?: string | null;
@@ -86,6 +156,12 @@ export interface TicketDetail extends TicketSummary {
    * there were none — it is a notice, never a refusal.
    */
   outstandingTasks?: TaskView[];
+  /**
+   * Phase 6 (FR-020). NULL for a ticket that matched no policy (FR-014) — not
+   * an object of nulls, so no consumer can render a countdown for a commitment
+   * nobody made.
+   */
+  sla: slaTargetService.SlaView | null;
 }
 
 type Loaded = Ticket & { customer?: Customer; assignee?: User | null; createdBy?: User | null };
@@ -321,7 +397,30 @@ export async function getById(id: number): Promise<TicketDetail> {
       : null,
     links: await linksFor(ticket.id),
     survivor: survivorId === null ? null : { id: survivorId, reference: toReference(survivorId) },
+    sla: await slaFor(ticket),
   };
+}
+
+/**
+ * The ticket's SLA state (Phase 6, FR-020).
+ *
+ * NO NEW PERMISSION: it rides on `tickets:view` and is returned WITH the
+ * ticket. A key every role holds unconditionally cannot refuse anything — the
+ * reasoning that kept `notifications:view` out of Phase 4's catalog and
+ * `timeline:view` out of Phase 5's.
+ *
+ * Returns null for a ticket that matched no policy (FR-014) — not an object of
+ * nulls, so nothing downstream can render "0 minutes remaining" about a
+ * commitment nobody made.
+ */
+async function slaFor(ticket: Ticket): Promise<slaTargetService.SlaView | null> {
+  const row = await TicketSla.findByPk(ticket.id);
+
+  if (!row) return null;
+
+  const policy = row.policy_id === null ? null : await SlaPolicy.findByPk(row.policy_id);
+
+  return slaTargetService.viewFor(ticket, row, policy?.name ?? null, env.SLA_WARNING_LEAD_MINUTES);
 }
 
 /** The moves available to this actor on this ticket (FR-017). */
@@ -439,10 +538,68 @@ export async function create(
       transaction,
     );
 
+    // Phase 6 (FR-056). Registered on the transaction, so rules see a ticket
+    // that definitely exists — nothing evaluates before the commit.
+    automationEngine.emit(
+      { trigger: 'ticket.created', ticketId: ticket.id, actorUserId: actor.id },
+      transaction,
+    );
+
+    // Phase 6 (FR-010): the ticket acquires its SLA targets the moment it
+    // exists, in the same transaction. A ticket that matches no policy gets no
+    // row at all, which is FR-014 made structural rather than checked.
+    // `?? clockNow()` for the same reason `mirrorDueDate` normalises: a freshly
+    // created instance may not have `created_at` populated yet, and the clock
+    // must never start from `undefined`.
+    await slaTargetService.attachTargets(ticket, transaction, ticket.created_at ?? clockNow());
+
     return ticket;
   });
 
+  // Phase 6 (FR-043). AFTER THE COMMIT, deliberately: automatic assignment
+  // reads the eligible agents' current load, and doing that inside the
+  // creating transaction would count this very ticket inconsistently. It also
+  // must not be able to fail the creation — a ticket that exists unassigned is
+  // a supervision problem; a ticket that failed to be raised is a lost customer.
+  await autoAssignQuietly(created.id);
+
   return getById(created.id);
+}
+
+/**
+ * Attempt automatic assignment, and never let it break what triggered it.
+ *
+ * Where no eligible agent exists the ticket stays unassigned, the reason is
+ * recorded, and the supervisory recipients are alerted (FR-048) — the ticket
+ * does not vanish into an unwatched state. That alert is dispatched here rather
+ * than inside `assignment.service` so the service stays a decision-maker and
+ * this stays the place that knows a NEW ticket is involved.
+ */
+async function autoAssignQuietly(ticketId: number): Promise<void> {
+  try {
+    const assignmentService = await import('./assignment.service.js');
+    const outcome = await assignmentService.autoAssign(ticketId);
+
+    // `strategy_off`, `already_assigned` and `not_workable` are ordinary
+    // outcomes, not problems. Only "there was work and nobody to give it to"
+    // is worth waking a supervisor for.
+    if (outcome.refusal === 'no_eligible_agent' || outcome.refusal === 'all_at_ceiling') {
+      const alertService = await import('./alert.service.js');
+      const { ALERT_EVENTS } = await import('../models/alert-subscription.model.js');
+
+      await sequelize.transaction(async (transaction) => {
+        await alertService.dispatch(
+          ALERT_EVENTS.ASSIGNMENT_FAILED,
+          { ticketId, assigneeUserId: null, params: { reason: outcome.refusal } },
+          transaction,
+        );
+      });
+    }
+  } catch (error) {
+    // Never propagates. The ticket is already created and the customer already
+    // has one; a routing failure is a supervision problem, not a request one.
+    logger.error({ err: error, ticketId }, 'Automatic assignment failed for a new ticket');
+  }
 }
 
 // --- Editing -------------------------------------------------------------
@@ -564,6 +721,33 @@ export async function update(
       },
       transaction,
     );
+
+    // Phase 6 (FR-017): a priority or category change may put this ticket under
+    // a DIFFERENT policy, so its targets are recomputed — from the original
+    // start time and accumulated pause, so elapsed time is neither forgiven nor
+    // charged twice. Nothing else in this edit can change which policy matches.
+    const changedScope = changes.some(
+      (change) => change.field === 'priority' || change.field === 'category',
+    );
+
+    if (changedScope) {
+      await slaTargetService.recompute(ticket, transaction);
+    }
+
+    const priorityChange = changes.find((change) => change.field === 'priority');
+
+    if (priorityChange) {
+      automationEngine.emit(
+        {
+          trigger: 'ticket.priority_changed',
+          ticketId: ticket.id,
+          actorUserId: actor.id,
+          from: priorityChange.previous as TicketPriority,
+          to: priorityChange.next as TicketPriority,
+        },
+        transaction,
+      );
+    }
   });
 
   return getById(ticket.id);
@@ -664,6 +848,23 @@ export async function transition(
         newValue: { status: edge.to },
         metadata: edge.to === 'escalated' ? { reason } : undefined,
         ...context,
+      },
+      transaction,
+    );
+
+    // Phase 6: the SLA clock starts, stops, satisfies, and re-arms on THESE
+    // transitions and no others (FR-021, FR-023, FR-030). The classification
+    // lives in sla/clock.ts, derived from this same lifecycle — there is
+    // deliberately no second state machine to keep in step.
+    await slaTargetService.onStatusChange(ticket, edge.from, edge.to, clockNow(), transaction);
+
+    automationEngine.emit(
+      {
+        trigger: 'ticket.status_changed',
+        ticketId: ticket.id,
+        actorUserId: actor.id,
+        from: edge.from,
+        to: edge.to,
       },
       transaction,
     );
@@ -801,6 +1002,21 @@ export async function assign(
         transaction,
       );
     }
+
+    // Phase 6 (FR-056). Assigned and unassigned are SEPARATE triggers, because
+    // a rule reacting to work being taken away is a different rule from one
+    // reacting to it arriving.
+    automationEngine.emit(
+      nextId === null
+        ? { trigger: 'ticket.unassigned', ticketId: ticket.id, actorUserId: actor.id }
+        : {
+            trigger: 'ticket.assigned',
+            ticketId: ticket.id,
+            actorUserId: actor.id,
+            assigneeUserId: nextId,
+          },
+      transaction,
+    );
   });
 
   return getById(ticket.id);

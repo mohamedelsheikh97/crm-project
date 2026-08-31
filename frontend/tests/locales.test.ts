@@ -41,8 +41,15 @@ describe('locale files stay in step (SC-017)', () => {
   it('use the same interpolation placeholders in both languages', () => {
     // A translation that drops `{reference}` renders a sentence with a hole in
     // it, which reads as a bug to the user and passes every other check.
+    //
+    // COMPARED AS A SET, NOT A LIST, and Phase 6 is what forced the
+    // distinction. Arabic has SIX plural categories to English's two, so a
+    // pluralised message legitimately repeats `{value}` six times in one file
+    // and twice in the other. Counting occurrences would fail every correctly
+    // translated plural — which is the opposite of what this test is for. What
+    // matters is that no NAMED placeholder is missing.
     const placeholders = (value: string): string[] =>
-      [...value.matchAll(/\{(\w+)\}/g)].map((match) => match[1]).sort();
+      [...new Set([...value.matchAll(/\{(\w+)\}/g)].map((match) => match[1]))].sort();
 
     const mismatched: string[] = [];
 

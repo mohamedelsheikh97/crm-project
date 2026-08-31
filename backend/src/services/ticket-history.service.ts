@@ -51,6 +51,20 @@ export const TICKET_EVENTS = {
   MESSAGE_SENT: 'ticket.message.sent',
   // Moving a conversation to the correct customer (FR-017).
   REATTRIBUTED: 'ticket.reattributed',
+
+  // Phase 6. Records what happened to the PROMISE about this ticket, alongside
+  // what happened to the ticket itself.
+  //
+  // Automated escalations and automatic assignments deliberately REUSE the
+  // ESCALATED and ASSIGNED events above, with SYSTEM_ACTOR. A separate
+  // "escalated by policy" event would fork the timeline for exactly one reader
+  // — someone auditing automation — and duplicate it for every other; the actor
+  // already says who did it, which is the question the timeline answers.
+  SLA_TARGET_SET: 'ticket.sla.target_set',
+  SLA_TARGET_CHANGED: 'ticket.sla.target_changed',
+  SLA_BREACHED: 'ticket.sla.breached',
+  SLA_CLOCK_PAUSED: 'ticket.sla.paused',
+  SLA_CLOCK_RESUMED: 'ticket.sla.resumed',
 } as const;
 
 export type TicketEvent = (typeof TICKET_EVENTS)[keyof typeof TICKET_EVENTS];

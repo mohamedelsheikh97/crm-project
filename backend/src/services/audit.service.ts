@@ -73,6 +73,31 @@ export const AUDIT_ACTIONS = {
   FORM_CREATED: 'form.created',
   FORM_UPDATED: 'form.updated',
 
+  // Phase 6 — SLA & automation. Every key here is CONFIGURATION: something that
+  // changes what the system will do to every future ticket, without a person in
+  // the loop at the moment it happens. That is precisely what an audit log is
+  // for, and it is why the runs themselves are NOT here.
+  //
+  // RULE RUNS ARE DELIBERATELY ABSENT. `automation_runs` is their record, and
+  // it holds thousands of rows a week. Writing them here would flood the log an
+  // investigator reads — the same reasoning that kept ordinary note and task
+  // activity out in Phase 4.
+  SLA_POLICY_CREATED: 'sla.policy.created',
+  SLA_POLICY_UPDATED: 'sla.policy.updated',
+  SLA_POLICY_ACTIVATED: 'sla.policy.activated',
+  SLA_POLICY_DEACTIVATED: 'sla.policy.deactivated',
+  // Changing what an hour means changes every target computed after it.
+  CALENDAR_UPDATED: 'sla.calendar.updated',
+  ASSIGNMENT_SETTINGS_UPDATED: 'assignment.settings.updated',
+  // Changes where future work is routed (FR-044d).
+  USER_COMPETENCIES_CHANGED: 'assignment.competencies.changed',
+  AUTOMATION_RULE_CREATED: 'automation.rule.created',
+  AUTOMATION_RULE_UPDATED: 'automation.rule.updated',
+  AUTOMATION_RULE_ENABLED: 'automation.rule.enabled',
+  AUTOMATION_RULE_DISABLED: 'automation.rule.disabled',
+  AUTOMATION_RULE_DELETED: 'automation.rule.deleted',
+  AUTOMATION_RULES_REORDERED: 'automation.rules.reordered',
+
   // Defined in Phase 1 with no caller; Phase 2 is the first phase that
   // exports business records, so this finally acquires one.
   DATA_EXPORTED: 'data.exported',

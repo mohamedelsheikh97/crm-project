@@ -131,6 +131,39 @@ export const PERMISSIONS = [
   define('channels', 'manage'),
   // A published form is a public endpoint anyone can submit to.
   define('forms', 'manage'),
+
+  // Phase 6 — SLA & Automation. Four keys, and two of them are DELIBERATE
+  // MERGES rather than oversights.
+  //
+  // `sla:manage` covers the BUSINESS CALENDAR as well as the policies. A policy
+  // expressed in working hours and the definition of a working hour are one
+  // administrator's single concern; granting either without the other produces
+  // a configuration nobody can reason about — targets in a unit whose meaning
+  // the holder cannot see or change.
+  define('sla', 'manage'),
+
+  // `assignment:manage` covers AGENT COMPETENCIES as well as the strategy and
+  // the ceiling. Competency exists only to serve routing (research D14), so
+  // routing authority is one permission. Splitting them would let a holder of
+  // "may edit who is competent" silently redirect work without ever touching
+  // the strategy.
+  //
+  // ADDITIONALLY CONDITIONED ON `tickets:assign` IN THE SERVICE (FR-051):
+  // configuring automatic assignment is self-assignment by a longer route, so
+  // an agent holding this key by misconfiguration is still refused.
+  define('assignment', 'manage'),
+
+  // Building a rule changes what the system does to every future ticket.
+  define('automation', 'manage'),
+  // Reading what automation did. A real gate rather than noise: agents do not
+  // hold it, supervisors and administrators do.
+  define('automation', 'view'),
+
+  // There is deliberately NO `sla:view` key. A ticket's SLA state rides on
+  // `tickets:view` and is returned with the ticket. A permission every role
+  // holds unconditionally, and that can therefore never refuse anything, is not
+  // a gate — the same reasoning that kept `notifications:view` out of the
+  // Phase 4 catalog and `timeline:view` out of Phase 5's.
 ] as const satisfies readonly PermissionDefinition[];
 
 export type PermissionKey = (typeof PERMISSIONS)[number]['key'];

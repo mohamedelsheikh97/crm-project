@@ -13,6 +13,19 @@ export class User extends Model<InferAttributes<User>, InferCreationAttributes<U
   declare id: CreationOptional<number>;
   declare email: string;
   declare full_name: string;
+  /**
+   * Where an SMS alert reaches this user (Phase 6, FR-072, FR-077).
+   *
+   * NOT A PROFILE FIELD, and the name says so. It is never shown to a customer
+   * and is not the beginning of a contact directory — Phase 12 should not
+   * inherit it as one. It exists because FR-077 requires a recipient with no
+   * reachable address to be SKIPPED, and a user record with no number at all is
+   * unreachable, which is a different and worse thing.
+   *
+   * Normalised through lib/phone.ts on write, the same helper Phase 2 uses for
+   * customer contacts.
+   */
+  declare alert_phone: CreationOptional<string | null>;
   declare password_hash: string;
   declare role_id: number;
   declare is_active: CreationOptional<boolean>;
@@ -56,6 +69,7 @@ User.init(
         this.setDataValue('full_name', String(value).trim());
       },
     },
+    alert_phone: { type: DataTypes.STRING(32), allowNull: true },
     password_hash: {
       type: DataTypes.STRING(255),
       allowNull: false,

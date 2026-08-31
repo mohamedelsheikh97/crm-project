@@ -17,6 +17,17 @@ const entries = computed(() =>
     { name: 'admin-users', labelKey: 'admin.nav.users', permission: 'users:view' },
     { name: 'admin-roles', labelKey: 'admin.nav.roles', permission: 'roles:view' },
     { name: 'admin-audit', labelKey: 'admin.nav.audit', permission: 'audit:view' },
+    // Phase 6. Grouped after the Phase 1-5 entries and before settings, so the
+    // order reads as identity → work → policy → configuration.
+    { name: 'admin-sla-policies', labelKey: 'admin.nav.sla', permission: 'sla:manage' },
+    { name: 'admin-sla-calendar', labelKey: 'admin.nav.calendar', permission: 'sla:manage' },
+    { name: 'admin-assignment', labelKey: 'admin.nav.assignment', permission: 'assignment:manage' },
+    { name: 'admin-automation', labelKey: 'admin.nav.automation', permission: 'automation:manage' },
+    {
+      name: 'admin-automation-runs',
+      labelKey: 'admin.nav.automationRuns',
+      permission: 'automation:view',
+    },
     { name: 'admin-settings', labelKey: 'admin.nav.settings', permission: 'settings:view' },
   ].filter((entry) => can(entry.permission)),
 );

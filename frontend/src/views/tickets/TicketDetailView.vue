@@ -5,6 +5,9 @@ import { useRoute } from 'vue-router';
 
 import CustomerContextPanel from '../../components/tickets/CustomerContextPanel.vue';
 import DueDateControl from '../../components/tickets/DueDateControl.vue';
+import DueSourceBadge from '../../components/sla/DueSourceBadge.vue';
+import SlaCountdown from '../../components/sla/SlaCountdown.vue';
+import SlaState from '../../components/sla/SlaState.vue';
 import TicketHistoryTimeline from '../../components/tickets/TicketHistoryTimeline.vue';
 import MessageThread from '../../components/messages/MessageThread.vue';
 import ReplyComposer from '../../components/messages/ReplyComposer.vue';
@@ -563,6 +566,54 @@ const formatter = computed(
           :saving="savingDueDate"
           @save="saveDueDate"
         />
+
+        <!-- Phase 6 (FR-024b). Beside the date, because the first question
+             about a date is who set it. Clearing an override returns the ticket
+             to its computed target rather than to no date (FR-024d). -->
+        <DueSourceBadge
+          v-if="ticket.sla"
+          class="mt-1"
+          :source="ticket.sla.dueSource"
+          :can-clear="can('tickets:set_due_date')"
+          @clear="saveDueDate(null)"
+        />
+      </section>
+
+      <!-- Phase 6 (FR-020). Absent entirely when the ticket matched no policy:
+           a ticket nobody made a commitment about is not annotated with the
+           absence of one. -->
+      <section v-if="ticket.sla" class="rounded border p-3">
+        <h2 class="text-sm font-medium">{{ t('sla.panel.title') }}</h2>
+
+        <dl class="mt-2 grid grid-cols-2 gap-3 text-sm">
+          <div>
+            <dt class="text-slate-600 dark:text-slate-400">{{ t('sla.panel.firstResponse') }}</dt>
+            <dd class="mt-1 flex flex-wrap items-center gap-2">
+              <SlaState
+                :state="ticket.sla.response.state"
+                :target-at="ticket.sla.response.targetAt"
+              />
+              <SlaCountdown :target="ticket.sla.response" :paused="ticket.sla.isPaused" />
+            </dd>
+          </div>
+
+          <div>
+            <dt class="text-slate-600 dark:text-slate-400">{{ t('sla.panel.resolution') }}</dt>
+            <dd class="mt-1 flex flex-wrap items-center gap-2">
+              <SlaState
+                :state="ticket.sla.resolution.state"
+                :target-at="ticket.sla.resolution.targetAt"
+                :paused="ticket.sla.isPaused"
+              />
+              <SlaCountdown :target="ticket.sla.resolution" :paused="ticket.sla.isPaused" />
+            </dd>
+          </div>
+
+          <div v-if="ticket.sla.policyName" class="col-span-2">
+            <dt class="text-slate-600 dark:text-slate-400">{{ t('sla.panel.policy') }}</dt>
+            <dd class="mt-1">{{ ticket.sla.policyName }}</dd>
+          </div>
+        </dl>
       </section>
 
       <!-- CORRESPONDENCE, above the internal notes. Deliberate: the customer's

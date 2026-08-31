@@ -23,6 +23,17 @@ export const TICKET_SOURCES = ['manual', 'email', 'whatsapp', 'sms', 'chat', 'fo
 export type TicketSource = (typeof TICKET_SOURCES)[number];
 
 /**
+ * Who set the due date (Phase 6, FR-024b, research.md D6).
+ *
+ * Two values because a due date now has two possible authors, and every surface
+ * showing one has to be able to say which — a supervisor asking "why is this
+ * date what it is?" needs an answer on both.
+ */
+export const DUE_SOURCES = ['policy', 'manual'] as const;
+
+export type DueSource = (typeof DUE_SOURCES)[number];
+
+/**
  * NO DESTROY PATH, for the same reason customers have none: a ticket is merged
  * or closed, never deleted. `merge` emits record.deleted as the
  * security-relevant fact while the row is retained, so every reference to it
@@ -70,6 +81,19 @@ export class Ticket extends Model<InferAttributes<Ticket>, InferCreationAttribut
    * re-saved date does not re-fire, a rescheduled one arms a new warning.
    */
   declare due_warning_sent_for: CreationOptional<Date | null>;
+  /**
+   * WHO PUT THE VALUE IN `due_at` (Phase 6, FR-024b).
+   *
+   * `manual` is what every ticket raised before Phase 6 is, and what the column
+   * default backfills them to — which is FR-024c, not an arbitrary default. A
+   * date typed by a person in Phase 4 is a commitment they made, and a policy
+   * must never quietly overwrite it. Phase 4 said so in its own words: "Phase 6
+   * must not assume this phase's dates were machine-generated."
+   *
+   * A policy writes `due_at` ONLY while this reads `policy`. Setting a date by
+   * hand flips it to `manual` permanently; clearing the override flips it back.
+   */
+  declare due_source: CreationOptional<DueSource>;
   declare version: CreationOptional<number>;
   declare readonly created_at: CreationOptional<Date>;
   declare readonly updated_at: CreationOptional<Date>;
@@ -103,6 +127,7 @@ Ticket.init(
     escalation_reason: { type: DataTypes.TEXT, allowNull: true },
     due_at: { type: DataTypes.DATE, allowNull: true },
     due_warning_sent_for: { type: DataTypes.DATE, allowNull: true },
+    due_source: { type: DataTypes.STRING(10), allowNull: false, defaultValue: 'manual' },
     version: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false, defaultValue: 0 },
     created_at: DataTypes.DATE,
     updated_at: DataTypes.DATE,

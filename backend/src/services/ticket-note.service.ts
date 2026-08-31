@@ -13,7 +13,7 @@ import { now } from '../lib/clock.js';
 import * as authorizationService from './authorization.service.js';
 import * as historyService from './ticket-history.service.js';
 import * as notificationService from './notification.service.js';
-import type { Actor, Paged } from './ticket.service.js';
+import type { UserActor as Actor, Paged } from './ticket.service.js';
 import { clampPageSize } from './ticket.service.js';
 
 /**

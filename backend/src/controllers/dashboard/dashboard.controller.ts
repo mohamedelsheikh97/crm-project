@@ -2,7 +2,7 @@ import type { NextFunction, Request, Response } from 'express';
 
 import { notFound, unauthenticated } from '../../errors/app-error.js';
 import * as dashboardService from '../../services/dashboard.service.js';
-import type { Actor } from '../../services/ticket.service.js';
+import type { UserActor as Actor } from '../../services/ticket.service.js';
 
 /**
  * HTTP concerns only — no business logic, no model access.

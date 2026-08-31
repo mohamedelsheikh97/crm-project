@@ -77,8 +77,20 @@ export function passwordChangeRequired(): AppError {
  * Returned regardless of whether the target exists — deciding permission before
  * existence is what stops the status code leaking (FR-019).
  */
-export function forbidden(): AppError {
-  return new AppError('FORBIDDEN', 403, 'You do not have permission to perform this action.');
+export function forbidden(details: ErrorDetail[] = []): AppError {
+  return new AppError(
+    'FORBIDDEN',
+    403,
+    'You do not have permission to perform this action.',
+    // OPTIONAL, and empty by default so the Phase 1 behaviour is unchanged: a
+    // bare refusal tells the caller nothing about why, which is right for a
+    // route gate. Phase 6 passes a detail where the refusal is a SECOND check
+    // the caller could not have predicted from their permissions alone — FR-051
+    // refuses `assignment:manage` without `tickets:assign`, and "you may not"
+    // with no explanation would look like a bug to the administrator who just
+    // granted the key.
+    details,
+  );
 }
 
 export function notFound(): AppError {
