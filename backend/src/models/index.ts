@@ -1,6 +1,13 @@
 import { sequelize } from '../config/database.js';
 
+import { AlertDelivery } from './alert-delivery.model.js';
+import { AlertSubscription } from './alert-subscription.model.js';
+import { AssignmentSetting } from './assignment-setting.model.js';
 import { AuditLog } from './audit-log.model.js';
+import { AutomationRule } from './automation-rule.model.js';
+import { AutomationRun } from './automation-run.model.js';
+import { BusinessCalendar } from './business-calendar.model.js';
+import { CalendarException } from './calendar-exception.model.js';
 import { ChannelIntake } from './channel-intake.model.js';
 import { ChannelOptOut } from './channel-opt-out.model.js';
 import { ChannelSetting } from './channel-setting.model.js';
@@ -18,12 +25,15 @@ import { PasswordHistory } from './password-history.model.js';
 import { ReplyTemplate } from './reply-template.model.js';
 import { RolePermission } from './role-permission.model.js';
 import { Role } from './role.model.js';
+import { SlaPolicy } from './sla-policy.model.js';
 import { Task } from './task.model.js';
+import { TicketSla } from './ticket-sla.model.js';
 import { TicketHistory } from './ticket-history.model.js';
 import { TicketLink } from './ticket-link.model.js';
 import { TicketNoteMention } from './ticket-note-mention.model.js';
 import { TicketNote } from './ticket-note.model.js';
 import { Ticket } from './ticket.model.js';
+import { UserCompetency } from './user-competency.model.js';
 import { User } from './user.model.js';
 
 // Associations are declared in one place so the relationship wiring is
@@ -155,9 +165,51 @@ FormDefinition.belongsTo(User, { foreignKey: 'created_by_user_id', as: 'createdB
 // deliberately not by customer, so a merge, a split, or a contact moving
 // between records cannot resurrect consent (FR-051, FR-060, FR-065).
 
+// --- Phase 6: SLA & automation ---
+
+// hasOne, not hasMany: `ticket_sla.ticket_id` is the primary key, so one row
+// per ticket is a schema guarantee rather than a service convention (D1). The
+// association is OPTIONAL by nature — a ticket matching no policy has no row at
+// all, which is FR-014 made structural.
+Ticket.hasOne(TicketSla, { foreignKey: 'ticket_id', as: 'sla' });
+TicketSla.belongsTo(Ticket, { foreignKey: 'ticket_id', as: 'ticket' });
+TicketSla.belongsTo(SlaPolicy, { foreignKey: 'policy_id', as: 'policy' });
+
+SlaPolicy.belongsTo(User, { foreignKey: 'created_by_user_id', as: 'createdBy' });
+
+BusinessCalendar.hasMany(CalendarException, { foreignKey: 'calendar_id', as: 'exceptions' });
+CalendarException.belongsTo(BusinessCalendar, { foreignKey: 'calendar_id', as: 'calendar' });
+BusinessCalendar.belongsTo(User, { foreignKey: 'updated_by_user_id', as: 'updatedBy' });
+
+AssignmentSetting.belongsTo(User, { foreignKey: 'updated_by_user_id', as: 'updatedBy' });
+AssignmentSetting.belongsTo(User, { foreignKey: 'round_robin_cursor_user_id', as: 'cursorUser' });
+
+User.hasMany(UserCompetency, { foreignKey: 'user_id', as: 'competencies' });
+UserCompetency.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
+AutomationRule.belongsTo(User, { foreignKey: 'created_by_user_id', as: 'createdBy' });
+
+// SET NULL, not CASCADE, and the denormalised `rule_name` beside it: FR-070
+// says the record of what a rule did outlives the rule.
+AutomationRun.belongsTo(AutomationRule, { foreignKey: 'rule_id', as: 'rule' });
+AutomationRun.belongsTo(Ticket, { foreignKey: 'ticket_id', as: 'ticket' });
+
+AlertSubscription.belongsTo(Role, { foreignKey: 'role_id', as: 'role' });
+
+AlertDelivery.belongsTo(Ticket, { foreignKey: 'ticket_id', as: 'ticket' });
+AlertDelivery.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+AlertDelivery.belongsTo(Customer, { foreignKey: 'customer_id', as: 'customer' });
+
 export {
   sequelize,
+  AlertDelivery,
+  AlertSubscription,
+  AssignmentSetting,
   AuditLog,
+  AutomationRule,
+  AutomationRun,
+  BusinessCalendar,
+  CalendarException,
   ChannelIntake,
   ChannelOptOut,
   ChannelSetting,
@@ -175,11 +227,14 @@ export {
   ReplyTemplate,
   Role,
   RolePermission,
+  SlaPolicy,
   Task,
   Ticket,
   TicketHistory,
   TicketLink,
   TicketNote,
   TicketNoteMention,
+  TicketSla,
   User,
+  UserCompetency,
 };

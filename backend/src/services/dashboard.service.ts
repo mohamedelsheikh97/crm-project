@@ -8,7 +8,7 @@ import { prioritySortExpression } from '../tickets/taxonomy.js';
 import type { TicketStatus } from '../tickets/lifecycle.js';
 import * as authorizationService from './authorization.service.js';
 import { dueDateOrder, isOverdue } from './ticket-due.service.js';
-import type { Actor, Paged } from './ticket.service.js';
+import type { UserActor as Actor, Paged } from './ticket.service.js';
 import { clampPageSize } from './ticket.service.js';
 
 /**

@@ -78,6 +78,22 @@ const PROBES: Record<
   'messages:reattribute': { method: 'post', path: '/api/tickets/999999/reattribute' },
   'channels:manage': { method: 'get', path: '/api/channels' },
   'forms:manage': { method: 'post', path: '/api/forms' },
+
+  // Phase 6 — SLA & automation. All four sit under /api/admin: they are
+  // configuration that changes what the system does to every future ticket,
+  // not everyday work on one.
+  //
+  // There is deliberately no probe for reading a ticket's SLA state: it rides
+  // on tickets:view, which already has one, and there is no `sla:view` key.
+  'sla:manage': { method: 'get', path: '/api/admin/sla/policies' },
+  // A plain probe works despite FR-051's extra condition: Administrator holds
+  // both `assignment:manage` and `tickets:assign`, so the granted case reaches
+  // the handler, and every role without the key is refused at the route. The
+  // FR-051 condition itself — holding this key WITHOUT tickets:assign — is
+  // covered by backend/tests/assignment/authority.test.ts.
+  'assignment:manage': { method: 'get', path: '/api/admin/assignment' },
+  'automation:manage': { method: 'get', path: '/api/admin/automation/rules' },
+  'automation:view': { method: 'get', path: '/api/admin/automation/runs' },
 };
 
 const ROLE_KEYS = ['agent', 'supervisor', 'admin'] as const;

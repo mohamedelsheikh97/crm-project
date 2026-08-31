@@ -4,6 +4,8 @@ export interface AdminUser {
   id: number;
   email: string;
   fullName: string;
+  /** Phase 6. Where an SMS alert reaches them; never shown to a customer. */
+  alertPhone?: string | null;
   role: { key: string; nameKey: string };
   isActive: boolean;
   isLocked: boolean;
@@ -51,6 +53,8 @@ export async function get(id: number): Promise<AdminUser> {
 export async function create(input: {
   email: string;
   fullName: string;
+  /** Phase 6. Where an SMS alert reaches them; never shown to a customer. */
+  alertPhone?: string | null;
   roleKey: string;
   initialPassword: string;
 }): Promise<AdminUser> {
@@ -59,7 +63,7 @@ export async function create(input: {
 
 export async function update(
   id: number,
-  input: { fullName?: string; roleKey?: string; version: number },
+  input: { fullName?: string; roleKey?: string; alertPhone?: string | null; version: number },
 ): Promise<AdminUser> {
   return http.patch<AdminUser>(`/admin/users/${id}`, input);
 }

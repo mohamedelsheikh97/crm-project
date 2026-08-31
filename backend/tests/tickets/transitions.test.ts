@@ -167,7 +167,9 @@ describe('a refusal names where the ticket can actually go (FR-017)', () => {
     expect(response.body.error.code).toBe('TRANSITION_NOT_ALLOWED');
     expect(response.body.transition.from).toBe('new');
     expect(response.body.transition.to).toBe('resolved');
-    expect(response.body.transition.allowed).toEqual(['open']);
+    // Phase 6 added `new -> escalated` (research D11); `resolved` is still not
+    // reachable from `new`, which is what this test is actually about.
+    expect(response.body.transition.allowed).toEqual(['open', 'escalated']);
   });
 
   it('refuses a target that is not a status at all, and still says where to go', async () => {
@@ -179,7 +181,7 @@ describe('a refusal names where the ticket can actually go (FR-017)', () => {
       .send({ to: 'banana', version: ticket.version });
 
     expect(response.status).toBe(422);
-    expect(response.body.transition.allowed).toEqual(['open']);
+    expect(response.body.transition.allowed).toEqual(['open', 'escalated']);
   });
 });
 

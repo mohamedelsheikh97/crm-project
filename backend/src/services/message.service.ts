@@ -27,6 +27,7 @@ import * as historyService from './ticket-history.service.js';
 import * as identityService from './identity.service.js';
 import * as lifecycleService from './ticket-lifecycle.service.js';
 import * as optOutService from './opt-out.service.js';
+import * as slaTargetService from './sla-target.service.js';
 
 /**
  * Reading and writing customer correspondence.
@@ -315,6 +316,20 @@ export async function send(
       },
       transaction,
     );
+
+    // Phase 6 (FR-015). THE FIRST OUTBOUND CUSTOMER-VISIBLE MESSAGE SATISFIES
+    // THE RESPONSE TARGET — and only this path can reach it, which is the
+    // point. An internal note is written by ticket-note.service and never comes
+    // here, so "a note does not count as a reply" is structural rather than a
+    // condition somebody has to remember.
+    //
+    // Called on EVERY send; the service itself is write-once, so later
+    // correspondence cannot re-arm a promise that was already kept (FR-016).
+    //
+    // Satisfied at the moment we PERSIST the reply, not when the provider
+    // confirms it: the organisation answered when the agent pressed send, and a
+    // gateway retry is not the customer waiting longer.
+    await slaTargetService.satisfyResponse(ticketId, now(), transaction);
 
     return message;
   });

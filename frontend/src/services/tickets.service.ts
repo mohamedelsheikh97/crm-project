@@ -1,3 +1,5 @@
+import type { SlaView } from './sla.service';
+
 import { ApiError, http } from './http';
 
 import type { Paged } from './admin-users.service';
@@ -64,6 +66,17 @@ export interface Ticket extends TicketSummary {
    * refusal, and the close has already happened either way.
    */
   outstandingTasks?: Array<{ id: number; title: string; dueAt: string | null }>;
+  /**
+   * Phase 6 (FR-020). NULL when the ticket matched no SLA policy (FR-014) —
+   * not an object of nulls, so nothing can render a countdown for a commitment
+   * nobody made.
+   *
+   * `state` is computed SERVER-SIDE against the one authoritative clock
+   * (FR-011). Never derive it here from `targetAt` and the browser's clock:
+   * that is how "overdue" comes to mean two different things for a viewer in
+   * Cairo and one in London, which SC-002 forbids.
+   */
+  sla: SlaView | null;
   escalationReason: string | null;
   createdBy: { id: number; fullName: string } | null;
   links: TicketLinkView[];

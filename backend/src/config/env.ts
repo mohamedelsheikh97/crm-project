@@ -83,6 +83,30 @@ const envSchema = z
     // per-customer thresholds are Phase 6's SLA policy, not this phase's.
     DUE_WARNING_LEAD_MINUTES: z.coerce.number().int().positive().optional().default(60),
 
+    // SLA and automation (Phase 6, research.md D15). ONLY operational tuning
+    // lives here. Policies, the business calendar, the assignment strategy,
+    // alert subscriptions, and automation rules are all DATABASE ROWS, because
+    // FR-001, FR-026, FR-043, FR-054 and FR-079 require an administrator to
+    // edit them at runtime with an audit entry — and an environment variable is
+    // neither editable through a screen nor auditable.
+    //
+    // How far ahead of a target the at-risk warning fires. Phase 4's
+    // DUE_WARNING_LEAD_MINUTES above is its ancestor and stays: that one warns
+    // about a due date, this one about an SLA target.
+    SLA_WARNING_LEAD_MINUTES: z.coerce.number().int().positive().optional().default(60),
+
+    // The rule cascade bound (FR-062). Depth 0 is the originating event, so 3
+    // permits "arrival sets priority → priority change assigns → assignment
+    // notifies" and stops a cycle within a second. Raising it raises the cost
+    // of a misconfiguration, which is why it is deployment configuration rather
+    // than a screen.
+    AUTOMATION_MAX_DEPTH: z.coerce.number().int().positive().optional().default(3),
+
+    // The FR-078 ceiling, per recipient per hour. A misconfigured rule with an
+    // outbound action is a machine that can send thousands of messages at real
+    // cost; Phase 5's per-conversation limits were never designed to stop it.
+    ALERT_MAX_PER_RECIPIENT_PER_HOUR: z.coerce.number().int().positive().optional().default(20),
+
     // Communication channels (Phase 5, research.md D1-D2). Every channel
     // defaults to `simulator`, which exercises the whole inbound and outbound
     // path without contacting anything. That default is what makes the phase

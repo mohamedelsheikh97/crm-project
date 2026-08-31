@@ -4,15 +4,17 @@ import { Task } from '../models/index.js';
 import { NOTIFICATION_TYPES } from '../models/notification.model.js';
 import { logger } from '../middleware/request-logger.js';
 import * as notificationService from '../services/notification.service.js';
+import * as escalationService from '../services/sla-escalation.service.js';
 import { ticketsDueSoon } from '../services/ticket-due.service.js';
 import { Op } from 'sequelize';
 
 /**
- * The two things this system does on its own initiative (research D4).
+ * The three things this system does on its own initiative (research D4, and
+ * Phase 6 research D5 for the third).
  *
  * No job queue and no cron dependency — a `setInterval` is the whole mechanism.
- * What makes that safe is that BOTH SWEEPS ARE WRITTEN SO THAT MISSING A TICK
- * IS HARMLESS. Neither depends on having been running at any particular moment.
+ * What makes that safe is that EVERY SWEEP IS WRITTEN SO THAT MISSING A TICK
+ * IS HARMLESS. None depends on having been running at any particular moment.
  *
  * STARTED FROM server.ts, NEVER app.ts. Tests import `app`, and timers started
  * there would leak into every test run. `server.ts` is the only module that
@@ -107,9 +109,36 @@ async function sweepDueWarnings(now: Date): Promise<number> {
   return tickets.length;
 }
 
+/**
+ * SLA detection (Phase 6, FR-033-FR-037).
+ *
+ * A THIRD SWEEP ON THE EXISTING TIMER rather than a job queue or a cron
+ * dependency. It inherits the property that makes the two above safe: MISSING A
+ * TICK IS HARMLESS, because the query is a state comparison and not a "since
+ * last run" ledger. A target that expired while the process was down is matched
+ * on the next tick after restart (FR-035), with no catch-up path to forget.
+ *
+ * The work itself lives in sla-escalation.service.ts; this only calls it, the
+ * same shape the two sweeps above follow.
+ *
+ * ONE CONSEQUENCE WORTH RECORDING for whoever lifts the single-process limit:
+ * this sweep CHANGES TICKETS, where the two above only wrote notifications. A
+ * double-fired tick under two processes duplicates a notification today and
+ * would escalate a ticket twice tomorrow. The marker and the act commit
+ * together, which bounds it to a duplicate rather than a loss — but a lock
+ * belongs here before a second process ever runs (plan.md, carried into
+ * Phase 11).
+ */
+async function sweepSlaTargets(now: Date): Promise<number> {
+  const result = await escalationService.detectAndAct(now);
+
+  return result.warned + result.escalated + result.refused;
+}
+
 export interface SweepResult {
   reminders: number;
   dueWarnings: number;
+  slaActions: number;
 }
 
 /**
@@ -117,9 +146,13 @@ export interface SweepResult {
  * ever waits on a timer. The interval below is a thin wrapper around this.
  */
 export async function runScheduledSweeps(now: Date = new Date()): Promise<SweepResult> {
-  const [reminders, dueWarnings] = [await sweepTaskReminders(now), await sweepDueWarnings(now)];
+  const [reminders, dueWarnings, slaActions] = [
+    await sweepTaskReminders(now),
+    await sweepDueWarnings(now),
+    await sweepSlaTargets(now),
+  ];
 
-  return { reminders, dueWarnings };
+  return { reminders, dueWarnings, slaActions };
 }
 
 export function startScheduler(): void {

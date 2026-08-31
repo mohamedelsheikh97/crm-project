@@ -12,11 +12,13 @@ import { CHANNELS, type Channel } from '../models/message.model.js';
 import type { TicketSource } from '../models/ticket.model.js';
 import { INITIAL_STATUS } from '../tickets/lifecycle.js';
 
+import * as automationEngine from './automation-engine.service.js';
 import * as attachmentService from './message-attachment.service.js';
 import * as historyService from './ticket-history.service.js';
 import * as identityService from './identity.service.js';
 import * as lifecycleService from './ticket-lifecycle.service.js';
 import * as optOutService from './opt-out.service.js';
+import * as slaTargetService from './sla-target.service.js';
 
 /**
  * INTAKE — where a message from outside becomes a ticket.
@@ -61,7 +63,11 @@ function subjectFrom(message: InboundMessage): string {
     return message.subject.trim().slice(0, 255);
   }
 
-  const firstLine = message.body.split('\n').find((line) => line.trim() !== '')?.trim() ?? '';
+  const firstLine =
+    message.body
+      .split('\n')
+      .find((line) => line.trim() !== '')
+      ?.trim() ?? '';
 
   return (firstLine === '' ? 'New conversation' : firstLine).slice(0, 255);
 }
@@ -200,9 +206,15 @@ async function createTicketFor(
       category: 'general',
       priority: 'normal',
       status: INITIAL_STATUS,
-      // NEVER ASSIGNED. Assignment stays Supervisor-only (FR-027, Phase 3
+      // NEVER ASSIGNED HERE. Assignment stays Supervisor-only (FR-027, Phase 3
       // Clarifications Q3) — an arriving message does not get to hand itself
       // to whoever happens to be free.
+      //
+      // PHASE 6 DID NOT CHANGE THAT, and the distinction matters. Automatic
+      // assignment runs AFTER intake, through assignment.service, under a
+      // policy a Supervisor configured in advance. The authority is still
+      // supervisory; what changed is when it is exercised, not who holds it.
+      // Intake itself still assigns nothing.
       assignee_user_id: null,
       // No human creator, and the source says who did (FR-026, research D9).
       created_by_user_id: null,
@@ -210,6 +222,11 @@ async function createTicketFor(
     },
     { transaction },
   );
+
+  // Phase 6 (FR-010). A ticket that arrived by email acquires its SLA targets
+  // exactly as a typed one does — which is most of the point: the tickets
+  // nobody is watching are the ones that most need a clock on them.
+  await slaTargetService.attachTargets(ticket, transaction, ticket.created_at ?? now());
 
   return ticket;
 }
@@ -388,6 +405,21 @@ export async function accept(
         transaction,
       );
 
+      // Phase 6 (FR-056). THE TRIGGER THAT MAKES UNTRUSTED INPUT ABLE TO CHANGE
+      // STATE — see automation/catalog.ts. It is bounded by the closed catalog,
+      // the depth limit, and the fact that every action goes through a service
+      // that already refuses what a stranger should not be able to do.
+      automationEngine.emit(
+        {
+          trigger: 'message.received',
+          ticketId,
+          actorUserId: null,
+          messageId: stored.id,
+          channel: message.channel,
+        },
+        transaction,
+      );
+
       return { ticketId, messageId: stored.id, created };
     });
 
@@ -397,6 +429,25 @@ export async function accept(
     await storeAttachments(result.messageId, message.attachments);
 
     await settle(INTAKE_STATUSES.CONVERTED, null, result.messageId);
+
+    // Phase 6 (FR-043). ONLY FOR A NEWLY CREATED TICKET: a message appended to
+    // an existing conversation must not re-route work somebody is already
+    // doing, and `autoAssign` would refuse anyway because the ticket has an
+    // assignee — but saying so here means the intent is readable rather than
+    // inferred from a refusal.
+    //
+    // This is the case automatic assignment most exists for: a ticket that
+    // arrived at 02:00 with nobody watching. Never throws — a routing failure
+    // must not turn a converted message back into a failed one.
+    if (result.created) {
+      try {
+        const assignmentService = await import('./assignment.service.js');
+        await assignmentService.autoAssign(result.ticketId);
+      } catch {
+        // Recorded by the service; the message is already a ticket, which is
+        // what intake promised.
+      }
+    }
 
     return {
       status: 'converted',

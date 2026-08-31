@@ -3,7 +3,7 @@ import type { NextFunction, Request, Response } from 'express';
 import { notFound, unauthenticated } from '../../errors/app-error.js';
 import { auditContextFrom } from '../../services/audit.service.js';
 import * as templateService from '../../services/template.service.js';
-import type { Actor } from '../../services/ticket.service.js';
+import type { UserActor as Actor } from '../../services/ticket.service.js';
 
 /** HTTP concerns only. Language validation lives in template.service.ts. */
 

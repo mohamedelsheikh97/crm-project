@@ -17,6 +17,11 @@ import TicketDetailView from '../views/tickets/TicketDetailView.vue';
 import TicketListView from '../views/tickets/TicketListView.vue';
 import AuditLogView from '../views/admin/AuditLogView.vue';
 import RolesView from '../views/admin/RolesView.vue';
+import AssignmentView from '../views/admin/AssignmentView.vue';
+import AutomationRulesView from '../views/admin/AutomationRulesView.vue';
+import AutomationRunsView from '../views/admin/AutomationRunsView.vue';
+import BusinessCalendarView from '../views/admin/BusinessCalendarView.vue';
+import SlaPoliciesView from '../views/admin/SlaPoliciesView.vue';
 import TemplatesView from '../views/admin/TemplatesView.vue';
 import SettingsShellView from '../views/admin/SettingsShellView.vue';
 import UserFormView from '../views/admin/UserFormView.vue';
@@ -175,6 +180,41 @@ const router = createRouter({
           name: 'admin-templates',
           component: TemplatesView,
           meta: { titleKey: 'route.templates.title', permission: 'templates:manage' },
+        },
+        // Phase 6. All five are CONFIGURATION — they change what the system
+        // does to every future ticket — which is why they sit under /admin
+        // rather than beside the everyday ticket screens.
+        {
+          path: 'sla/policies',
+          name: 'admin-sla-policies',
+          component: SlaPoliciesView,
+          meta: { titleKey: 'route.admin.sla.title', permission: 'sla:manage' },
+        },
+        {
+          path: 'sla/calendar',
+          name: 'admin-sla-calendar',
+          component: BusinessCalendarView,
+          meta: { titleKey: 'route.admin.calendar.title', permission: 'sla:manage' },
+        },
+        {
+          path: 'assignment',
+          name: 'admin-assignment',
+          component: AssignmentView,
+          meta: { titleKey: 'route.admin.assignment.title', permission: 'assignment:manage' },
+        },
+        {
+          path: 'automation',
+          name: 'admin-automation',
+          component: AutomationRulesView,
+          meta: { titleKey: 'route.admin.automation.title', permission: 'automation:manage' },
+        },
+        // A DIFFERENT PERMISSION from the builder: reading what automation did
+        // is a supervisor's question; building rules is not.
+        {
+          path: 'automation/runs',
+          name: 'admin-automation-runs',
+          component: AutomationRunsView,
+          meta: { titleKey: 'route.admin.automationRuns.title', permission: 'automation:view' },
         },
         {
           path: 'settings',

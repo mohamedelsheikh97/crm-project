@@ -20,6 +20,8 @@ const isEdit = computed(() => id.value !== null);
 
 const email = ref('');
 const fullName = ref('');
+// Phase 6. An ALERT DESTINATION, not a profile field — see the hint below it.
+const alertPhone = ref('');
 const roleKey = ref('agent');
 const initialPassword = ref('');
 const version = ref(0);
@@ -78,6 +80,7 @@ async function load(): Promise<void> {
     const user = await adminUsers.get(id.value);
     email.value = user.email;
     fullName.value = user.fullName;
+    alertPhone.value = user.alertPhone ?? '';
     roleKey.value = user.role.key;
     version.value = user.version;
   } catch (cause) {
@@ -99,6 +102,10 @@ async function submit(): Promise<void> {
       await adminUsers.update(id.value, {
         fullName: fullName.value,
         roleKey: roleKey.value,
+        // Empty clears it, which makes this user SKIPPED for SMS alerts rather
+        // than failed (FR-077) — there is nothing to try, which is a different
+        // fact from having tried and been refused.
+        alertPhone: alertPhone.value.trim() === '' ? null : alertPhone.value.trim(),
         version: version.value,
       });
     } else {
@@ -178,6 +185,27 @@ async function submitReset(): Promise<void> {
             :aria-invalid="invalid ? 'true' : undefined"
             class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
           />
+        </template>
+      </FormField>
+
+      <!-- Phase 6 (FR-072, FR-077). Edit only: a new user has no alerts to
+           receive until they have a role and some work. -->
+      <FormField
+        v-if="isEdit"
+        label-key="userForm.field.alertPhone"
+        :error="fieldErrors.alertPhone"
+      >
+        <template #default="{ id: fieldId, describedBy }">
+          <input
+            :id="fieldId"
+            v-model="alertPhone"
+            type="tel"
+            :aria-describedby="describedBy"
+            class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+          />
+          <p class="mt-1 text-xs text-slate-600 dark:text-slate-400">
+            {{ t('userForm.alertPhoneHint') }}
+          </p>
         </template>
       </FormField>
 

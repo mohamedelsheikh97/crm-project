@@ -2,7 +2,7 @@ import type { NextFunction, Request, Response } from 'express';
 
 import { notFound, unauthenticated } from '../../errors/app-error.js';
 import * as ticketNoteService from '../../services/ticket-note.service.js';
-import type { Actor } from '../../services/ticket.service.js';
+import type { UserActor as Actor } from '../../services/ticket.service.js';
 
 /**
  * HTTP concerns only. Who may edit whose note, and which mentions are

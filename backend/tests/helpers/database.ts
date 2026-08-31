@@ -39,6 +39,7 @@ const CUSTOMER_PERMISSIONS_SEEDER = '20260827000001-customer-permissions.cjs';
 const TICKET_PERMISSIONS_SEEDER = '20260828000001-ticket-permissions.cjs';
 const DASHBOARD_PERMISSIONS_SEEDER = '20260829000001-dashboard-permissions.cjs';
 const CHANNEL_PERMISSIONS_SEEDER = '20260830000001-channel-permissions.cjs';
+const SLA_PERMISSIONS_SEEDER = '20260831000001-sla-permissions.cjs';
 const ADMIN_USER_SEEDER = '20260825000002-admin-user.cjs';
 
 /**
@@ -61,6 +62,7 @@ async function reseed(): Promise<void> {
   await seeder(TICKET_PERMISSIONS_SEEDER).up(queryInterface);
   await seeder(DASHBOARD_PERMISSIONS_SEEDER).up(queryInterface);
   await seeder(CHANNEL_PERMISSIONS_SEEDER).up(queryInterface);
+  await seeder(SLA_PERMISSIONS_SEEDER).up(queryInterface);
   await seeder(ADMIN_USER_SEEDER).up(queryInterface);
 }
 
@@ -98,6 +100,21 @@ export async function truncateAll(): Promise<void> {
 
   await sequelize.query('SET FOREIGN_KEY_CHECKS = 1;');
 
+  // A NOTE FOR WHOEVER CHASES THE NEXT 403 OR 401 THAT MAKES NO SENSE.
+  //
+  // The seeders reconcile: they read what exists, then insert what is missing.
+  // That is only correct if the read sees post-truncation state, and MySQL's
+  // default isolation is REPEATABLE READ. A connection left inside an open
+  // transaction — most easily by KILLING A TEST RUN mid-flight, which is how
+  // this was found in Phase 6 — keeps an older snapshot. Handed that
+  // connection, a seeder can read rows TRUNCATE has already removed, conclude
+  // nothing is missing, and leave `role_permissions` empty; every test in the
+  // file then fails on authorization for a reason that looks nothing like the
+  // cause.
+  //
+  // If a whole file suddenly fails on 401/403, suspect a stale connection
+  // before suspecting the code under test: restart MySQL or wait for the
+  // abandoned transactions to time out, then re-run.
   await reseed();
 }
 

@@ -153,13 +153,13 @@ describe('the lifecycle declaration is structurally sound', () => {
     expect(isTransitionDeclared('closed', 'open')).toBe(true); // FR-020
   });
 
-  it('permits exactly 13 of the 36 ordered pairs', () => {
+  it('permits exactly 14 of the 36 ordered pairs', () => {
     const permitted = TICKET_STATUSES.flatMap((from) =>
       TICKET_STATUSES.filter((to) => isTransitionDeclared(from, to)),
     );
 
     expect(TICKET_STATUSES.length ** 2).toBe(36);
-    expect(permitted).toHaveLength(13);
+    expect(permitted).toHaveLength(14);
   });
 });
 
@@ -215,7 +215,14 @@ describe('reopening is a distinct authority (Clarifications Q2)', () => {
 });
 
 describe('the transitions endpoint reflects the same table', () => {
-  it('offers only Open from New', async () => {
+  it('offers Open and Escalated from New', async () => {
+    // Phase 6 added `new -> escalated` (research D11). This test previously
+    // asserted `['open']` and is updated rather than removed: it still proves
+    // the endpoint reflects TRANSITIONS rather than a second copy of it, which
+    // is the property it was written for. What changed is the declaration, and
+    // the reason is that a ticket nobody had opened could otherwise never
+    // escalate when it breached — the phase's Definition of done failing for
+    // the case escalation most exists for.
     const { user, agent } = await agentAs('supervisor');
     const ticket = await seedTicket({ createdBy: user, assignee: user, status: 'new' });
 
@@ -223,7 +230,7 @@ describe('the transitions endpoint reflects the same table', () => {
 
     expect(response.status).toBe(200);
     expect(response.body.status).toBe('new');
-    expect(response.body.transitions).toEqual(['open']);
+    expect(response.body.transitions).toEqual(['open', 'escalated']);
   });
 
   it('offers Open and Closed from Resolved to a Supervisor', async () => {

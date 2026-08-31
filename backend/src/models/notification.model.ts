@@ -19,6 +19,21 @@ export const NOTIFICATION_TYPES = {
   NOTE_MENTIONED: 'note.mentioned',
   TASK_REMINDER: 'task.reminder',
   TICKET_DUE_SOON: 'ticket.due_soon',
+
+  // Phase 6 — SLA & automation. NO NEW COLUMNS: all three concern a ticket,
+  // which this table already references.
+  //
+  // Automatic assignment deliberately reuses TICKET_ASSIGNED above rather than
+  // adding a fourth. FR-050 requires an automatic assignment to produce the
+  // same downstream effects as a manual one, and a separate type would make the
+  // agent's notification list distinguish two things that are, to the agent,
+  // one thing: work arrived.
+  SLA_AT_RISK: 'sla.at_risk',
+  SLA_BREACHED: 'sla.breached',
+  // Nobody eligible to take the ticket. Goes to the supervisory recipients,
+  // because an unassignable ticket is a staffing problem rather than an agent's
+  // (FR-048).
+  ASSIGNMENT_FAILED: 'assignment.failed',
 } as const;
 
 export type NotificationType = (typeof NOTIFICATION_TYPES)[keyof typeof NOTIFICATION_TYPES];

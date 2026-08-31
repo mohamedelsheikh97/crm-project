@@ -4,7 +4,7 @@ import { notFound, validationError } from '../errors/app-error.js';
 import { now } from '../lib/clock.js';
 import { Customer, Task, Ticket } from '../models/index.js';
 import { toReference } from '../tickets/reference.js';
-import type { Actor, Paged } from './ticket.service.js';
+import type { UserActor as Actor, Paged } from './ticket.service.js';
 import { clampPageSize } from './ticket.service.js';
 
 /**
