@@ -24,7 +24,12 @@ export class TicketHistory extends Model<
   declare id: CreationOptional<number>;
   declare ticket_id: number;
   declare event: string;
-  declare actor_user_id: number;
+  /**
+   * NULL means the SYSTEM caused this event — a message arriving from a
+   * customer, in Phase 5. Nobody did it, and attributing it to a person would
+   * be a lie the audit trail then carries forever.
+   */
+  declare actor_user_id: number | null;
   /** Snapshotted so an entry stays attributed once the actor is deactivated. */
   declare actor_name: string;
   declare field: CreationOptional<string | null>;
@@ -39,7 +44,7 @@ TicketHistory.init(
     id: { type: DataTypes.BIGINT.UNSIGNED, primaryKey: true, autoIncrement: true },
     ticket_id: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false },
     event: { type: DataTypes.STRING(50), allowNull: false },
-    actor_user_id: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false },
+    actor_user_id: { type: DataTypes.INTEGER.UNSIGNED, allowNull: true },
     actor_name: { type: DataTypes.STRING(255), allowNull: false },
     field: { type: DataTypes.STRING(50), allowNull: true },
     previous_value: { type: DataTypes.TEXT, allowNull: true },

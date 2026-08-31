@@ -108,6 +108,29 @@ export const PERMISSIONS = [
   // Using the library is everyday work; changing it for everyone is not.
   define('templates', 'use'),
   define('templates', 'manage'),
+
+  // Phase 5 — Communication Channels.
+  //
+  // `messages:send` is separate from `ticket_notes:create` on purpose (FR-043),
+  // and the separation is the whole of SC-006. They are the two composers on
+  // one screen: one writes to a colleague, the other speaks to a customer in
+  // the organisation's name. Holding the authority to do the first must not
+  // imply the second, and the person who may annotate a ticket is not
+  // automatically the person who may answer it.
+  define('messages', 'send'),
+  // Correcting which customer a conversation belongs to moves correspondence
+  // between records, so it is a supervisory act rather than everyday work.
+  define('messages', 'reattribute'),
+
+  // There is deliberately NO `timeline:view` key. The timeline rides on
+  // `customers:view` and is filtered by ticket visibility (FR-090). A
+  // permission every role holds unconditionally cannot refuse anything — the
+  // same reasoning that kept `notifications:view` out of the Phase 4 catalog.
+
+  // Switching a channel on points the outside world at this system.
+  define('channels', 'manage'),
+  // A published form is a public endpoint anyone can submit to.
+  define('forms', 'manage'),
 ] as const satisfies readonly PermissionDefinition[];
 
 export type PermissionKey = (typeof PERMISSIONS)[number]['key'];

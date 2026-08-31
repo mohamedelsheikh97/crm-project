@@ -1,11 +1,18 @@
 import { sequelize } from '../config/database.js';
 
 import { AuditLog } from './audit-log.model.js';
+import { ChannelIntake } from './channel-intake.model.js';
+import { ChannelOptOut } from './channel-opt-out.model.js';
+import { ChannelSetting } from './channel-setting.model.js';
+import { ChatSession } from './chat-session.model.js';
 import { CustomerAttachment } from './customer-attachment.model.js';
 import { CustomerContact } from './customer-contact.model.js';
 import { CustomerNote } from './customer-note.model.js';
 import { Customer } from './customer.model.js';
 import { DuplicateOverride } from './duplicate-override.model.js';
+import { FormDefinition } from './form-definition.model.js';
+import { MessageAttachment } from './message-attachment.model.js';
+import { Message } from './message.model.js';
 import { Notification } from './notification.model.js';
 import { PasswordHistory } from './password-history.model.js';
 import { ReplyTemplate } from './reply-template.model.js';
@@ -115,14 +122,54 @@ Notification.belongsTo(TicketNote, { foreignKey: 'note_id', as: 'note' });
 
 ReplyTemplate.belongsTo(User, { foreignKey: 'created_by_user_id', as: 'createdBy' });
 
+// --- Phase 5: communication channels ---
+
+// Customer correspondence. Deliberately a SIBLING of TicketNote rather than a
+// flag on it: a note is written to a colleague, a message is exchanged with a
+// customer, and one table with a boolean deciding which is the design FR-002,
+// FR-044 and SC-006 exist to prevent.
+Ticket.hasMany(Message, { foreignKey: 'ticket_id', as: 'messages' });
+Message.belongsTo(Ticket, { foreignKey: 'ticket_id', as: 'ticket' });
+// Set on outbound, null on inbound. RESTRICT at the database, so an agent who
+// leaves does not take their correspondence with them.
+Message.belongsTo(User, { foreignKey: 'author_user_id', as: 'author' });
+
+Message.hasMany(MessageAttachment, { foreignKey: 'message_id', as: 'attachments' });
+MessageAttachment.belongsTo(Message, { foreignKey: 'message_id', as: 'message' });
+
+// The ledger points AT a message rather than the other way round: a delivery
+// that was ignored or failed produced none, and those are precisely the rows
+// most likely to be redelivered.
+ChannelIntake.belongsTo(Message, { foreignKey: 'message_id', as: 'message' });
+
+ChannelSetting.belongsTo(User, { foreignKey: 'updated_by_user_id', as: 'updatedBy' });
+
+// A chat session becomes a ticket at the first message, not at the moment the
+// panel opens — a visitor who opens and closes it has not raised anything.
+ChatSession.belongsTo(Ticket, { foreignKey: 'ticket_id', as: 'ticket' });
+Ticket.hasOne(ChatSession, { foreignKey: 'ticket_id', as: 'chatSession' });
+
+FormDefinition.belongsTo(User, { foreignKey: 'created_by_user_id', as: 'createdBy' });
+
+// ChannelOptOut has NO association. It is keyed by (channel, identity) and
+// deliberately not by customer, so a merge, a split, or a contact moving
+// between records cannot resurrect consent (FR-051, FR-060, FR-065).
+
 export {
   sequelize,
   AuditLog,
+  ChannelIntake,
+  ChannelOptOut,
+  ChannelSetting,
+  ChatSession,
   Customer,
   CustomerAttachment,
   CustomerContact,
   CustomerNote,
   DuplicateOverride,
+  FormDefinition,
+  Message,
+  MessageAttachment,
   Notification,
   PasswordHistory,
   ReplyTemplate,

@@ -2,6 +2,7 @@ import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import router from '../../src/router';
+import { markSessionRestored, resetSessionRestore } from '../../src/services/auth.service';
 import { useAuthStore, type SessionUser } from '../../src/stores/auth.store';
 
 function signIn(overrides: Partial<SessionUser> = {}): void {
@@ -20,6 +21,16 @@ function signIn(overrides: Partial<SessionUser> = {}): void {
 
 beforeEach(async () => {
   setActivePinia(createPinia());
+
+  // The guard awaits session restoration before reading the store, so that a
+  // refresh on a guarded route is not bounced to login while the access token
+  // (memory-only) is still absent. These tests seed the store by hand, so the
+  // restore is declared already done — otherwise every navigation here would
+  // issue a real /auth/me, and a failed one would call `auth.clear()` and wipe
+  // the session the test just set up.
+  resetSessionRestore();
+  markSessionRestored();
+
   await router.replace('/');
   await router.isReady();
 });

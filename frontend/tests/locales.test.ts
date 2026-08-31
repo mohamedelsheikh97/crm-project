@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { describe, expect, it } from 'vitest';
+import { createI18n } from 'vue-i18n';
 
 import ar from '../src/locales/ar.json';
 import en from '../src/locales/en.json';
@@ -94,4 +95,55 @@ describe('every literal translation key used in the app exists', () => {
     // every value of the enumeration.
     expect(missing).toEqual([]);
   });
+});
+
+/**
+ * Every message must actually COMPILE.
+ *
+ * This exists because of a real defect, and a nasty one to diagnose. vue-i18n
+ * treats `@` as the start of a linked message (`@:some.key`), so a message
+ * containing a bare `@` throws `SyntaxError: Message compilation error:
+ * Invalid linked format` — but NOT at startup. It throws lazily, the first time
+ * that particular message is rendered.
+ *
+ * `ticketNote.placeholder` was "Type @ to mention a colleague." The throw
+ * happened inside the note composer's render, during a route change, and the
+ * visible symptom was nothing like the cause: the URL changed and the screen
+ * did not, because a render that throws mid-navigation leaves the previous view
+ * mounted. Nobody would guess a placeholder string from that.
+ *
+ * Compiling every message here turns a lazy runtime crash into a build failure,
+ * for `@`, for stray `|`, and for malformed `{...}` alike.
+ */
+describe('every message compiles (vue-i18n)', () => {
+  for (const [locale, messages] of [
+    ['en', en],
+    ['ar', ar],
+  ] as const) {
+    it(`compiles every ${locale} message`, () => {
+      const i18n = createI18n({
+        legacy: false,
+        locale,
+        fallbackLocale: locale,
+        messages: { [locale]: messages } as Record<string, Record<string, string>>,
+        // Silence "missing parameter" noise: this test is about COMPILATION,
+        // and a message with an unsupplied {placeholder} still compiles.
+        warnHtmlMessage: false,
+        missingWarn: false,
+        fallbackWarn: false,
+      });
+
+      const broken: string[] = [];
+
+      for (const key of Object.keys(messages)) {
+        try {
+          i18n.global.t(key);
+        } catch (error) {
+          broken.push(`${key}: ${error instanceof Error ? error.message : String(error)}`);
+        }
+      }
+
+      expect(broken).toEqual([]);
+    });
+  }
 });

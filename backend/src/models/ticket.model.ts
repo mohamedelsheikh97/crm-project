@@ -11,6 +11,18 @@ import type { TicketStatus } from '../tickets/lifecycle.js';
 import type { TicketCategory, TicketPriority } from '../tickets/taxonomy.js';
 
 /**
+ * How a ticket came to exist (Phase 5, FR-026).
+ *
+ * `manual` is what every ticket raised before Phase 5 is, and what the column
+ * default backfills them to. The rest name the channel that created it, so an
+ * administrator can ask "which of these arrived on their own?" without joining
+ * to messages.
+ */
+export const TICKET_SOURCES = ['manual', 'email', 'whatsapp', 'sms', 'chat', 'form'] as const;
+
+export type TicketSource = (typeof TICKET_SOURCES)[number];
+
+/**
  * NO DESTROY PATH, for the same reason customers have none: a ticket is merged
  * or closed, never deleted. `merge` emits record.deleted as the
  * security-relevant fact while the row is retained, so every reference to it
@@ -27,7 +39,22 @@ export class Ticket extends Model<InferAttributes<Ticket>, InferCreationAttribut
   declare priority: TicketPriority;
   declare status: CreationOptional<TicketStatus>;
   declare assignee_user_id: number | null;
-  declare created_by_user_id: number;
+  /**
+   * NULL means the system raised this ticket from an inbound message (Phase 5,
+   * FR-026). Read together with `source`: a null creator and a non-`manual`
+   * source is a ticket nobody typed.
+   *
+   * A seeded "system" user was the alternative and is worse than it looks — it
+   * appears in user lists and assignment pickers, needs a role and a password
+   * hash, and Phase 1's last-administrator tests and Phase 4's ownership matrix
+   * would both have to learn to ignore it.
+   */
+  declare created_by_user_id: CreationOptional<number | null>;
+  /**
+   * Where the ticket came from: `manual`, or the channel that created it
+   * (Phase 5). `manual` for everything raised before Phase 5, which is correct.
+   */
+  declare source: CreationOptional<TicketSource>;
   /** Non-null means merged: a redirect, unworkable by every route (FR-043). */
   declare merged_into_ticket_id: CreationOptional<number | null>;
   declare escalation_reason: CreationOptional<string | null>;
@@ -70,7 +97,8 @@ Ticket.init(
     priority: { type: DataTypes.STRING(20), allowNull: false },
     status: { type: DataTypes.STRING(20), allowNull: false, defaultValue: 'new' },
     assignee_user_id: { type: DataTypes.INTEGER.UNSIGNED, allowNull: true },
-    created_by_user_id: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false },
+    created_by_user_id: { type: DataTypes.INTEGER.UNSIGNED, allowNull: true },
+    source: { type: DataTypes.STRING(20), allowNull: false, defaultValue: 'manual' },
     merged_into_ticket_id: { type: DataTypes.INTEGER.UNSIGNED, allowNull: true },
     escalation_reason: { type: DataTypes.TEXT, allowNull: true },
     due_at: { type: DataTypes.DATE, allowNull: true },

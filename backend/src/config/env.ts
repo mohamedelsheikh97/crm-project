@@ -82,6 +82,59 @@ const envSchema = z
     // spec's Assumptions fix it as system-wide, and per-priority or
     // per-customer thresholds are Phase 6's SLA policy, not this phase's.
     DUE_WARNING_LEAD_MINUTES: z.coerce.number().int().positive().optional().default(60),
+
+    // Communication channels (Phase 5, research.md D1-D2). Every channel
+    // defaults to `simulator`, which exercises the whole inbound and outbound
+    // path without contacting anything. That default is what makes the phase
+    // testable with no commercial account (FR-005b) — and why
+    // channels/registry.ts refuses to start a PRODUCTION process against one
+    // (FR-005c). A simulator in production is the single invisible failure in
+    // this phase: tickets keep arriving and replies keep reporting sent, while
+    // no customer ever hears anything.
+    CHANNEL_EMAIL_PROVIDER: z.enum(['simulator', 'imap-smtp']).optional().default('simulator'),
+    CHANNEL_WHATSAPP_PROVIDER: z.enum(['simulator', 'cloud-api']).optional().default('simulator'),
+    CHANNEL_SMS_PROVIDER: z.enum(['simulator', 'gateway']).optional().default('simulator'),
+
+    MAIL_POLL_SECONDS: z.coerce.number().int().positive().optional().default(60),
+
+    // Per channel, per sender. Bounds provisional-customer creation, which is
+    // the first way the outside world can add rows to `customers` (research D7).
+    INTAKE_RATE_PER_MINUTE: z.coerce.number().int().positive().optional().default(60),
+    // Chat and form submission, per visitor (FR-078, FR-086).
+    PUBLIC_RATE_PER_MINUTE: z.coerce.number().int().positive().optional().default(20),
+
+    // Origin permitted to embed the widget. Separate from CORS_ORIGIN: the
+    // widget lives on a marketing site, the application does not.
+    CHAT_WIDGET_ORIGIN: z.string().min(1).optional(),
+
+    // Signs the `support+<token>@` reply address, the threading fallback for
+    // clients that strip References (research D4). A guessed token must not be
+    // able to attach a stranger's mail to someone else's ticket.
+    CHANNEL_ADDRESS_TOKEN_SECRET: z.string().min(32).optional(),
+
+    // --- Provider credentials. Required ONLY when the matching provider is not
+    // `simulator`; the superRefine below enforces that pairing, so a channel
+    // switched on without its credentials fails at startup rather than at the
+    // first message (FR-005, FR-006).
+    MAIL_IMAP_HOST: z.string().min(1).optional(),
+    MAIL_IMAP_PORT: z.coerce.number().int().positive().optional().default(993),
+    MAIL_IMAP_USER: z.string().min(1).optional(),
+    MAIL_IMAP_PASSWORD: z.string().min(1).optional(),
+    MAIL_SMTP_HOST: z.string().min(1).optional(),
+    MAIL_SMTP_PORT: z.coerce.number().int().positive().optional().default(587),
+    MAIL_SMTP_USER: z.string().min(1).optional(),
+    MAIL_SMTP_PASSWORD: z.string().min(1).optional(),
+    MAIL_FROM_ADDRESS: z.string().min(1).optional(),
+
+    WHATSAPP_PHONE_NUMBER_ID: z.string().min(1).optional(),
+    WHATSAPP_ACCESS_TOKEN: z.string().min(1).optional(),
+    WHATSAPP_APP_SECRET: z.string().min(1).optional(),
+    WHATSAPP_VERIFY_TOKEN: z.string().min(1).optional(),
+
+    SMS_API_BASE_URL: z.string().min(1).optional(),
+    SMS_API_KEY: z.string().min(1).optional(),
+    SMS_SENDER_ID: z.string().min(1).optional(),
+    SMS_WEBHOOK_SECRET: z.string().min(1).optional(),
   })
   .superRefine((value, ctx) => {
     // Equal secrets would silently defeat the access/refresh type separation.
@@ -92,6 +145,67 @@ const envSchema = z
         message: 'must differ from JWT_ACCESS_SECRET',
       });
     }
+
+    /**
+     * Credentials are required by the PROVIDER CHOICE, not by an enablement
+     * flag (Phase 5, FR-005). Enablement lives in `channel_settings` where an
+     * administrator can change it at runtime; the provider lives here because
+     * it decides which code runs. Pairing the check to the provider means the
+     * failure surfaces at startup with the variable named, which is the whole
+     * point of this file.
+     */
+    const required = (
+      condition: boolean,
+      keys: readonly (keyof typeof value)[],
+      because: string,
+    ): void => {
+      if (!condition) return;
+
+      for (const key of keys) {
+        if (value[key] === undefined || value[key] === '') {
+          ctx.addIssue({ code: 'custom', path: [key as string], message: `required ${because}` });
+        }
+      }
+    };
+
+    required(
+      value.CHANNEL_EMAIL_PROVIDER === 'imap-smtp',
+      [
+        'MAIL_IMAP_HOST',
+        'MAIL_IMAP_USER',
+        'MAIL_IMAP_PASSWORD',
+        'MAIL_SMTP_HOST',
+        'MAIL_SMTP_USER',
+        'MAIL_SMTP_PASSWORD',
+        'MAIL_FROM_ADDRESS',
+      ],
+      'when CHANNEL_EMAIL_PROVIDER is "imap-smtp"',
+    );
+
+    required(
+      value.CHANNEL_WHATSAPP_PROVIDER === 'cloud-api',
+      [
+        'WHATSAPP_PHONE_NUMBER_ID',
+        'WHATSAPP_ACCESS_TOKEN',
+        'WHATSAPP_APP_SECRET',
+        'WHATSAPP_VERIFY_TOKEN',
+      ],
+      'when CHANNEL_WHATSAPP_PROVIDER is "cloud-api"',
+    );
+
+    required(
+      value.CHANNEL_SMS_PROVIDER === 'gateway',
+      ['SMS_API_BASE_URL', 'SMS_API_KEY', 'SMS_SENDER_ID', 'SMS_WEBHOOK_SECRET'],
+      'when CHANNEL_SMS_PROVIDER is "gateway"',
+    );
+
+    // The address-token fallback is only reachable on real mail, so it is only
+    // required there (research D4).
+    required(
+      value.CHANNEL_EMAIL_PROVIDER === 'imap-smtp',
+      ['CHANNEL_ADDRESS_TOKEN_SECRET'],
+      'when CHANNEL_EMAIL_PROVIDER is "imap-smtp"',
+    );
   });
 
 const parsed = envSchema.safeParse(process.env);
