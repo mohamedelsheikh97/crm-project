@@ -17,6 +17,20 @@ router.patch('/:id', requirePermission('tickets:update'), ticketsController.upda
 
 // Discovery and the move itself. The interface renders its buttons from the
 // GET and holds no copy of the lifecycle table.
+// Phase 8 (FR-026h, FR-057a). Records which contact raised an existing ticket,
+// which is what makes it visible in that person's portal.
+//
+// GATED ON portal:manage, NOT tickets:update. This is not an edit to the ticket's
+// content — it is a decision to disclose a conversation to somebody outside the
+// organisation, and it is audited as one
+// (`portal.ticket.contact_associated`). An agent who may correct a subject line
+// is not thereby somebody who may decide who reads the thread.
+router.patch(
+  '/:id/requesting-contact',
+  requirePermission('portal:manage'),
+  ticketsController.setRequestingContact,
+);
+
 router.get('/:id/transitions', requirePermission('tickets:view'), ticketsController.transitions);
 
 // ONE endpoint for every lifecycle move. The route gate is tickets:transition;

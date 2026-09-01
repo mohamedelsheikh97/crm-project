@@ -107,6 +107,43 @@ export async function create(req: Request, res: Response, next: NextFunction): P
   }
 }
 
+/**
+ * Records which contact raised this ticket (Phase 8, FR-026h, FR-057a).
+ *
+ * The manual route out of Clarifications Q2's fail-closed rule: a ticket that
+ * predates this phase, or whose sender matched two contacts, is invisible in the
+ * portal until somebody says whose it was.
+ *
+ * `null` is accepted and means "unknown again" — a mistaken association must be
+ * removable, and the effect is to make the ticket invisible in the portal rather
+ * than to hide the correction.
+ */
+export async function setRequestingContact(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    if (!req.user) throw unauthenticated();
+
+    res.status(200).json(
+      await ticketService.setRequestingContact(
+        ticketId(req),
+        req.body?.requestingContactId ?? null,
+        {
+          id: req.user.id,
+          email: req.user.email,
+          fullName: req.user.fullName,
+          roleId: req.user.roleId,
+        },
+        auditContextFrom(req),
+      ),
+    );
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function update(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     res

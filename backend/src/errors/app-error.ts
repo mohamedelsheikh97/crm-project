@@ -25,6 +25,10 @@ export type ErrorCode =
   // Phase 7 — Knowledge Base.
   | 'ARTICLE_INCOMPLETE'
   | 'CATEGORY_IN_USE'
+  // Phase 8 — Customer Portal.
+  | 'INVITATION_INVALID'
+  | 'TICKET_SETTLED'
+  | 'ALREADY_RECORDED'
   | 'INTERNAL_ERROR';
 
 export interface ErrorDetail {
@@ -388,4 +392,55 @@ export class CategoryInUseError extends AppError {
 
 export function categoryInUse(articleCount: number): CategoryInUseError {
   return new CategoryInUseError(articleCount);
+}
+
+/**
+ * An invitation that cannot be used (Phase 8, FR-002c).
+ *
+ * ONE ERROR FOR FOUR CAUSES — expired, already accepted, revoked, and never
+ * existed. Fixed here rather than at the call site for exactly the reason
+ * `invalidCredentials` is: the moment these are distinguishable, the endpoint
+ * becomes an oracle for which invitations exist, and an attacker holding a list
+ * of guessed tokens learns which ones were real.
+ *
+ * 404 rather than 410 or 403. "Gone" would confirm it had once been valid.
+ */
+export function invitationInvalid(): AppError {
+  return new AppError('INVITATION_INVALID', 404, 'This invitation cannot be used.');
+}
+
+/**
+ * A customer tried to reply on a CLOSED request (Phase 8, FR-036, research D9).
+ *
+ * The lifecycle already decides where finality lives: `TRANSITIONS` makes
+ * `closed -> open` need `tickets:reopen`, held only by a Supervisor, "because
+ * closing finishes work and reopening undoes something already finished". A
+ * customer reply that reopened a closed ticket would route around that decision,
+ * so it is refused — and refused BEFORE the message is stored, because FR-036
+ * forbids accepting something and then discarding it.
+ *
+ * A resolved request is different and is not refused: it reopens.
+ */
+export function ticketSettled(): AppError {
+  return new AppError(
+    'TICKET_SETTLED',
+    409,
+    'This request is closed. Raise a new request to continue.',
+  );
+}
+
+/**
+ * A second satisfaction submission for one ticket (Phase 8, FR-049).
+ *
+ * Raised from the UNIQUE CONSTRAINT rather than from a preceding read. A
+ * check-then-insert passes every test and still admits two rows when a customer
+ * double-clicks; translating the constraint violation is what makes "at most one
+ * per ticket" true rather than merely intended.
+ */
+export function alreadyRecorded(): AppError {
+  return new AppError(
+    'ALREADY_RECORDED',
+    409,
+    'A rating has already been recorded for this request.',
+  );
 }

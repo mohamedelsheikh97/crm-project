@@ -125,6 +125,37 @@ export const AUDIT_ACTIONS = {
   KB_CATEGORY_CHANGED: 'kb.category.changed',
   KB_GUIDE_CHANGED: 'kb.guide.changed',
 
+  // Phase 8 — Customer Portal.
+  //
+  // NAMESPACED UNDER `portal.` RATHER THAN REUSING `auth.`, and the reason is
+  // FR-008's word "attributable". A Phase 1 audit query asking "who signed in
+  // last night" means STAFF; if a customer sign-in landed on
+  // `auth.login.success`, every existing filter, export, and screen built on
+  // those keys would silently start returning people who do not work here. The
+  // two realms are separate in the token, in the account table, and in the
+  // middleware — the log is where an investigator finds out, so it is separate
+  // here too.
+  //
+  // The invitation lifecycle gets three keys rather than one. "Who was invited
+  // and by whom" and "who revoked an invitation before it was used" are
+  // different questions, and the second is the one asked after something has
+  // gone wrong.
+  PORTAL_INVITATION_ISSUED: 'portal.invitation.issued',
+  PORTAL_INVITATION_ACCEPTED: 'portal.invitation.accepted',
+  PORTAL_INVITATION_REVOKED: 'portal.invitation.revoked',
+  PORTAL_LOGIN_SUCCESS: 'portal.login.success',
+  PORTAL_LOGIN_FAILURE: 'portal.login.failure',
+  PORTAL_ACCOUNT_LOCKED: 'portal.account.locked',
+  PORTAL_ACCOUNT_UNLOCKED: 'portal.account.unlocked',
+  PORTAL_ACCESS_WITHDRAWN: 'portal.access.withdrawn',
+  PORTAL_ACCESS_RESTORED: 'portal.access.restored',
+  PORTAL_CREDENTIAL_RESET: 'portal.credential.reset',
+  // Making a ticket visible to a customer is a disclosure decision, so it is
+  // recorded like one. This is the key that answers "why can this person see
+  // that conversation?" — the question Clarifications Q2's whole design exists
+  // to keep answerable.
+  PORTAL_TICKET_CONTACT_ASSOCIATED: 'portal.ticket.contact_associated',
+
   // Defined in Phase 1 with no caller; Phase 2 is the first phase that
   // exports business records, so this finally acquires one.
   DATA_EXPORTED: 'data.exported',

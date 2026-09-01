@@ -41,6 +41,7 @@ const DASHBOARD_PERMISSIONS_SEEDER = '20260829000001-dashboard-permissions.cjs';
 const CHANNEL_PERMISSIONS_SEEDER = '20260830000001-channel-permissions.cjs';
 const SLA_PERMISSIONS_SEEDER = '20260831000001-sla-permissions.cjs';
 const KB_PERMISSIONS_SEEDER = '20260901000001-kb-permissions.cjs';
+const PORTAL_PERMISSIONS_SEEDER = '20260901000013-portal-permissions.cjs';
 const ADMIN_USER_SEEDER = '20260825000002-admin-user.cjs';
 
 /**
@@ -65,6 +66,7 @@ async function reseed(): Promise<void> {
   await seeder(CHANNEL_PERMISSIONS_SEEDER).up(queryInterface);
   await seeder(SLA_PERMISSIONS_SEEDER).up(queryInterface);
   await seeder(KB_PERMISSIONS_SEEDER).up(queryInterface);
+  await seeder(PORTAL_PERMISSIONS_SEEDER).up(queryInterface);
   await seeder(ADMIN_USER_SEEDER).up(queryInterface);
 }
 

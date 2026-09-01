@@ -2,6 +2,7 @@ import { fileTypeFromBuffer } from 'file-type';
 
 import type { InboundAttachment } from '../channels/types.js';
 import { env } from '../config/env.js';
+import { notFound } from '../errors/app-error.js';
 import * as fileStorage from '../lib/file-storage.js';
 import { MessageAttachment } from '../models/index.js';
 
@@ -140,4 +141,51 @@ export async function listFor(messageIds: number[]): Promise<Map<number, Attachm
 
 export async function findForDownload(attachmentId: number): Promise<MessageAttachment | null> {
   return MessageAttachment.findByPk(attachmentId);
+}
+
+export interface MessageDownloadTarget {
+  stream: ReturnType<typeof fileStorage.readStream>;
+  originalName: string;
+  contentType: string;
+  sizeBytes: number;
+}
+
+/**
+ * Opens an attachment that has ALREADY been proven to belong to the caller
+ * (Phase 8, FR-033, research.md D15).
+ *
+ * TAKES A MESSAGE ID AS WELL AS AN ATTACHMENT ID, and that is the entire point
+ * of adding a second function rather than routing `findForDownload` above.
+ * `findForDownload` takes an id and no scope; called from an HTTP handler it
+ * serves any attachment to any caller, which is the defect Phase 2's controller
+ * names: "serving it would make an attachment reachable by anyone who obtains its
+ * address, which is the same defect as not checking permission at all."
+ *
+ * The portal reaches this only through `portal-ticket.service.attachmentFor`,
+ * which resolves session -> scoped ticket -> message -> attachment in one query
+ * before this is ever called. The `message_id` in the WHERE clause here is the
+ * second lock: even a caller who somehow arrived with a mismatched pair gets
+ * nothing.
+ *
+ * `findForDownload` is deliberately LEFT ALONE rather than deleted or
+ * repurposed. Phase 5 wrote it and never wired it up; the agent-side download it
+ * was meant for still does not exist, and quietly making it scoped would hide
+ * that gap instead of leaving it visible for the phase that closes it.
+ */
+export async function getScopedForDownload(
+  messageId: number,
+  attachmentId: number,
+): Promise<MessageDownloadTarget> {
+  const attachment = await MessageAttachment.findOne({
+    where: { id: attachmentId, message_id: messageId },
+  });
+
+  if (!attachment) throw notFound();
+
+  return {
+    stream: fileStorage.readStream(attachment.storage_key),
+    originalName: attachment.file_name,
+    contentType: attachment.content_type,
+    sizeBytes: attachment.byte_size,
+  };
 }

@@ -191,6 +191,28 @@ export const PERMISSIONS = [
   // out of the Phase 4 catalog, `timeline:view` out of Phase 5's, and
   // `sla:view` out of Phase 6's. Drafts are a different matter, and they are
   // gated by `kb:author` in the service rather than by a key of their own.
+
+  // Phase 8 — Customer Portal.
+  //
+  // ONE KEY, covering invitation, withdrawal, lockout release, credential reset,
+  // and associating a ticket with the contact who raised it. Nothing in the spec
+  // distinguishes those audiences: they are all "may decide who gets into the
+  // portal", and a supervisor who can invite but not withdraw holds half a
+  // remedy for a compromised credential.
+  //
+  // DISTINCT FROM `customers:update` on purpose (FR-058). Managing portal access
+  // is not editing customer data, and the two grants belong to different
+  // judgements — a team lead may reasonably hand out portal access without being
+  // trusted to rewrite a customer's address.
+  define('portal', 'manage'),
+
+  // There is deliberately NO PERMISSION KEY FOR CUSTOMERS. Portal capability
+  // comes from holding a portal session, not from a grant, and a customer has no
+  // row in `users` to grant anything to. Putting customers into this catalog is
+  // precisely the realm confusion research D1 exists to prevent: the staff
+  // middleware resolves a token's subject against `users`, so anything that made
+  // a customer look like a permission holder would be one line away from making
+  // them a staff member.
 ] as const satisfies readonly PermissionDefinition[];
 
 export type PermissionKey = (typeof PERMISSIONS)[number]['key'];

@@ -12,7 +12,17 @@ import {
 } from '../errors/app-error.js';
 import { now as clockNow } from '../lib/clock.js';
 import { logger } from '../middleware/request-logger.js';
-import { Customer, SlaPolicy, Ticket, TicketLink, TicketSla, User } from '../models/index.js';
+import {
+  Customer,
+  CustomerContact,
+  SlaPolicy,
+  Ticket,
+  TicketLink,
+  TicketSatisfaction,
+  TicketSla,
+  User,
+} from '../models/index.js';
+import { isTicketSource } from '../models/ticket.model.js';
 import { INITIAL_STATUS, type TicketStatus } from '../tickets/lifecycle.js';
 import { parseReference, toReference } from '../tickets/reference.js';
 import {
@@ -162,6 +172,27 @@ export interface TicketDetail extends TicketSummary {
    * nobody made.
    */
   sla: slaTargetService.SlaView | null;
+  /**
+   * WHO CAN SEE THIS CONVERSATION IN THE PORTAL (Phase 8, FR-026i).
+   *
+   * Shown to agents because it answers a question they will otherwise guess at.
+   * Without it, "the customer says they cannot find their ticket" has no visible
+   * cause — the ticket is right there on the agent's screen, and the reason it is
+   * missing from the customer's is a column nobody can see.
+   *
+   * NULL means nobody sees it in the portal (FR-026f), which is the state most
+   * historical tickets are in until somebody associates them.
+   */
+  requestingContact: { id: number; email: string } | null;
+  /**
+   * The customer's rating of the resolution (Phase 8, FR-053).
+   *
+   * NULL means not rated — which covers both "not asked yet" and "asked and
+   * ignored", and deliberately does not distinguish them. Nothing records that
+   * we invited a rating, because nothing needs to: FR-051 requires that ignoring
+   * the invitation creates nothing at all.
+   */
+  satisfaction: { score: number; comment: string | null; submittedAt: Date } | null;
 }
 
 type Loaded = Ticket & { customer?: Customer; assignee?: User | null; createdBy?: User | null };
@@ -388,6 +419,15 @@ export async function getById(id: number): Promise<TicketDetail> {
   const survivorId =
     ticket.merged_into_ticket_id === null ? null : await lifecycleService.resolveSurvivorId(ticket);
 
+  const requestingContact =
+    ticket.requesting_contact_id === null
+      ? null
+      : await CustomerContact.findByPk(ticket.requesting_contact_id, {
+          attributes: ['id', 'value_raw'],
+        });
+
+  const satisfaction = await TicketSatisfaction.findOne({ where: { ticket_id: ticket.id } });
+
   return {
     ...toSummary(ticket),
     description: ticket.description,
@@ -398,6 +438,16 @@ export async function getById(id: number): Promise<TicketDetail> {
     links: await linksFor(ticket.id),
     survivor: survivorId === null ? null : { id: survivorId, reference: toReference(survivorId) },
     sla: await slaFor(ticket),
+    requestingContact: requestingContact
+      ? { id: requestingContact.id, email: requestingContact.value_raw }
+      : null,
+    satisfaction: satisfaction
+      ? {
+          score: satisfaction.score,
+          comment: satisfaction.comment,
+          submittedAt: satisfaction.submitted_at,
+        }
+      : null,
   };
 }
 
@@ -445,6 +495,30 @@ export interface TicketInput {
   category?: unknown;
   priority?: unknown;
   version?: unknown;
+  /**
+   * Where the ticket came from (Phase 5's `TICKET_SOURCES`). Defaults to
+   * `manual`, so every existing caller is unchanged.
+   *
+   * HONOURED ONLY FOR A SYSTEM ACTOR — see `create` below. The staff controller
+   * passes `req.body` straight through, so without that rule an agent could post
+   * `source: 'portal'` and make a ticket they typed claim a customer raised it.
+   * Nothing breaks if they do, but `source` is the column an administrator reads
+   * to ask "which of these arrived on their own?", and an answer that can be
+   * typed is not an answer.
+   */
+  source?: unknown;
+  /**
+   * WHICH CONTACT RAISED IT (Phase 8, FR-026a, FR-026e).
+   *
+   * Optional, and allowed to stay null: an agent raising a ticket during a phone
+   * call may not know. NULL means nobody sees it in the portal (FR-026f), which
+   * is the correct fail-closed default for a ticket whose requester is unknown.
+   *
+   * Validated against THIS ticket's customer below. A contact on another
+   * customer's record would be a cross-customer disclosure, and the foreign key
+   * cannot express the constraint.
+   */
+  requestingContactId?: unknown;
 }
 
 function validateTaxonomy(input: TicketInput, details: ErrorDetail[]): void {
@@ -463,6 +537,92 @@ function validateTaxonomy(input: TicketInput, details: ErrorDetail[]): void {
       message: `ticket.error.priorityInvalid:${allPriorityKeys().join(',')}`,
     });
   }
+}
+
+/**
+ * Resolves and validates a requesting contact (Phase 8, FR-026a, FR-026h).
+ *
+ * THE ONLY PLACE either write path checks it, so "the contact must belong to this
+ * ticket's customer" has one implementation. That rule is not decoration: an
+ * association across customers would make one customer's conversation visible in
+ * another customer's portal, which is the worst outcome this phase has.
+ */
+async function resolveRequestingContact(
+  value: unknown,
+  customerId: number,
+): Promise<number | null> {
+  if (value === undefined || value === null || value === '') return null;
+
+  const contactId = Number(value);
+
+  if (!Number.isInteger(contactId) || contactId < 1) {
+    throw validationError([
+      { field: 'requestingContactId', message: 'ticket.error.requestingContactInvalid' },
+    ]);
+  }
+
+  const contact = await CustomerContact.findOne({
+    where: { id: contactId, customer_id: customerId },
+    attributes: ['id'],
+  });
+
+  // Refused rather than silently ignored. A caller who named the wrong contact
+  // has a bug, and quietly storing NULL would hide it behind a portal that
+  // simply never shows the ticket.
+  if (!contact) {
+    throw validationError([
+      { field: 'requestingContactId', message: 'ticket.error.requestingContactNotOnCustomer' },
+    ]);
+  }
+
+  return contact.id;
+}
+
+/**
+ * Records which contact raised an existing ticket (Phase 8, FR-026h, FR-057a).
+ *
+ * The manual route out of Clarifications Q2's fail-closed rule: every ticket that
+ * predates this phase and could not be associated deterministically is invisible
+ * in the portal until somebody says whose it was.
+ *
+ * AUDITED AS A DISCLOSURE, not as an edit. `portal.ticket.contact_associated` is
+ * the key that answers "why can this person see that conversation?" — the
+ * question Q2's whole design exists to keep answerable.
+ */
+export async function setRequestingContact(
+  ticketId: number,
+  contactId: unknown,
+  actor: UserActor,
+  context: AuditContext = {},
+): Promise<TicketDetail> {
+  const ticket = await Ticket.findByPk(ticketId);
+
+  if (!ticket) throw notFound();
+
+  const resolved = await resolveRequestingContact(contactId, ticket.customer_id);
+  const previous = ticket.requesting_contact_id;
+
+  await sequelize.transaction(async (transaction) => {
+    ticket.requesting_contact_id = resolved;
+    await ticket.save({ transaction });
+
+    await auditService.record(
+      {
+        action: auditService.AUDIT_ACTIONS.PORTAL_TICKET_CONTACT_ASSOCIATED,
+        actorUserId: actor.id,
+        actorEmail: actor.email,
+        targetType: 'ticket',
+        targetId: ticket.id,
+        targetLabel: toReference(ticket.id),
+        previousValue: { requestingContactId: previous },
+        newValue: { requestingContactId: resolved },
+        ...context,
+      },
+      transaction,
+    );
+  });
+
+  return getById(ticket.id);
 }
 
 export async function create(
@@ -502,6 +662,14 @@ export async function create(
 
   const description = typeof input.description === 'string' ? input.description.trim() : '';
 
+  // Phase 8, FR-026a. Resolved BEFORE the transaction so a bad contact is a 400
+  // rather than a rolled-back ticket, and checked against THIS customer because
+  // the foreign key cannot express that constraint (FR-026h).
+  const requestingContactId = await resolveRequestingContact(
+    input.requestingContactId,
+    customer.id,
+  );
+
   const created = await sequelize.transaction(async (transaction) => {
     const ticket = await Ticket.create(
       {
@@ -515,6 +683,12 @@ export async function create(
         status: INITIAL_STATUS,
         assignee_user_id: null,
         created_by_user_id: actor.id,
+        // A PERSON'S TICKET IS ALWAYS `manual`, whatever the body said. Only a
+        // system actor — the portal service, or intake — may name a source, and
+        // each passes a literal it decided itself rather than one it was handed
+        // (Phase 8).
+        source: actor.id === null && isTicketSource(input.source) ? input.source : 'manual',
+        requesting_contact_id: requestingContactId,
       },
       { transaction },
     );

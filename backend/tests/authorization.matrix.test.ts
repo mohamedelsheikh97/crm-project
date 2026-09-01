@@ -103,6 +103,12 @@ const PROBES: Record<
   'kb:author': { method: 'post', path: '/api/knowledge/articles' },
   'kb:publish': { method: 'post', path: '/api/knowledge/articles/999999/publish' },
   'kb:manage': { method: 'post', path: '/api/knowledge/categories' },
+
+  // Phase 8. A GET rather than one of the four write actions, deliberately: a
+  // permitted caller must reach the handler and get anything but 403, and every
+  // write path here would need a real account or invitation id to get that far.
+  // Reading the access overview is gated on the same single key.
+  'portal:manage': { method: 'get', path: '/api/customers/999999/portal-access' },
 };
 
 const ROLE_KEYS = ['agent', 'supervisor', 'admin'] as const;

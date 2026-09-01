@@ -15,6 +15,7 @@ import { now } from '../lib/clock.js';
 import { normaliseContact } from '../lib/phone.js';
 import { Customer, Message, Ticket } from '../models/index.js';
 import {
+  CHANNELS,
   DELIVERY_STATES,
   REPLYABLE_CHANNELS,
   type Channel,
@@ -246,7 +247,21 @@ export async function send(
 
   // Checked BEFORE the adapter is called, so a refused message never reaches a
   // provider (FR-051).
-  if (await optOutService.isOptedOut(conversation.channel, conversation.recipientIdentity)) {
+  //
+  // THE PORTAL IS EXEMPT (Phase 8, FR-037, research D6). Opt-out governs
+  // unsolicited contact on a channel that pushes to somebody: a customer who
+  // asked us to stop texting them has said something meaningful. The portal
+  // pushes nothing — the customer signed in and is reading their own request —
+  // and FR-037 forbids an opt-out reducing the completeness of what they can
+  // read there. Honouring an opt-out here would silently withhold the answer
+  // from the person who came looking for it.
+  //
+  // ONE EXCLUSION, IN ONE PLACE. A second exemption added elsewhere would be
+  // invisible; if another channel ever needs one, it belongs on this line.
+  if (
+    conversation.channel !== CHANNELS.PORTAL &&
+    (await optOutService.isOptedOut(conversation.channel, conversation.recipientIdentity))
+  ) {
     throw recipientOptedOut();
   }
 

@@ -81,6 +81,22 @@ export interface Ticket extends TicketSummary {
   createdBy: { id: number; fullName: string } | null;
   links: TicketLinkView[];
   survivor: { id: number; reference: string } | null;
+  /**
+   * Phase 8 (FR-026i). WHICH CONTACT CAN SEE THIS IN THE PORTAL.
+   *
+   * NULL means nobody can — which is the state most tickets raised before this
+   * phase are in, and the answer to "the customer says they cannot find their
+   * ticket".
+   */
+  requestingContact: { id: number; email: string } | null;
+  /**
+   * Phase 8 (FR-053). The customer's rating of the resolution.
+   *
+   * NULL covers both "not asked yet" and "asked and ignored", and deliberately
+   * does not distinguish them: nothing records that we asked, because FR-051
+   * requires ignoring the invitation to create nothing at all.
+   */
+  satisfaction: { score: number; comment: string | null; submittedAt: string } | null;
 }
 
 export interface HistoryEntry {

@@ -21,6 +21,13 @@ export const CHANNELS = {
   SMS: 'sms',
   CHAT: 'chat',
   FORM: 'form',
+  /**
+   * The customer portal (Phase 8, research.md D6).
+   *
+   * A channel with no transport: a portal message is delivered by being read,
+   * because both ends of the conversation are inside this application.
+   */
+  PORTAL: 'portal',
 } as const;
 
 export type Channel = (typeof CHANNELS)[keyof typeof CHANNELS];
@@ -31,12 +38,28 @@ export function isChannel(value: unknown): value is Channel {
   return typeof value === 'string' && (ALL_CHANNELS as readonly string[]).includes(value);
 }
 
-/** A form is inbound-only: it has no reply path of its own (FR-003). */
+/**
+ * A form is inbound-only: it has no reply path of its own (FR-003).
+ *
+ * THE PORTAL IS REPLYABLE, and Phase 8 research D6 exists because that is not
+ * the obvious answer. Treating it like `form` looked cheaper and does not work:
+ * `message.service.conversationFor` derives the reply channel and recipient from
+ * the most recent inbound message FILTERED TO THIS LIST, and returns null
+ * otherwise. A portal-submitted ticket would therefore have no reply path at
+ * all — the hole Phase 5 left for form submissions, inherited into the one
+ * phase whose Definition of done requires a customer to be answered where they
+ * wrote.
+ *
+ * Do not remove `PORTAL` from this list to "tidy up" a channel with no
+ * transport. The adapter's `send` performing no network call is the point, not
+ * a symptom.
+ */
 export const REPLYABLE_CHANNELS: readonly Channel[] = [
   CHANNELS.EMAIL,
   CHANNELS.WHATSAPP,
   CHANNELS.SMS,
   CHANNELS.CHAT,
+  CHANNELS.PORTAL,
 ];
 
 export type MessageDirection = 'inbound' | 'outbound';

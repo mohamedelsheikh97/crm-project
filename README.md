@@ -35,8 +35,10 @@ No local MySQL install is needed — the database runs in a container.
 
 ```bash
 cp .env.example .env
-# Set JWT_ACCESS_SECRET and JWT_REFRESH_SECRET to two DIFFERENT random strings
-# of at least 32 characters. Startup fails if they match.
+# Set all FOUR JWT secrets to DIFFERENT random strings of at least 32 characters:
+#   JWT_ACCESS_SECRET, JWT_REFRESH_SECRET  (staff)
+#   PORTAL_JWT_ACCESS_SECRET, PORTAL_JWT_REFRESH_SECRET  (customer portal)
+# Startup fails if any two of them match, naming the pair.
 
 docker compose up -d      # wait for `docker compose ps` to report healthy
 npm install               # single install covers both workspaces
@@ -65,6 +67,39 @@ once at startup, so changing one needs a restart.
 
 A locked account returns the **same** response as a wrong password and an unknown account. That is
 deliberate: saying "this account is locked" to an anonymous caller confirms the account exists.
+
+### The customer portal (Phase 8)
+
+The portal is a **second identity realm**: a customer signs in with a token this application's staff
+middleware refuses, and vice versa. That separation is cryptographic rather than conventional, which
+is why two of these four variables are **required** and the application refuses to start without
+them.
+
+| Variable                    | Required | Default | Controls                                          |
+| --------------------------- | -------- | ------- | ------------------------------------------------- |
+| `PORTAL_JWT_ACCESS_SECRET`  | **yes**  | —       | Signs portal access tokens (≥32 chars)            |
+| `PORTAL_JWT_REFRESH_SECRET` | **yes**  | —       | Signs portal refresh tokens (≥32 chars)           |
+| `PORTAL_INVITE_TTL_HOURS`   | no       | `168`   | How long a portal invitation stays usable         |
+| `PORTAL_RATE_PER_MINUTE`    | no       | `20`    | Base allowance for the portal's rate-limit scopes |
+
+**All four JWT secrets must differ from each other**, and startup fails naming the pair that
+collided. That refusal is the point rather than a nuisance: the staff middleware resolves a token's
+subject against `users`, so a customer token signed with the staff secret would come back as a real
+staff account with a real role. Sharing a secret is the one misconfiguration in this area that works
+perfectly until somebody notices they can act as a member of staff.
+
+**Access is invite-only.** There is no registration route, and no customer can reach the portal until
+somebody holding `portal:manage` invites an email contact on their record — from the customer's
+profile screen. `portal:manage` is seeded to Administrator and Supervisor, not to Agent.
+
+**A newly invited customer often sees nothing at first, and that is correct.** The portal shows a
+request only to the contact recorded as having raised it, and tickets created before this phase have
+no such record. The migration associates every one it can decide without guessing; the rest are
+associated by hand from the ticket screen ("Raised by"). An empty request list is a normal first
+experience, not a fault.
+
+**The portal accepts no file uploads.** Customers send files by replying to a request by email.
+Lifting that needs a virus-scanning step first — see Phase 8's Out of Scope.
 
 ## Scripts
 
@@ -191,12 +226,12 @@ gets asked at every code review of `lib/text-normalise.ts`, so the measurement i
 
 Probed against this project's own MySQL 8.4.11, `utf8mb4_0900_ai_ci`, default settings:
 
-| Query                                       | `FULLTEXT` result | Why it matters                            |
-| ------------------------------------------- | ----------------- | ----------------------------------------- |
-| a word, against a row holding it with `ال`  | **0 matches**     | The Arabic definite article breaks matching |
-| the same, in the other direction            | **0 matches**     | …and it fails both ways                   |
-| a real two-letter Arabic word               | **0 matches**     | `innodb_ft_min_token_size` defaults to 3  |
-| a word carrying harakat                     | matches           | The collation handles diacritics for free |
+| Query                                      | `FULLTEXT` result | Why it matters                              |
+| ------------------------------------------ | ----------------- | ------------------------------------------- |
+| a word, against a row holding it with `ال` | **0 matches**     | The Arabic definite article breaks matching |
+| the same, in the other direction           | **0 matches**     | …and it fails both ways                     |
+| a real two-letter Arabic word              | **0 matches**     | `innodb_ft_min_token_size` defaults to 3    |
+| a word carrying harakat                    | matches           | The collation handles diacritics for free   |
 
 The first two have **no configuration fix at all**. The third needs a global server variable, a
 restart, and a full index rebuild — none of which a migration can express, and which a managed
@@ -224,8 +259,7 @@ cases the table above measures, and it is the only place the phase's central cla
   constants. If somebody threads them through from the request "so the endpoint is reusable", that
   is one signature change away from serving internal content to the internet — and the diff would
   look like good engineering.
-- **Draft, archived, internal, and non-existent are ONE answer.** All four return a byte-identical
-  404. A public reader must not be able to learn that an article exists but is not for them.
+- **Draft, archived, internal, and non-existent are ONE answer.** All four return a byte-identical 404. A public reader must not be able to learn that an article exists but is not for them.
 - **Suggestions are computed on read and never stored.** `kb_ticket_articles` holds only deliberate
   attachments — an agent pinning one, or a rule acting. A stored suggestion goes stale the moment an
   article is archived, and nothing notices.

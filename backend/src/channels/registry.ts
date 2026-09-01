@@ -6,6 +6,7 @@ import { chatAdapter } from './chat/simulator.js';
 import { emailImapSmtpAdapter } from './email/imap-smtp.js';
 import { emailSimulatorAdapter } from './email/simulator.js';
 import { formAdapter } from './form/inbound.js';
+import { portalAdapter } from './portal/in-app.js';
 import { smsGatewayAdapter } from './sms/gateway.js';
 import { smsSimulatorAdapter } from './sms/simulator.js';
 import type { ChannelAdapter } from './types.js';
@@ -42,6 +43,11 @@ function resolve(channel: Channel): ChannelAdapter {
     // A form is inbound-only by definition (FR-003).
     case CHANNELS.FORM:
       return formAdapter;
+    // The portal has no third party either, and unlike a form it CAN be replied
+    // on — the adapter simply performs no network call, because both ends of the
+    // conversation are inside this application (Phase 8, research D6).
+    case CHANNELS.PORTAL:
+      return portalAdapter;
   }
 }
 
@@ -124,10 +130,13 @@ export async function assertProductionReady(): Promise<void> {
   const offenders = settings
     .map((row) => row.channel)
     .filter((channel) => resolve(channel).provider === SIMULATOR)
-    // Chat and forms have no external provider, so their "simulator" is the
-    // real implementation. Excluding them is not a loophole: there is nothing
-    // for them to be pointed at instead.
-    .filter((channel) => channel !== CHANNELS.CHAT && channel !== CHANNELS.FORM);
+    // Chat, forms and the portal have no external provider, so their
+    // "simulator" is the real implementation. Excluding them is not a loophole:
+    // there is nothing for them to be pointed at instead.
+    .filter(
+      (channel) =>
+        channel !== CHANNELS.CHAT && channel !== CHANNELS.FORM && channel !== CHANNELS.PORTAL,
+    );
 
   if (offenders.length > 0) {
     throw new SimulatorInProductionError(offenders);

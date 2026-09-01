@@ -159,15 +159,55 @@ const envSchema = z
     SMS_API_KEY: z.string().min(1).optional(),
     SMS_SENDER_ID: z.string().min(1).optional(),
     SMS_WEBHOOK_SECRET: z.string().min(1).optional(),
+
+    // --- Phase 8 — Customer Portal (research.md D1, D11).
+    //
+    // REQUIRED, not optional with a default. Every other Phase 8 knob has a
+    // default because a missing value is an inconvenience; a missing portal
+    // secret is not. The alternative to requiring them is falling back to the
+    // staff secret, which is the one misconfiguration in this phase that works
+    // perfectly until somebody notices they can act as a staff user.
+    PORTAL_JWT_ACCESS_SECRET: z.string().min(32, 'must be at least 32 characters'),
+    PORTAL_JWT_REFRESH_SECRET: z.string().min(32, 'must be at least 32 characters'),
+
+    // How long an invitation stays usable. Seven days is long enough to survive
+    // a holiday and short enough that a forwarded mailbox is not a standing key
+    // (research open question 3). No requirement fixes it.
+    PORTAL_INVITE_TTL_HOURS: z.coerce.number().int().positive().optional().default(168),
+    // Base allowance for the portal rate-limit scopes. Authenticated scopes are
+    // keyed by ACCOUNT, not by IP: an office behind one address is many
+    // customers, and IP-keying would let one of them lock out the rest (D11).
+    PORTAL_RATE_PER_MINUTE: z.coerce.number().int().positive().optional().default(20),
   })
   .superRefine((value, ctx) => {
-    // Equal secrets would silently defeat the access/refresh type separation.
-    if (value.JWT_ACCESS_SECRET === value.JWT_REFRESH_SECRET) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['JWT_REFRESH_SECRET'],
-        message: 'must differ from JWT_ACCESS_SECRET',
-      });
+    /**
+     * FOUR SECRETS, PAIRWISE DISTINCT (Phase 1 research D5; Phase 8 research D1).
+     *
+     * Phase 1 needed two so a refresh token could not be presented as an access
+     * token. Phase 8 needs four so a CUSTOMER token cannot be presented as a
+     * STAFF one — and that axis matters more, because the staff realm resolves
+     * its subject against `users` and would hand back a real role.
+     *
+     * Checked pairwise rather than by set size so the message names the pair
+     * that collided. A developer who reused one value wants to be told which.
+     */
+    const secrets: ReadonlyArray<readonly [name: string, secret: string]> = [
+      ['JWT_ACCESS_SECRET', value.JWT_ACCESS_SECRET],
+      ['JWT_REFRESH_SECRET', value.JWT_REFRESH_SECRET],
+      ['PORTAL_JWT_ACCESS_SECRET', value.PORTAL_JWT_ACCESS_SECRET],
+      ['PORTAL_JWT_REFRESH_SECRET', value.PORTAL_JWT_REFRESH_SECRET],
+    ];
+
+    for (const [index, [name, secret]] of secrets.entries()) {
+      for (const [earlierName, earlierSecret] of secrets.slice(0, index)) {
+        if (secret === earlierSecret) {
+          ctx.addIssue({
+            code: 'custom',
+            path: [name],
+            message: `must differ from ${earlierName}`,
+          });
+        }
+      }
     }
 
     /**

@@ -197,6 +197,20 @@ async function createTicketFor(
   message: InboundMessage,
   customerId: number,
   transaction: Transaction,
+  /**
+   * WHICH CONTACT SENT IT (Phase 8, FR-026c).
+   *
+   * Comes from `identityService.resolveOrCreate`, which already knew it — the
+   * lookup is BY contact — and is what makes this request visible in that
+   * person's portal and nobody else's.
+   *
+   * NULL is a real and correct value here, not a missing argument: an ambiguous
+   * identity resolves to no single contact (see ResolveResult.contactId), and a
+   * ticket with no requesting contact is invisible in the portal rather than
+   * visible to everyone on the record (FR-026f). Failing closed is the whole
+   * point.
+   */
+  requestingContactId: number | null = null,
 ): Promise<Ticket> {
   const ticket = await Ticket.create(
     {
@@ -219,6 +233,7 @@ async function createTicketFor(
       // No human creator, and the source says who did (FR-026, research D9).
       created_by_user_id: null,
       source: sourceFor(message.channel),
+      requesting_contact_id: requestingContactId,
     },
     { transaction },
   );
@@ -335,17 +350,32 @@ export async function accept(
         if (target.ticketId !== null) {
           ticketId = target.ticketId;
         } else {
-          const customerId =
-            options.overrideCustomerId ??
-            (
-              await identityService.resolveOrCreate(
-                message.channel,
-                message.senderIdentity,
-                transaction,
-              )
-            ).customerId;
+          // Resolved ONCE and both halves kept. Previously only `customerId` was
+          // read and the contact discarded; Phase 8 needs the contact to record
+          // who raised the request (FR-026c).
+          const resolved = await identityService.resolveOrCreate(
+            message.channel,
+            message.senderIdentity,
+            transaction,
+          );
 
-          const ticket = await createTicketFor(message, customerId, transaction);
+          const customerId = options.overrideCustomerId ?? resolved.customerId;
+
+          // The contact is only meaningful for the customer it belongs to. Where
+          // the caller overrode the customer — chat does, with its visitor's
+          // session — the resolved contact may belong to somebody else entirely,
+          // so it is dropped rather than attached to the wrong record.
+          const requestingContactId =
+            options.overrideCustomerId && options.overrideCustomerId !== resolved.customerId
+              ? null
+              : resolved.contactId;
+
+          const ticket = await createTicketFor(
+            message,
+            customerId,
+            transaction,
+            requestingContactId,
+          );
           ticketId = ticket.id;
           created = true;
 
@@ -379,7 +409,7 @@ export async function accept(
           author_user_id: null,
           sender_identity: message.senderIdentity.slice(0, 255),
           sender_identity_normalised: normaliseContact(
-            identityService.contactKindFor(message.channel),
+            identityService.contactKindFor(message.channel, message.senderIdentity),
             message.senderIdentity,
           ).slice(0, 255),
           body: message.body,

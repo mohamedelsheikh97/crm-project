@@ -5,6 +5,7 @@ import { useRoute } from 'vue-router';
 
 import AttachmentList from '../../components/customers/AttachmentList.vue';
 import NoteList from '../../components/customers/NoteList.vue';
+import PortalAccessPanel from '../../components/customers/PortalAccessPanel.vue';
 import { usePermissions } from '../../composables/usePermissions';
 import * as customersService from '../../services/customers.service';
 import type { Customer } from '../../services/customers.service';
@@ -90,8 +91,14 @@ onMounted(async () => {
         <NoteList :customer-id="customer.id" />
       </div>
 
-      <div class="border-t border-slate-200 pt-8">
+      <div class="mb-10 border-t border-slate-200 pt-8">
         <AttachmentList :customer-id="customer.id" />
+      </div>
+
+      <!-- Phase 8 (FR-056). Hidden without portal:manage as a convenience; every
+           action behind it is refused server-side regardless (FR-059). -->
+      <div v-if="can('portal:manage')" class="border-t border-slate-200 pt-8">
+        <PortalAccessPanel :customer-id="customer.id" />
       </div>
     </template>
   </section>

@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 import i18n from '../i18n';
 import { ensureSessionRestored } from '../services/auth.service';
 import { useAuthStore } from '../stores/auth.store';
+import { usePortalStore } from '../stores/portal.store';
 import AdminLayout from '../layouts/AdminLayout.vue';
 import ChangePasswordView from '../views/ChangePasswordView.vue';
 import DashboardView from '../views/DashboardView.vue';
@@ -15,6 +16,13 @@ import HelpArticleView from '../views/help/HelpArticleView.vue';
 import HelpCentreView from '../views/help/HelpCentreView.vue';
 import HelpContactView from '../views/help/HelpContactView.vue';
 import NotFoundView from '../views/NotFoundView.vue';
+import AcceptInviteView from '../views/portal/AcceptInviteView.vue';
+import NewRequestView from '../views/portal/NewRequestView.vue';
+import PortalHelpView from '../views/portal/PortalHelpView.vue';
+import PortalLoginView from '../views/portal/PortalLoginView.vue';
+import PortalResetView from '../views/portal/PortalResetView.vue';
+import RequestDetailView from '../views/portal/RequestDetailView.vue';
+import RequestListView from '../views/portal/RequestListView.vue';
 import TicketCreateView from '../views/tickets/TicketCreateView.vue';
 import TicketDetailView from '../views/tickets/TicketDetailView.vue';
 import TicketListView from '../views/tickets/TicketListView.vue';
@@ -281,6 +289,89 @@ const router = createRouter({
       component: HelpArticleView,
       meta: { titleKey: 'route.help.article.title', publicShell: true },
     },
+    // --- The customer portal (Phase 8) -------------------------------------
+    //
+    // `portalShell: true` renders these in `PortalLayout` rather than the
+    // authenticated staff shell (FR-063). Driven by route meta, exactly as Phase
+    // 7's `publicShell` is, so a reader of this file meets the rule where the
+    // route is declared.
+    //
+    // `requiresAuth` IS DELIBERATELY ABSENT. That flag means a STAFF session, and
+    // the guard below reads the staff store — a portal route carrying it would
+    // send every customer to the staff login screen. The portal's own guard is
+    // three lines further down, keyed on the portal store.
+    //
+    // REFERENCES AND SLUGS IN PATHS, never ids (FR-065). And NO REGISTRATION
+    // ROUTE: its absence is a requirement, not an omission (FR-002a).
+    {
+      path: '/portal/login',
+      name: 'portal-login',
+      component: PortalLoginView,
+      meta: { titleKey: 'route.portal.login.title', portalShell: true },
+    },
+    {
+      path: '/portal/invite/:token',
+      name: 'portal-invite',
+      component: AcceptInviteView,
+      meta: { titleKey: 'route.portal.invite.title', portalShell: true },
+    },
+    {
+      path: '/portal/forgot',
+      name: 'portal-forgot',
+      component: PortalResetView,
+      meta: { titleKey: 'route.portal.reset.title', portalShell: true },
+    },
+    {
+      path: '/portal/reset/:token',
+      name: 'portal-reset',
+      component: PortalResetView,
+      meta: { titleKey: 'route.portal.reset.title', portalShell: true },
+    },
+    {
+      path: '/portal',
+      name: 'portal-requests',
+      component: RequestListView,
+      meta: {
+        titleKey: 'route.portal.requests.title',
+        portalShell: true,
+        requiresPortalAuth: true,
+      },
+    },
+    {
+      path: '/portal/requests/new',
+      name: 'portal-new-request',
+      component: NewRequestView,
+      meta: {
+        titleKey: 'route.portal.newRequest.title',
+        portalShell: true,
+        requiresPortalAuth: true,
+      },
+    },
+    // BY REFERENCE (TKT-000042), never by id.
+    {
+      path: '/portal/requests/:reference',
+      name: 'portal-request',
+      component: RequestDetailView,
+      meta: {
+        titleKey: 'route.portal.request.title',
+        portalShell: true,
+        requiresPortalAuth: true,
+      },
+    },
+    {
+      path: '/portal/help',
+      name: 'portal-help',
+      component: PortalHelpView,
+      meta: { titleKey: 'route.portal.help.title', portalShell: true, requiresPortalAuth: true },
+    },
+    // BY SLUG (Phase 7 research D10), for the same reason.
+    {
+      path: '/portal/help/:slug',
+      name: 'portal-help-article',
+      component: PortalHelpView,
+      meta: { titleKey: 'route.portal.help.title', portalShell: true, requiresPortalAuth: true },
+    },
+
     {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
@@ -311,6 +402,24 @@ router.beforeEach(async (to) => {
   // Single-flight and already resolved after the first navigation, so this
   // costs one await per route change and no extra requests.
   await ensureSessionRestored();
+
+  // Phase 8. THE PORTAL'S OWN GATE, keyed on the portal store rather than the
+  // staff one — the front-end half of the realm separation. A customer sent to
+  // the staff login screen would be told to sign in somewhere they have no
+  // account, which is the confusion two stores exist to prevent.
+  //
+  // A CONVENIENCE, NOT A CONTROL, exactly as the staff guard below is: every
+  // portal endpoint enforces independently, and a token from the wrong realm
+  // fails at signature verification on the server.
+  const portal = usePortalStore();
+
+  if (to.meta.requiresPortalAuth && !portal.accessToken) {
+    return { name: 'portal-login', query: { redirect: to.fullPath } };
+  }
+
+  if (to.name === 'portal-login' && portal.accessToken) {
+    return { name: 'portal-requests' };
+  }
 
   const auth = useAuthStore();
 
