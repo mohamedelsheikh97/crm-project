@@ -28,6 +28,7 @@ import * as messagesService from '../../services/messages.service';
 import * as ticketNotesService from '../../services/ticket-notes.service';
 import type { TicketNote } from '../../services/ticket-notes.service';
 import { useAuthStore } from '../../stores/auth.store';
+import * as portalAccessService from '../../services/portal-access.service';
 import * as ticketsService from '../../services/tickets.service';
 import {
   TICKET_CATEGORIES,
@@ -42,6 +43,33 @@ const { can } = usePermissions();
 const route = useRoute();
 
 const ticket = ref<Ticket | null>(null);
+
+/**
+ * Phase 8 (FR-026h, FR-057a). Recording which contact raised an existing ticket.
+ *
+ * A plain id field rather than a picker of the customer's contacts. The picker is
+ * the better screen and it needs an endpoint that lists a customer's contacts for
+ * this purpose; the id is what makes the capability reachable now, which matters
+ * because without it every ticket that predates this phase stays permanently
+ * invisible to the customer who raised it. Recorded in the plan as the smaller
+ * thing done deliberately rather than the better thing left undone.
+ */
+const requestingContactId = ref<number | null>(null);
+const requestingContactSaved = ref(false);
+
+async function saveRequestingContact(): Promise<void> {
+  if (!ticket.value) return;
+
+  const value = Number(requestingContactId.value);
+
+  await portalAccessService.setRequestingContact(
+    ticket.value.id,
+    Number.isInteger(value) && value > 0 ? value : null,
+  );
+
+  requestingContactSaved.value = true;
+  await load();
+}
 const loading = ref(true);
 const error = ref<string | null>(null);
 
@@ -76,6 +104,7 @@ async function load(): Promise<void> {
 
   try {
     ticket.value = await ticketsService.get(ticketId.value);
+    requestingContactId.value = ticket.value.requestingContact?.id ?? null;
     resetForm();
 
     // Notes and correspondence load WITH the ticket.
@@ -388,6 +417,77 @@ function openArticle(articleId: number): void {
       >
         <strong>{{ t('ticket.escalation.current') }}:</strong> {{ ticket.escalationReason }}
       </p>
+
+      <!-- Phase 8 (FR-026i). WHO CAN SEE THIS CONVERSATION IN THE PORTAL.
+           Labelled by what it means operationally rather than by the column name,
+           because "requesting contact" alone reads as decoration — and the
+           question an agent actually has is "why can't the customer see their own
+           ticket?", whose answer is right here. -->
+      <section class="rounded-md border border-slate-200 p-3 text-sm dark:border-slate-700">
+        <h2 class="font-medium">{{ t('ticket.requestingContact.label') }}</h2>
+
+        <p v-if="ticket.requestingContact" class="mt-1 text-slate-700 dark:text-slate-200">
+          {{ ticket.requestingContact.email }}
+        </p>
+        <p v-else class="mt-1 text-slate-600 dark:text-slate-300">
+          {{ t('ticket.requestingContact.none') }}
+        </p>
+
+        <p class="mt-1 text-xs text-slate-500">{{ t('ticket.requestingContact.hint') }}</p>
+
+        <form
+          v-if="can('portal:manage')"
+          class="mt-2 flex flex-wrap items-end gap-2"
+          novalidate
+          @submit.prevent="saveRequestingContact"
+        >
+          <label class="text-xs font-medium" :for="'requesting-contact'">
+            {{ t('ticket.requestingContact.set') }}
+          </label>
+          <input
+            id="requesting-contact"
+            v-model="requestingContactId"
+            type="number"
+            min="1"
+            class="w-32 rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-600 dark:bg-slate-800"
+          />
+          <button
+            type="submit"
+            class="rounded-md border border-slate-300 px-2.5 py-1.5 text-xs font-medium hover:bg-slate-100 dark:border-slate-600"
+          >
+            {{ t('action.save') }}
+          </button>
+          <span v-if="requestingContactSaved" role="status" class="text-xs text-slate-600">
+            {{ t('ticket.requestingContact.saved') }}
+          </span>
+        </form>
+      </section>
+
+      <!-- Phase 8 (FR-053). The customer's own verdict, where the person who
+           handled it will see it. NULL means "not rated", which covers both "not
+           asked yet" and "asked and ignored" — and deliberately does not
+           distinguish them, because nothing records that we asked (FR-051). -->
+      <section class="rounded-md border border-slate-200 p-3 text-sm dark:border-slate-700">
+        <h2 class="font-medium">{{ t('ticket.satisfaction.title') }}</h2>
+
+        <template v-if="ticket.satisfaction">
+          <p class="mt-1">
+            {{ t('ticket.satisfaction.score', { score: ticket.satisfaction.score }) }} ·
+            {{
+              t('ticket.satisfaction.givenOn', {
+                date: formatter.format(new Date(ticket.satisfaction.submittedAt)),
+              })
+            }}
+          </p>
+          <p v-if="ticket.satisfaction.comment" class="mt-1 text-slate-700 dark:text-slate-200">
+            {{ ticket.satisfaction.comment }}
+          </p>
+        </template>
+
+        <p v-else class="mt-1 text-slate-600 dark:text-slate-300">
+          {{ t('ticket.satisfaction.none') }}
+        </p>
+      </section>
 
       <!-- Phase 4 replaces the bare customer link with the full context panel:
            identity, contacts, other tickets, and recent notes, all beside the

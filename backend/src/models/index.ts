@@ -28,6 +28,8 @@ import { MessageAttachment } from './message-attachment.model.js';
 import { Message } from './message.model.js';
 import { Notification } from './notification.model.js';
 import { PasswordHistory } from './password-history.model.js';
+import { PortalAccount } from './portal-account.model.js';
+import { PortalInvitation } from './portal-invitation.model.js';
 import { ReplyTemplate } from './reply-template.model.js';
 import { RolePermission } from './role-permission.model.js';
 import { Role } from './role.model.js';
@@ -38,6 +40,7 @@ import { TicketHistory } from './ticket-history.model.js';
 import { TicketLink } from './ticket-link.model.js';
 import { TicketNoteMention } from './ticket-note-mention.model.js';
 import { TicketNote } from './ticket-note.model.js';
+import { TicketSatisfaction } from './ticket-satisfaction.model.js';
 import { Ticket } from './ticket.model.js';
 import { UserCompetency } from './user-competency.model.js';
 import { User } from './user.model.js';
@@ -240,6 +243,46 @@ KbTicketArticle.belongsTo(Ticket, { foreignKey: 'ticket_id', as: 'ticket' });
 KbTicketArticle.belongsTo(KbArticle, { foreignKey: 'article_id', as: 'article' });
 KbTicketArticle.belongsTo(User, { foreignKey: 'attached_by_user_id', as: 'attachedBy' });
 
+// --- Phase 8: Customer portal ---
+//
+// EVERY EDGE HERE HANGS OFF `customer_contacts`, NOT `customers`, and that is
+// Clarifications Q2 expressed as wiring. A portal account belongs to one
+// contact; a ticket records the one contact that raised it; a satisfaction
+// response records the contact that gave it. Nothing in this block can answer
+// "which tickets does this CUSTOMER's portal show?", because that is not a
+// question the portal is allowed to ask.
+
+// CASCADE, uniquely appropriate here: an account has no meaning without the
+// contact it authenticates. FR-003b wants removing the contact to end the
+// access rather than leave a credential resolving to nothing.
+CustomerContact.hasOne(PortalAccount, { foreignKey: 'customer_contact_id', as: 'portalAccount' });
+PortalAccount.belongsTo(CustomerContact, { foreignKey: 'customer_contact_id', as: 'contact' });
+PortalAccount.belongsTo(User, { foreignKey: 'invited_by_user_id', as: 'invitedBy' });
+
+CustomerContact.hasMany(PortalInvitation, {
+  foreignKey: 'customer_contact_id',
+  as: 'portalInvitations',
+});
+PortalInvitation.belongsTo(CustomerContact, { foreignKey: 'customer_contact_id', as: 'contact' });
+PortalInvitation.belongsTo(User, { foreignKey: 'issued_by_user_id', as: 'issuedBy' });
+PortalInvitation.belongsTo(User, { foreignKey: 'revoked_by_user_id', as: 'revokedBy' });
+
+// SET NULL, not CASCADE: removing a contact must not delete a ticket. The
+// ticket becomes invisible in the portal, which is the correct fail-closed
+// outcome (FR-026f).
+Ticket.belongsTo(CustomerContact, { foreignKey: 'requesting_contact_id', as: 'requestingContact' });
+CustomerContact.hasMany(Ticket, { foreignKey: 'requesting_contact_id', as: 'requestedTickets' });
+
+// hasOne, because the unique index on ticket_id means there is at most one
+// (FR-049). A hasMany here would invite a caller to render a list and quietly
+// tolerate the second row the database will never let exist.
+Ticket.hasOne(TicketSatisfaction, { foreignKey: 'ticket_id', as: 'satisfaction' });
+TicketSatisfaction.belongsTo(Ticket, { foreignKey: 'ticket_id', as: 'ticket' });
+TicketSatisfaction.belongsTo(CustomerContact, {
+  foreignKey: 'submitted_by_contact_id',
+  as: 'submittedBy',
+});
+
 export {
   sequelize,
   AlertDelivery,
@@ -270,6 +313,8 @@ export {
   MessageAttachment,
   Notification,
   PasswordHistory,
+  PortalAccount,
+  PortalInvitation,
   ReplyTemplate,
   Role,
   RolePermission,
@@ -280,6 +325,7 @@ export {
   TicketLink,
   TicketNote,
   TicketNoteMention,
+  TicketSatisfaction,
   TicketSla,
   User,
   UserCompetency,

@@ -116,8 +116,28 @@ function callerKey(req: Request): string {
  * a flood of form submissions cannot exhaust the chat allowance (FR-100).
  */
 export function rateLimit(scope: string, limit: number) {
+  return rateLimitKeyed(scope, limit, callerKey);
+}
+
+/**
+ * The same limiter, keyed by something other than the caller's address
+ * (Phase 8, research D11).
+ *
+ * The portal needs this and the public surface did not. An anonymous visitor IS
+ * their IP address, so keying on it is the only option; a signed-in customer has
+ * an account id, and using it is materially better. AN OFFICE BEHIND ONE ADDRESS
+ * IS MANY CUSTOMERS — key their portal reads on the IP and one person clicking
+ * quickly denies service to all of their colleagues, which is a self-inflicted
+ * outage rather than a defence.
+ *
+ * The unauthenticated portal endpoints — sign-in, credential recovery,
+ * invitation acceptance — still key on the address, because at that point there
+ * is no account to key on and the flood being defended against is exactly
+ * somebody trying to find one.
+ */
+export function rateLimitKeyed(scope: string, limit: number, keyOf: (req: Request) => string) {
   return (req: Request, _res: Response, next: NextFunction): void => {
-    const verdict = hit(`${scope}:${callerKey(req)}`, limit);
+    const verdict = hit(`${scope}:${keyOf(req)}`, limit);
 
     if (!verdict.allowed) {
       next(new RateLimitedError(verdict.retryAfterSeconds));

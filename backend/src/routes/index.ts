@@ -9,6 +9,7 @@ import formRoutes from './forms/index.js';
 import healthRoutes from './health.routes.js';
 import knowledgeRoutes from './knowledge/index.js';
 import notificationRoutes from './notifications/index.js';
+import portalRoutes from './portal/index.js';
 import publicRoutes from './public/index.js';
 import taskRoutes from './tasks/index.js';
 import templateRoutes from './templates/index.js';
@@ -51,6 +52,14 @@ router.use('/forms', formRoutes);
 // unauthenticated surface, so that file stays the one place a reviewer can see
 // the whole of it at once.
 router.use('/knowledge', knowledgeRoutes);
+
+// Phase 8. THE SECOND IDENTITY REALM, in its own file for the same reason the
+// public surface has one: everything under it is reached by somebody who does
+// not work here, holding a token this application's staff middleware refuses.
+// Nothing above this line accepts a portal token, and nothing below it accepts a
+// staff one — and that is enforced by separate signing secrets rather than by
+// this comment (research D1).
+router.use('/portal', portalRoutes);
 
 // THE ONLY UNAUTHENTICATED SURFACES IN THIS PROJECT (FR-105), gathered under
 // one prefix and one file so the whole public attack surface is reviewable at

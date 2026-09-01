@@ -9,6 +9,7 @@ import alertsRoutes from '../alerts/alerts.routes.js';
 import slaRoutes from '../sla/sla.routes.js';
 
 import auditRoutes from './audit.routes.js';
+import portalAccessRoutes from './portal-access.routes.js';
 import rolesRoutes from './roles.routes.js';
 import settingsRoutes from './settings.routes.js';
 import usersRoutes from './users.routes.js';
@@ -34,5 +35,11 @@ router.use('/sla', slaRoutes);
 router.use('/assignment', assignmentRoutes);
 router.use('/automation', automationRoutes);
 router.use('/alerts', alertsRoutes);
+
+// Phase 8. Ongoing management of who may reach the customer portal. Here rather
+// than on the customer router because it is configuration of an outside-facing
+// surface; the per-customer READ is on the customer router, where a staff member
+// is standing when they ask the question.
+router.use('/portal', portalAccessRoutes);
 
 export default router;

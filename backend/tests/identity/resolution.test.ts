@@ -61,6 +61,11 @@ describe('identity resolution (FR-011, FR-016)', () => {
     expect(outcome).toEqual({
       kind: 'resolved',
       customerId: customer.id,
+      // Phase 8 (FR-026c). The lookup is BY contact, so it always knew which one
+      // matched; it used to throw the answer away. A ticket created from an
+      // inbound message records it, and that is what makes the request visible in
+      // that person's portal and nobody else's.
+      contactId: expect.any(Number),
       isProvisional: false,
       isActive: true,
     });
@@ -102,6 +107,7 @@ describe('identity resolution (FR-011, FR-016)', () => {
     expect(outcome).toEqual({
       kind: 'resolved',
       customerId: customer.id,
+      contactId: expect.any(Number),
       isProvisional: false,
       isActive: false,
     });
@@ -142,5 +148,20 @@ describe('identity resolution (FR-011, FR-016)', () => {
     expect(identityService.contactKindFor(CHANNELS.EMAIL)).toBe('email');
     expect(identityService.contactKindFor(CHANNELS.SMS)).toBe('phone');
     expect(identityService.contactKindFor(CHANNELS.WHATSAPP)).toBe('phone');
+
+    // Phase 8. The portal is an email channel: an account is keyed to an email
+    // contact, so a portal reply's sender identity is an address.
+    expect(identityService.contactKindFor(CHANNELS.PORTAL)).toBe('email');
+
+    // A FORM IS DECIDED BY THE VALUE, not by the channel, because
+    // `form.service` takes its identity from the first field typed `email` OR
+    // `phone` and the channel cannot say which. Before Phase 8 every form fell
+    // through to 'phone', so an email address was normalised as a phone number:
+    // it matched no existing contact, and each submission created another
+    // provisional customer for a person the system already knew.
+    expect(identityService.contactKindFor(CHANNELS.FORM, 'hala@example.com')).toBe('email');
+    expect(identityService.contactKindFor(CHANNELS.FORM, '+201001234567')).toBe('phone');
+    // With no value to look at, the channel's default stands and nothing changes.
+    expect(identityService.contactKindFor(CHANNELS.FORM)).toBe('phone');
   });
 });

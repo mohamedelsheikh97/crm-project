@@ -18,9 +18,32 @@ import type { TicketCategory, TicketPriority } from '../tickets/taxonomy.js';
  * administrator can ask "which of these arrived on their own?" without joining
  * to messages.
  */
-export const TICKET_SOURCES = ['manual', 'email', 'whatsapp', 'sms', 'chat', 'form'] as const;
+export const TICKET_SOURCES = [
+  'manual',
+  'email',
+  'whatsapp',
+  'sms',
+  'chat',
+  'form',
+  // Phase 8, FR-021. Distinguishable from `form`, the other self-service
+  // origin, so an administrator can ask "which of these came from the portal?"
+  // without joining to messages.
+  'portal',
+] as const;
 
 export type TicketSource = (typeof TICKET_SOURCES)[number];
+
+/**
+ * Guards the one place a source is chosen from an untyped value.
+ *
+ * Every caller passes a literal it decided itself — intake passes the channel it
+ * received on, the portal passes `'portal'`. This exists so `ticket.service`
+ * never has to cast, and so a value that is not a declared source falls back to
+ * `manual` rather than reaching the column.
+ */
+export function isTicketSource(value: unknown): value is TicketSource {
+  return typeof value === 'string' && (TICKET_SOURCES as readonly string[]).includes(value);
+}
 
 /**
  * Who set the due date (Phase 6, FR-024b, research.md D6).
@@ -50,6 +73,21 @@ export class Ticket extends Model<InferAttributes<Ticket>, InferCreationAttribut
   declare priority: TicketPriority;
   declare status: CreationOptional<TicketStatus>;
   declare assignee_user_id: number | null;
+  /**
+   * WHICH CONTACT RAISED THIS (Phase 8, Clarifications Q2, FR-026a).
+   *
+   * NULL MEANS INVISIBLE IN THE CUSTOMER PORTAL (FR-026f). It does NOT mean
+   * "visible to every contact on the record", and no query may read it that
+   * way. Reading absence as permission is the one mistake that would
+   * reintroduce exactly the leak Q2 exists to prevent — silently, and on the
+   * oldest data in the system.
+   *
+   * Nullable because FR-026e is real: an agent raising a ticket during a phone
+   * call may not know which contact it was, and a default would invent a
+   * requester. Every write site must check that the contact belongs to THIS
+   * ticket's customer; the foreign key cannot express that.
+   */
+  declare requesting_contact_id: CreationOptional<number | null>;
   /**
    * NULL means the system raised this ticket from an inbound message (Phase 5,
    * FR-026). Read together with `source`: a null creator and a non-`manual`
@@ -117,6 +155,7 @@ Ticket.init(
         this.setDataValue('description', value === null ? null : String(value).trim() || null);
       },
     },
+    requesting_contact_id: { type: DataTypes.INTEGER.UNSIGNED, allowNull: true },
     category: { type: DataTypes.STRING(30), allowNull: false },
     priority: { type: DataTypes.STRING(20), allowNull: false },
     status: { type: DataTypes.STRING(20), allowNull: false, defaultValue: 'new' },
