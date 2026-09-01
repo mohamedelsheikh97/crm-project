@@ -98,6 +98,33 @@ export const AUDIT_ACTIONS = {
   AUTOMATION_RULE_DELETED: 'automation.rule.deleted',
   AUTOMATION_RULES_REORDERED: 'automation.rules.reordered',
 
+  // Phase 7 — the knowledge base. Article content is ORGANISATIONAL SPEECH:
+  // published words that customers and colleagues act on in the organisation's
+  // name. Changes to it are answerable, which is FR-009.
+  //
+  // ARTICLE READS ARE DELIBERATELY ABSENT, and this is the load-bearing
+  // omission. `kb_articles.view_count` is the record of reading (FR-049), and
+  // it holds no reader identity by design (FR-050, research D11). Writing a row
+  // here for every page view would flood the log an investigator reads with the
+  // one event that is never the answer to an investigation — the same reasoning
+  // that kept ordinary note and task activity out in Phase 4, and automation
+  // runs out in Phase 6. The public help centre makes this sharper still: those
+  // reads come from strangers, in volume, and an audit row per view would hand
+  // anyone on the internet a way to fill the log.
+  KB_ARTICLE_CREATED: 'kb.article.created',
+  KB_ARTICLE_UPDATED: 'kb.article.updated',
+  // Separate keys rather than one status.changed, so "what went in front of
+  // customers, and when" is answerable without reading the values of every
+  // change — the reasoning Phase 3 used for close and reopen.
+  KB_ARTICLE_PUBLISHED: 'kb.article.published',
+  KB_ARTICLE_ARCHIVED: 'kb.article.archived',
+  KB_ARTICLE_RESTORED: 'kb.article.restored',
+  // The shape of the help centre rather than its content. One key covers
+  // create, edit, and delete: the question an investigator asks is "who
+  // reorganised the filing", not which verb they used.
+  KB_CATEGORY_CHANGED: 'kb.category.changed',
+  KB_GUIDE_CHANGED: 'kb.guide.changed',
+
   // Defined in Phase 1 with no caller; Phase 2 is the first phase that
   // exports business records, so this finally acquires one.
   DATA_EXPORTED: 'data.exported',

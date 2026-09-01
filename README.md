@@ -157,6 +157,11 @@ comparison, never a "since last run" ledger. All three existing sweeps follow th
 why a target that expired while the process was down is still found on the next tick. There is one
 timer and no job queue.
 
+**An article, category, or guide?** Nothing in code — that content is authored at runtime and
+stored per language on the row. If you are tempted to seed a taxonomy, do not: a knowledge base is
+entirely the organisation's own, and inventing one guesses at their business. Every knowledge
+surface is built to read as "nothing here yet" on a fresh database.
+
 **An automation trigger, condition, or action?** One entry in
 `backend/src/automation/catalog.ts`, and one branch in the executor if it is an action. The
 catalog is read by the validator, the builder screen, and the executor, so a rule can never name
@@ -178,6 +183,67 @@ resolution_target_at` is what makes "fire once, do not re-fire after a manual de
 - **Working time is not wall-clock time.** `lib/business-hours.ts` is the only place that knows the
   difference. Comparing two timestamps to measure "how much of the target is left" is wrong across
   any night or weekend.
+
+### The knowledge base — and why search is ours, not the database's
+
+**This project owns its search because MySQL measurably cannot do it in Arabic.** That question
+gets asked at every code review of `lib/text-normalise.ts`, so the measurement is recorded here.
+
+Probed against this project's own MySQL 8.4.11, `utf8mb4_0900_ai_ci`, default settings:
+
+| Query                                       | `FULLTEXT` result | Why it matters                            |
+| ------------------------------------------- | ----------------- | ----------------------------------------- |
+| a word, against a row holding it with `ال`  | **0 matches**     | The Arabic definite article breaks matching |
+| the same, in the other direction            | **0 matches**     | …and it fails both ways                   |
+| a real two-letter Arabic word               | **0 matches**     | `innodb_ft_min_token_size` defaults to 3  |
+| a word carrying harakat                     | matches           | The collation handles diacritics for free |
+
+The first two have **no configuration fix at all**. The third needs a global server variable, a
+restart, and a full index rebuild — none of which a migration can express, and which a managed
+MySQL may simply refuse. Those are two functional requirements failing on ordinary Arabic words,
+so the matching is a normalised token table (`kb_article_terms`) plus a ranking function.
+
+**The tokenizer runs at BOTH ends or it is worthless.** `normaliseForIndex` and `normaliseQuery`
+are thin wrappers over one internal pipeline, and a test asserts they agree on every case.
+Normalising indexed text by one set of rules and a query by another produces a word findable by
+nobody — and the failure is invisible to any reviewer who does not read Arabic.
+
+**Only published articles have index rows.** Drafting writes none, archiving deletes them,
+publishing rebuilds them, all inside the writing transaction. That makes "a draft is not findable"
+structural rather than checked: there is nothing to exclude, on any of the four reader surfaces, so
+no query can forget to. If you find yourself adding `WHERE status = 'published'` to a search, the
+index is wrong rather than the query.
+
+**`backend/tests/search/text-normalise.test.ts` is the file to run first.** It holds the exact
+cases the table above measures, and it is the only place the phase's central claim is observable.
+
+#### What not to break
+
+- **The public surface's visibility is a LITERAL, never a parameter.**
+  `controllers/public/kb.controller.ts` passes `audience: 'customer'` and `status: 'published'` as
+  constants. If somebody threads them through from the request "so the endpoint is reusable", that
+  is one signature change away from serving internal content to the internet — and the diff would
+  look like good engineering.
+- **Draft, archived, internal, and non-existent are ONE answer.** All four return a byte-identical
+  404. A public reader must not be able to learn that an article exists but is not for them.
+- **Suggestions are computed on read and never stored.** `kb_ticket_articles` holds only deliberate
+  attachments — an agent pinning one, or a rule acting. A stored suggestion goes stale the moment an
+  article is archived, and nothing notices.
+- **An empty suggestion panel is a feature.** The score floor in `kb-suggestion.service.ts` is the
+  one number in this phase whose wrong value makes the feature worthless while looking correct: too
+  low and the panel is noise agents learn to ignore, too high and it is always empty — **and both
+  pass every test in the suite.** It wants tuning against real tickets, not adjusting to make the
+  panel look busier.
+- **An article is archived, never deleted.** There is no delete route, method, or control, for the
+  reason customers deactivate and tickets merge: a link already sent to a customer must not lead to
+  a hole.
+- **Article content is DATA, not locale keys.** It is authored at runtime and stored per language on
+  the row, so it never enters the `ar.json` / `en.json` parity mechanism. The same goes for category
+  and guide names — an administrator creating one cannot add a key to a locale file.
+- **Article content carries its own `dir` and `lang`; the chrome does not.** A one-language article
+  is legitimate, so an English article inside an Arabic help centre is normal. This is the one place
+  in the project where direction is not purely a document-root concern, and the reason is that the
+  direction is a property of the text rather than of the interface.
 
 ### Authorization — read this before adding a protected endpoint
 
@@ -266,6 +332,11 @@ supertest against a dedicated `crm_support_test` schema, so a run can never touc
 
 CI runs `npm ci`, lint, test, and build on every push.
 
-Manual validation procedures live with each phase:
-[Phase 0](./specs/001-phase-0-foundation/quickstart.md) ·
-[Phase 1](./specs/002-phase-1-security-administration/quickstart.md).
+Manual validation procedures live with each phase, in that phase's `quickstart.md` under
+`specs/` — from [Phase 0](./specs/001-phase-0-foundation/quickstart.md) through
+[Phase 7](./specs/008-phase-7-knowledge-base/quickstart.md).
+
+A few checks cannot be automated and are recorded in each phase's task list rather than quietly
+dropped: reading Arabic long-form prose by eye, screen-reader navigation, greyscale, the public help
+centre on a phone, and the two Phase 7 tuning passes — search quality against a real corpus, and
+the suggestion score floor.

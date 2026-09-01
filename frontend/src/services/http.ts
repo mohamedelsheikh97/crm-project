@@ -189,7 +189,17 @@ export async function requestBlob(path: string): Promise<Blob> {
 }
 
 export const http = {
-  get: <T>(path: string) => request<T>(path, { method: 'GET' }),
+  /**
+   * `signal` is accepted from Phase 7 onward, for search-as-you-type.
+   *
+   * A search that fires on every keystroke will have several requests in
+   * flight, and they do not come back in order. Without cancellation a slow
+   * response for "car" can land after a fast one for "card reader" and
+   * overwrite it — the reader watches their results become wrong as they finish
+   * typing, which reads as the search being broken.
+   */
+  get: <T>(path: string, options: { signal?: AbortSignal } = {}) =>
+    request<T>(path, { method: 'GET', ...(options.signal ? { signal: options.signal } : {}) }),
   getBlob: (path: string) => requestBlob(path),
   post: <T>(path: string, body?: unknown) => withBody<T>('POST', path, body),
   patch: <T>(path: string, body?: unknown) => withBody<T>('PATCH', path, body),

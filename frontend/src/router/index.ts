@@ -11,6 +11,9 @@ import LoginView from '../views/LoginView.vue';
 import CustomerFormView from '../views/customers/CustomerFormView.vue';
 import CustomerListView from '../views/customers/CustomerListView.vue';
 import CustomerProfileView from '../views/customers/CustomerProfileView.vue';
+import HelpArticleView from '../views/help/HelpArticleView.vue';
+import HelpCentreView from '../views/help/HelpCentreView.vue';
+import HelpContactView from '../views/help/HelpContactView.vue';
 import NotFoundView from '../views/NotFoundView.vue';
 import TicketCreateView from '../views/tickets/TicketCreateView.vue';
 import TicketDetailView from '../views/tickets/TicketDetailView.vue';
@@ -21,6 +24,8 @@ import AssignmentView from '../views/admin/AssignmentView.vue';
 import AutomationRulesView from '../views/admin/AutomationRulesView.vue';
 import AutomationRunsView from '../views/admin/AutomationRunsView.vue';
 import BusinessCalendarView from '../views/admin/BusinessCalendarView.vue';
+import KnowledgeStructureView from '../views/admin/KnowledgeStructureView.vue';
+import KnowledgeView from '../views/admin/KnowledgeView.vue';
 import SlaPoliciesView from '../views/admin/SlaPoliciesView.vue';
 import TemplatesView from '../views/admin/TemplatesView.vue';
 import SettingsShellView from '../views/admin/SettingsShellView.vue';
@@ -216,6 +221,26 @@ const router = createRouter({
           component: AutomationRunsView,
           meta: { titleKey: 'route.admin.automationRuns.title', permission: 'automation:view' },
         },
+        // Phase 7. Under /admin because writing down what the organisation
+        // knows sits beside the template library rather than beside a ticket
+        // queue — it is content everybody reads, maintained by a few. The guard
+        // is kb:author, which every Agent holds: the person who just solved
+        // something is the person who should write it down.
+        {
+          path: 'knowledge',
+          name: 'admin-knowledge',
+          component: KnowledgeView,
+          meta: { titleKey: 'route.admin.knowledge.title', permission: 'kb:author' },
+        },
+        // A DIFFERENT PERMISSION from the article screen, and the split is the
+        // point: writing one article and deciding how everything is filed are
+        // different jobs. `kb:manage` reorganises what every reader meets first.
+        {
+          path: 'knowledge/structure',
+          name: 'admin-knowledge-structure',
+          component: KnowledgeStructureView,
+          meta: { titleKey: 'route.admin.knowledgeStructure.title', permission: 'kb:manage' },
+        },
         {
           path: 'settings',
           name: 'admin-settings',
@@ -223,6 +248,38 @@ const router = createRouter({
           meta: { titleKey: 'route.admin.settings.title', permission: 'settings:view' },
         },
       ],
+    },
+    // --- The public help centre (Phase 7, User Story 4) --------------------
+    //
+    // NO `requiresAuth`, AND NO `permission`, ON ANY OF THESE. That is the
+    // point of the block, and it is grouped and commented for the same reason
+    // routes/public/index.ts is a single file on the server: the whole
+    // unauthenticated surface should be readable in one place.
+    //
+    // `publicShell: true` renders them OUTSIDE the authenticated application
+    // shell — no navigation into signed-in areas, no user menu, nothing that
+    // implies an account exists. A help centre offering a sign-in box to a
+    // customer who has no account is telling them they are in the wrong place.
+    {
+      path: '/help',
+      name: 'help',
+      component: HelpCentreView,
+      meta: { titleKey: 'route.help.title', publicShell: true },
+    },
+    {
+      path: '/help/contact',
+      name: 'help-contact',
+      component: HelpContactView,
+      meta: { titleKey: 'route.help.contact.title', publicShell: true },
+    },
+    // BY SLUG, NEVER BY ID (research D10). Sequential ids in a public URL
+    // disclose the size of the corpus and let a stranger walk it. Declared
+    // after /help/contact so the literal path wins the match.
+    {
+      path: '/help/:slug',
+      name: 'help-article',
+      component: HelpArticleView,
+      meta: { titleKey: 'route.help.article.title', publicShell: true },
     },
     {
       path: '/:pathMatch(.*)*',

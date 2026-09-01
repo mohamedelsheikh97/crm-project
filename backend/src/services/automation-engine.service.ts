@@ -488,6 +488,31 @@ async function executeOne(action: RuleAction, subject: Subject): Promise<Applied
       return { action: action.action, result: 'ok' };
     }
 
+    case 'suggest_article': {
+      const attachmentService = await import('./kb-attachment.service.js');
+
+      const outcome = await attachmentService.attach(
+        subject.ticket.id,
+        Number(action.params.articleId),
+        // NULL ACTOR = a rule did it. The Phase 5 and 6 convention for a system
+        // act, and what lets the suggestion panel tell "a colleague pinned
+        // this" from "a rule did" — different facts to the agent deciding
+        // whether to trust it.
+        null,
+      );
+
+      // FR-047: a named article that is archived or gone FAILS WITH A RECORDED
+      // REASON rather than silently doing nothing. This is the existing failure
+      // path, not a new one — the same shape `apply_assignment_strategy` uses
+      // when it cannot place a ticket. A rule that quietly stopped working
+      // leaves a supervisor believing it is still helping.
+      return {
+        action: action.action,
+        result: outcome.attached ? 'ok' : 'failed',
+        detail: outcome.refusal ?? undefined,
+      };
+    }
+
     default:
       // Unreachable while validation and this switch read the same catalog. If
       // it is ever reached, the rule names something the executor does not

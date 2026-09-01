@@ -18,6 +18,12 @@ import { CustomerNote } from './customer-note.model.js';
 import { Customer } from './customer.model.js';
 import { DuplicateOverride } from './duplicate-override.model.js';
 import { FormDefinition } from './form-definition.model.js';
+import { KbArticleTerm } from './kb-article-term.model.js';
+import { KbArticle } from './kb-article.model.js';
+import { KbCategory } from './kb-category.model.js';
+import { KbGuideStep } from './kb-guide-step.model.js';
+import { KbGuide } from './kb-guide.model.js';
+import { KbTicketArticle } from './kb-ticket-article.model.js';
 import { MessageAttachment } from './message-attachment.model.js';
 import { Message } from './message.model.js';
 import { Notification } from './notification.model.js';
@@ -200,6 +206,40 @@ AlertDelivery.belongsTo(Ticket, { foreignKey: 'ticket_id', as: 'ticket' });
 AlertDelivery.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 AlertDelivery.belongsTo(Customer, { foreignKey: 'customer_id', as: 'customer' });
 
+// --- Phase 7: Knowledge base ---
+
+// RESTRICT on the category (declared in the migration), not CASCADE: FR-015
+// forbids orphaning an article, and the service turns the refusal into a
+// message naming how many articles stand in the way.
+KbCategory.hasMany(KbArticle, { foreignKey: 'category_id', as: 'articles' });
+KbArticle.belongsTo(KbCategory, { foreignKey: 'category_id', as: 'category' });
+
+KbArticle.belongsTo(User, { foreignKey: 'created_by_user_id', as: 'createdBy' });
+KbArticle.belongsTo(User, { foreignKey: 'updated_by_user_id', as: 'updatedBy' });
+KbArticle.belongsTo(User, { foreignKey: 'published_by_user_id', as: 'publishedBy' });
+
+// The search index. CASCADE is exactly right here and nowhere else in this
+// project: an index row has no meaning without its article.
+KbArticle.hasMany(KbArticleTerm, { foreignKey: 'article_id', as: 'terms' });
+KbArticleTerm.belongsTo(KbArticle, { foreignKey: 'article_id', as: 'article' });
+
+// A JOIN, NOT A CONTAINER (research D9). The article is unaware it is in a
+// guide, stays in its category, and may appear in several guides — which is why
+// this is an explicit join model rather than a guide id column on the article.
+// Modelling a guide as a kind of article would have forced every article query
+// in the system to learn to exclude containers.
+KbGuide.hasMany(KbGuideStep, { foreignKey: 'guide_id', as: 'steps' });
+KbGuideStep.belongsTo(KbGuide, { foreignKey: 'guide_id', as: 'guide' });
+KbGuideStep.belongsTo(KbArticle, { foreignKey: 'article_id', as: 'article' });
+KbArticle.hasMany(KbGuideStep, { foreignKey: 'article_id', as: 'guideSteps' });
+
+// DELIBERATE attachments only — never suggestions, which are computed on read
+// and never stored (FR-042). A null attached_by_user_id means a rule did it.
+Ticket.hasMany(KbTicketArticle, { foreignKey: 'ticket_id', as: 'knowledgeArticles' });
+KbTicketArticle.belongsTo(Ticket, { foreignKey: 'ticket_id', as: 'ticket' });
+KbTicketArticle.belongsTo(KbArticle, { foreignKey: 'article_id', as: 'article' });
+KbTicketArticle.belongsTo(User, { foreignKey: 'attached_by_user_id', as: 'attachedBy' });
+
 export {
   sequelize,
   AlertDelivery,
@@ -220,6 +260,12 @@ export {
   CustomerNote,
   DuplicateOverride,
   FormDefinition,
+  KbArticle,
+  KbArticleTerm,
+  KbCategory,
+  KbGuide,
+  KbGuideStep,
+  KbTicketArticle,
   Message,
   MessageAttachment,
   Notification,

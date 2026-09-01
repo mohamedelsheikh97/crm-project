@@ -164,6 +164,16 @@ function validateActionParams(
       return false;
     }
 
+    // Phase 7. Validated as an integer HERE and for existence at EXECUTION
+    // time, deliberately: an article that exists when a rule is saved can be
+    // archived a month later, so 'does this article exist' is not a fact the
+    // validator can settle. FR-047 makes that the executor's job, where it
+    // becomes a recorded failure rather than a silent no-op.
+    if (param.kind === 'articleId' && !Number.isInteger(Number(value))) {
+      errors.push({ field: 'actions', message: 'automation.error.actionParamsInvalid' });
+      return false;
+    }
+
     if (param.kind === 'userIds' && !Array.isArray(value)) {
       errors.push({ field: 'actions', message: 'automation.error.actionParamsInvalid' });
       return false;

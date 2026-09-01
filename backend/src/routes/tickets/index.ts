@@ -3,6 +3,7 @@ import { Router } from 'express';
 import { authenticate } from '../../middleware/authenticate.js';
 import { requirePasswordChange } from '../../middleware/require-password-change.js';
 
+import ticketKnowledgeRoutes from '../knowledge/ticket-knowledge.routes.js';
 import messageRoutes from '../messages/index.js';
 
 import ticketNotesRoutes from './ticket-notes.routes.js';
@@ -24,5 +25,10 @@ router.use(ticketNotesRoutes);
 // shape — a separate module hanging off the ticket path, never folded into the
 // note routes, so the two can never be reached through one handler.
 router.use(messageRoutes);
+
+// Phase 7. Suggested articles for this ticket, as their OWN request rather
+// than part of the ticket payload (FR-045): the ticket is what the agent is
+// waiting for, and suggestion must not make them wait for it.
+router.use(ticketKnowledgeRoutes);
 
 export default router;

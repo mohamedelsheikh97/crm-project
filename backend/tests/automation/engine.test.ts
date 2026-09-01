@@ -137,6 +137,12 @@ describe('the catalog and the validator agree (FR-058)', () => {
       apply_assignment_strategy: {},
       notify_users: { userIds: [user.id] },
       send_customer_message: { bodyKey: 'automation.body.acknowledged' },
+      // Phase 7. Any integer: the VALIDATOR only checks the shape, because an
+      // article that exists when a rule is saved can be archived a month later
+      // — "does this article exist" is not a fact a validator can settle. The
+      // executor checks existence and records a FAILED run when it is gone
+      // (FR-047), which is asserted in tests/knowledge/automation-action.test.ts.
+      suggest_article: { articleId: 1 },
     };
 
     for (const action of ACTIONS) {

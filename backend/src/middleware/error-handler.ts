@@ -2,6 +2,7 @@ import type { ErrorRequestHandler, RequestHandler } from 'express';
 
 import {
   AppError,
+  CategoryInUseError,
   ChannelWindowClosedError,
   DuplicateCustomerError,
   MentionNotVisibleError,
@@ -66,6 +67,17 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
     res.status(err.status).json({
       error: { code: err.code, message: err.message, details: err.details },
       window: err.window,
+    });
+    return;
+  }
+
+  // Phase 7, same sibling rule. FR-015 requires the refusal; the COUNT is what
+  // turns it into an instruction rather than a dead end, and a number does not
+  // fit the {field, message} shape details[] has a defined meaning for.
+  if (err instanceof CategoryInUseError) {
+    res.status(err.status).json({
+      error: { code: err.code, message: err.message, details: err.details },
+      articleCount: err.articleCount,
     });
     return;
   }

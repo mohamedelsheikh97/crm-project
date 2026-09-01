@@ -94,6 +94,15 @@ const PROBES: Record<
   'assignment:manage': { method: 'get', path: '/api/admin/assignment' },
   'automation:manage': { method: 'get', path: '/api/admin/automation/rules' },
   'automation:view': { method: 'get', path: '/api/admin/automation/runs' },
+
+  // Phase 7 — the knowledge base. Note the paths: /api/knowledge sits at the
+  // TOP LEVEL rather than under /api/admin, for the reason customers and
+  // tickets do. Writing down what you have just worked out is everyday work;
+  // only the filing structure is administration, and that is expressed in the
+  // permission (kb:manage) rather than in the path.
+  'kb:author': { method: 'post', path: '/api/knowledge/articles' },
+  'kb:publish': { method: 'post', path: '/api/knowledge/articles/999999/publish' },
+  'kb:manage': { method: 'post', path: '/api/knowledge/categories' },
 };
 
 const ROLE_KEYS = ['agent', 'supervisor', 'admin'] as const;
