@@ -7,6 +7,7 @@ import customerRoutes from './customers/index.js';
 import dashboardRoutes from './dashboard/index.js';
 import formRoutes from './forms/index.js';
 import healthRoutes from './health.routes.js';
+import knowledgeRoutes from './knowledge/index.js';
 import notificationRoutes from './notifications/index.js';
 import publicRoutes from './public/index.js';
 import taskRoutes from './tasks/index.js';
@@ -40,6 +41,16 @@ router.use('/templates', templateRoutes);
 // rather than standing alone.
 router.use('/channels', channelRoutes);
 router.use('/forms', formRoutes);
+
+// Phase 7. Top level, for the reason customers and tickets are: writing down
+// what you have just worked out is everyday work, not administration. Only the
+// filing STRUCTURE is administration, and that distinction lives in the
+// permission (kb:manage) rather than in the path.
+//
+// The PUBLIC help centre is not here. It is mounted below with every other
+// unauthenticated surface, so that file stays the one place a reviewer can see
+// the whole of it at once.
+router.use('/knowledge', knowledgeRoutes);
 
 // THE ONLY UNAUTHENTICATED SURFACES IN THIS PROJECT (FR-105), gathered under
 // one prefix and one file so the whole public attack surface is reviewable at

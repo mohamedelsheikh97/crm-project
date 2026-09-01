@@ -154,7 +154,7 @@ export function conditionField(key: string): ConditionField | null {
 export interface ActionParam {
   key: string;
   /** `enum` params are validated against `values`; `ids` against existence. */
-  kind: 'enum' | 'userId' | 'userIds' | 'roleId' | 'templateId' | 'localeKey';
+  kind: 'enum' | 'userId' | 'userIds' | 'roleId' | 'templateId' | 'localeKey' | 'articleId';
   values?: readonly string[];
   required: boolean;
 }
@@ -224,6 +224,27 @@ export const ACTIONS = [
       { key: 'bodyKey', kind: 'localeKey', required: false },
     ],
   },
+  {
+    /**
+     * Phase 7. The entry this catalog's own comment predicted: "one entry here
+     * plus one executor branch". It cost exactly that.
+     *
+     * ATTACHES AN ARTICLE, DOES NOT SEND ONE. The action writes a row in
+     * `kb_ticket_articles` with a null `attached_by_user_id` — the Phase 5 and 6
+     * convention for a system act — which puts the article in front of the AGENT
+     * working the ticket, pinned and distinguishable from a computed
+     * suggestion. It does not put anything in front of the customer; that is
+     * `send_customer_message`, and it is a different authority.
+     *
+     * A NAMED ARTICLE THAT IS GONE FAILS WITH A RECORDED REASON (FR-047),
+     * through the existing failure path rather than a new one — exactly as an
+     * assignment to a deactivated user does. Silently doing nothing would leave
+     * a supervisor believing a rule was helping when it had stopped.
+     */
+    key: 'suggest_article',
+    nameKey: 'automation.action.suggestArticle',
+    params: [{ key: 'articleId', kind: 'articleId', required: true }],
+  },
 ] as const satisfies readonly ActionDefinition[];
 
 export type ActionKey = (typeof ACTIONS)[number]['key'];
@@ -248,7 +269,11 @@ export function actionDefinition(key: string): ActionDefinition | null {
  *   - `merge_tickets` / `link_tickets` — merge is irreversible and
  *     identity-sensitive. Not a thing to automate on a stranger's email.
  *   - `call_webhook` — Phase 11.
- *   - `suggest_article` — Phase 7. One entry here plus one executor branch.
+ *
+ * `suggest_article` WAS listed here as reserved for Phase 7. It has arrived,
+ * above, and cost exactly what this comment predicted: one entry plus one
+ * executor branch. Left recorded because a prediction that held is worth as
+ * much to the next phase as a warning.
  */
 
 /** The whole catalog, as the builder screen consumes it. */

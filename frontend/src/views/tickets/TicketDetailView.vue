@@ -4,6 +4,8 @@ import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 
 import CustomerContextPanel from '../../components/tickets/CustomerContextPanel.vue';
+import SearchBox from '../../components/knowledge/SearchBox.vue';
+import SuggestionPanel from '../../components/knowledge/SuggestionPanel.vue';
 import DueDateControl from '../../components/tickets/DueDateControl.vue';
 import DueSourceBadge from '../../components/sla/DueSourceBadge.vue';
 import SlaCountdown from '../../components/sla/SlaCountdown.vue';
@@ -310,6 +312,17 @@ function closeMerge(): void {
 const formatter = computed(
   () => new Intl.DateTimeFormat(locale.value, { dateStyle: 'medium', timeStyle: 'short' }),
 );
+
+/**
+ * OPENING AN ARTICLE MUST NOT LOSE THE AGENT'S PLACE (FR-044).
+ *
+ * A new tab rather than a navigation. The agent is part-way through a reply,
+ * and router.push would discard the composer they are standing in — turning a
+ * feature meant to save them time into one that costs them work.
+ */
+function openArticle(articleId: number): void {
+  window.open(`/admin/knowledge?article=${articleId}`, '_blank', 'noopener');
+}
 </script>
 
 <template>
@@ -651,6 +664,27 @@ const formatter = computed(
           :submitting="savingNote"
           @submit="addNote"
         />
+      </section>
+
+      <!--
+        PLAN.md's Definition of done, on the screen: an article appears BEFORE
+        anyone goes looking. Above the search box deliberately — the whole point
+        of User Story 3 is that the agent does not have to search.
+      -->
+      <section class="rounded border p-3">
+        <SuggestionPanel :ticket-id="ticket.id" @open="openArticle" />
+      </section>
+
+      <!--
+        KNOWLEDGE, BESIDE THE WORK (FR-030).
+
+        An agent searching for an answer is in the middle of writing a reply.
+        Sending them to another screen to look costs them the reply, which is
+        why this is a panel here rather than a link to a knowledge section —
+        the whole point of User Story 1 is not leaving the ticket.
+      -->
+      <section class="rounded border p-3">
+        <SearchBox @open="openArticle" />
       </section>
 
       <TicketHistoryTimeline

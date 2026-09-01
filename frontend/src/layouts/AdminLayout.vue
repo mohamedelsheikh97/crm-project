@@ -28,6 +28,15 @@ const entries = computed(() =>
       labelKey: 'admin.nav.automationRuns',
       permission: 'automation:view',
     },
+    // Phase 7. Sits with the template library conceptually — both are text
+    // the organisation keeps and reuses — but after the Phase 6 configuration
+    // entries, so the order still reads identity -> work -> policy -> content.
+    { name: 'admin-knowledge', labelKey: 'admin.nav.knowledge', permission: 'kb:author' },
+    {
+      name: 'admin-knowledge-structure',
+      labelKey: 'admin.nav.knowledgeStructure',
+      permission: 'kb:manage',
+    },
     { name: 'admin-settings', labelKey: 'admin.nav.settings', permission: 'settings:view' },
   ].filter((entry) => can(entry.permission)),
 );

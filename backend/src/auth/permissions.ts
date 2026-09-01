@@ -164,6 +164,33 @@ export const PERMISSIONS = [
   // holds unconditionally, and that can therefore never refuse anything, is not
   // a gate — the same reasoning that kept `notifications:view` out of the
   // Phase 4 catalog and `timeline:view` out of Phase 5's.
+
+  // Phase 7 — Knowledge Base.
+  //
+  // AUTHORING AND PUBLISHING ARE SPLIT, and the split is the point. Publishing
+  // is the only quality gate this content has: there is no review workflow, no
+  // approval chain, and no version history to fall back on (spec Assumptions).
+  //
+  // "May write a draft" is a reasonable grant for an agent who has just solved
+  // something — they are the person who knows the answer, and the moment they
+  // know it is the moment to write it down. "May put words in front of
+  // customers in the organisation's name" is a different authority entirely.
+  // Same reasoning that separated `messages:send` from `ticket_notes:create` in
+  // Phase 5: both compose text on one screen, and only one of them speaks
+  // outward.
+  define('kb', 'author'),
+  define('kb', 'publish'),
+
+  // Categories and guides are the shape of the help centre rather than its
+  // content. Reorganising the filing changes what every reader sees on the
+  // front page, which is a different job from writing one article.
+  define('kb', 'manage'),
+
+  // There is deliberately NO `kb:read` key. Reading a PUBLISHED article rides
+  // on being signed in (FR-053) — the reasoning that kept `notifications:view`
+  // out of the Phase 4 catalog, `timeline:view` out of Phase 5's, and
+  // `sla:view` out of Phase 6's. Drafts are a different matter, and they are
+  // gated by `kb:author` in the service rather than by a key of their own.
 ] as const satisfies readonly PermissionDefinition[];
 
 export type PermissionKey = (typeof PERMISSIONS)[number]['key'];

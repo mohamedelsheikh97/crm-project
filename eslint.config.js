@@ -46,6 +46,20 @@ export default tseslint.config(
           caughtErrorsIgnorePattern: '^_',
         },
       ],
+
+      // Phase 7. The rule exists to catch a combining character somebody pasted
+      // into a character class by accident — `[é]` that is really `e` plus a
+      // combining acute, and matches neither.
+      //
+      // The Arabic tokenizer's character classes are combining marks ON PURPOSE:
+      // stripping harakat is the whole job of `MARKS` in
+      // `backend/src/lib/text-normalise.ts`. `allowEscape` keeps the rule doing
+      // what it is for while accepting the deliberate case, and it demands the
+      // characters be written as `\uXXXX` escapes to qualify — which is the
+      // outcome we want anyway. A literal combining mark is invisible in a
+      // source file: it renders as nothing, or attaches itself to the bracket
+      // beside it, and no reviewer can verify what a class actually contains.
+      'no-misleading-character-class': ['error', { allowEscape: true }],
     },
   },
   // Must stay last so formatting rules do not fight Prettier.

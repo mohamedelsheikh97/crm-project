@@ -22,6 +22,9 @@ export type ErrorCode =
   | 'RECIPIENT_OPTED_OUT'
   | 'CHANNEL_WINDOW_CLOSED'
   | 'CHANNEL_UNAVAILABLE'
+  // Phase 7 — Knowledge Base.
+  | 'ARTICLE_INCOMPLETE'
+  | 'CATEGORY_IN_USE'
   | 'INTERNAL_ERROR';
 
 export interface ErrorDetail {
@@ -333,4 +336,56 @@ export class ChannelWindowClosedError extends AppError {
 
 export function channelWindowClosed(window: ReplyWindowSummary): ChannelWindowClosedError {
   return new ChannelWindowClosedError(window);
+}
+
+// --- Phase 7: Knowledge Base ---------------------------------------------
+
+/**
+ * An article that cannot be published as it stands (FR-005).
+ *
+ * 422 rather than 400: nothing about the REQUEST is malformed. The article is
+ * simply not finished, and the same request will succeed once somebody writes
+ * the missing half. That distinction matters to the interface, which should
+ * offer "finish the Arabic body" rather than "your request was invalid".
+ *
+ * The details carry which half is missing, because a refusal that names the
+ * obstacle is a different thing from a dead end. THE PUBLISH GATE IS THE ONLY
+ * QUALITY CONTROL THIS CONTENT HAS — there is no review workflow and no version
+ * history behind it — so it refuses precisely and explains itself.
+ */
+export function articleIncomplete(details: ErrorDetail[]): AppError {
+  return new AppError(
+    'ARTICLE_INCOMPLETE',
+    422,
+    'This article needs a title and body in the same language before it can be published.',
+    details,
+  );
+}
+
+/**
+ * Deleting a category that still holds articles (FR-015).
+ *
+ * `articleCount` rides BESIDE the envelope, following the precedent Phase 2 set
+ * with `duplicates` and Phase 3 with `transition`: `{field, message}` has a
+ * defined meaning that a count does not fit.
+ *
+ * The count is the whole point. FR-015 requires the refusal; naming HOW MANY
+ * articles stand in the way is what turns it from a dead end into an
+ * instruction — the administrator now knows there are eleven articles to move,
+ * not merely that they cannot proceed.
+ */
+export class CategoryInUseError extends AppError {
+  readonly articleCount: number;
+
+  constructor(articleCount: number) {
+    super('CATEGORY_IN_USE', 409, 'This category still holds articles and cannot be deleted.', [
+      { field: 'id', message: 'kb.error.categoryHasArticles' },
+    ]);
+    this.name = 'CategoryInUseError';
+    this.articleCount = articleCount;
+  }
+}
+
+export function categoryInUse(articleCount: number): CategoryInUseError {
+  return new CategoryInUseError(articleCount);
 }
