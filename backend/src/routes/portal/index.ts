@@ -164,11 +164,7 @@ router.post(
 
 // Phase 9 — the assistant. Keyed by ACCOUNT like every other authenticated
 // portal route: an office behind one address is many customers (Phase 8 D11).
-router.post(
-  '/assistant/messages',
-  byAccount('portal-submit'),
-  portalAssistantController.message,
-);
+router.post('/assistant/messages', byAccount('portal-submit'), portalAssistantController.message);
 router.post(
   '/assistant/escalate',
   byAccount('portal-submit'),

@@ -143,7 +143,10 @@ describe('the shared invocation path', () => {
     await invoke(provider, {
       ...request,
       messages: [
-        { role: 'user', content: 'the key is sk-ant-api03-abcdefghijklmnop1234 and card 4111111111111111' },
+        {
+          role: 'user',
+          content: 'the key is sk-ant-api03-abcdefghijklmnop1234 and card 4111111111111111',
+        },
       ],
     });
 

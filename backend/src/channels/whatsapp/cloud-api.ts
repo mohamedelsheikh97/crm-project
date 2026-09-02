@@ -172,9 +172,7 @@ export const whatsappCloudApiAdapter: ChannelAdapter = {
             // fetch happens in the poller-side hydration rather than inside
             // parse, which must stay synchronous and side-effect free.
             attachments,
-            occurredAt: message.timestamp
-              ? new Date(Number(message.timestamp) * 1000)
-              : new Date(),
+            occurredAt: message.timestamp ? new Date(Number(message.timestamp) * 1000) : new Date(),
             threadHints: {
               inReplyTo: null,
               references: [],

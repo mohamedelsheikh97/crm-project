@@ -28,6 +28,11 @@ import TicketCreateView from '../views/tickets/TicketCreateView.vue';
 import TicketDetailView from '../views/tickets/TicketDetailView.vue';
 import TicketListView from '../views/tickets/TicketListView.vue';
 import AiActivityView from '../views/admin/AiActivityView.vue';
+import ManagementDashboardView from '../views/reports/ManagementDashboardView.vue';
+import AgentReportView from '../views/reports/AgentReportView.vue';
+import CsatReportView from '../views/reports/CsatReportView.vue';
+import SlaReportView from '../views/reports/SlaReportView.vue';
+import VolumeReportView from '../views/reports/VolumeReportView.vue';
 import AiConversationsView from '../views/admin/AiConversationsView.vue';
 import AiSettingsView from '../views/admin/AiSettingsView.vue';
 import AuditLogView from '../views/admin/AuditLogView.vue';
@@ -381,6 +386,52 @@ const router = createRouter({
         portalShell: true,
         requiresPortalAuth: true,
       },
+    },
+    // Phase 10 — reporting. TOP LEVEL rather than under /admin: operational
+    // visibility is supervisory work, not administration — the same reasoning
+    // that puts /tickets and /dashboard at the top level.
+    {
+      path: '/reports',
+      name: 'reports-dashboard',
+      component: ManagementDashboardView,
+      meta: { titleKey: 'route.reports.dashboard.title', permission: 'reports:view' },
+    },
+    {
+      path: '/reports/volume',
+      name: 'reports-volume',
+      component: VolumeReportView,
+      meta: { titleKey: 'route.reports.volume.title', permission: 'reports:view' },
+    },
+    {
+      path: '/reports/sla',
+      name: 'reports-sla',
+      component: SlaReportView,
+      meta: { titleKey: 'route.reports.sla.title', permission: 'reports:view' },
+    },
+    {
+      // `reports:view`, not `reports:view_agents`: a distribution over a whole
+      // team characterises nobody, and the response-rate denominator is
+      // tickets rather than people.
+      path: '/reports/csat',
+      name: 'reports-csat',
+      component: CsatReportView,
+      meta: { titleKey: 'route.reports.csat.title', permission: 'reports:view' },
+    },
+    {
+      /**
+       * Agent performance. `reports:view_agents`, and OMITTED FROM NAVIGATION
+       * for anyone without it (FR-030b).
+       *
+       * The guard already refuses the route, so hiding the link is not the
+       * control — it is the point. A visible-but-refused link tells an agent
+       * that per-agent figures about them exist and that somebody else can
+       * read them, which is exactly what Clarifications Q1 decided not to
+       * say. The server answers 404 for the same reason.
+       */
+      path: '/reports/agents',
+      name: 'reports-agents',
+      component: AgentReportView,
+      meta: { titleKey: 'route.reports.agents.title', permission: 'reports:view_agents' },
     },
     // Phase 9 — the assistant. Under the portal shell and the portal auth
     // guard, so it is a customer surface in the Phase 8 realm and nothing else.

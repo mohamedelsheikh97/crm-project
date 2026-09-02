@@ -11,6 +11,7 @@ import knowledgeRoutes from './knowledge/index.js';
 import notificationRoutes from './notifications/index.js';
 import aiRoutes from './ai/index.js';
 import portalRoutes from './portal/index.js';
+import reportRoutes from './reports/index.js';
 import publicRoutes from './public/index.js';
 import taskRoutes from './tasks/index.js';
 import templateRoutes from './templates/index.js';
@@ -34,6 +35,11 @@ router.use('/tickets', ticketRoutes);
 // Phase 7's public knowledge base behind a token. Ticket-scoped AI routes live
 // in routes/tickets/ai.routes.ts, inside the tickets group.
 router.use('/ai', aiRoutes);
+
+// Phase 10. Under a prefix, for the same reason the AI router is: this router
+// applies `authenticate`, and a bare mount would apply it to every route
+// registered after this line.
+router.use('/reports', reportRoutes);
 
 // Phase 4. All four are top level for the same reason: this is the workspace an
 // agent lives in, not administration. Managing the template LIBRARY is

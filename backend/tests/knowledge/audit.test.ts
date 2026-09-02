@@ -82,7 +82,11 @@ describe('every lifecycle act is recorded with its actor', () => {
     await publisher.agent.post(`/api/knowledge/articles/${created.body.id}/publish`);
 
     const entry = await AuditLog.findOne({
-      where: { target_type: 'kb_article', target_id: created.body.id, action: 'kb.article.published' },
+      where: {
+        target_type: 'kb_article',
+        target_id: created.body.id,
+        action: 'kb.article.published',
+      },
     });
 
     expect(entry?.actor_user_id).toBe(publisher.user.id);

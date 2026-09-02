@@ -16,8 +16,7 @@ import { AiProviderError, type AiProvider } from './types.js';
  * check, on the grounds that the one which stops customer content leaving the
  * building is worth asserting twice.
  */
-const PRIVATE_HOST =
-  /^(localhost|::1|127\..*|10\..*|192\.168\..*|172\.(1[6-9]|2\d|3[01])\..*)$/;
+const PRIVATE_HOST = /^(localhost|::1|127\..*|10\..*|192\.168\..*|172\.(1[6-9]|2\d|3[01])\..*)$/;
 
 export function localProviderFor(): AiProvider {
   if (!env.AI_LOCAL_BASE_URL) {

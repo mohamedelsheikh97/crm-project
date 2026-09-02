@@ -115,7 +115,11 @@ async function copy(template: ReplyTemplate): Promise<void> {
     </p>
 
     <ul v-else class="mt-2 max-h-64 space-y-1 overflow-y-auto">
-      <li v-for="template in items" :key="template.id" class="rounded border border-slate-100 p-2 dark:border-slate-800">
+      <li
+        v-for="template in items"
+        :key="template.id"
+        class="rounded border border-slate-100 p-2 dark:border-slate-800"
+      >
         <div class="flex flex-wrap items-center gap-2">
           <button
             type="button"

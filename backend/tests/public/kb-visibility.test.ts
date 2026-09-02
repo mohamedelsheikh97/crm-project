@@ -127,9 +127,7 @@ describe('the surface accepts nothing that could widen it', () => {
   it('ignores an audience parameter on the search route', async () => {
     await makeArticle({ ...FIELDS, audience: 'internal' });
 
-    const response = await anonymous().get(
-      '/api/public/kb/search?q=card+reader&audience=internal',
-    );
+    const response = await anonymous().get('/api/public/kb/search?q=card+reader&audience=internal');
 
     expect(response.body.items).toEqual([]);
   });

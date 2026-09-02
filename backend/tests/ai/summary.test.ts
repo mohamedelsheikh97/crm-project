@@ -44,9 +44,8 @@ vi.mock('../../src/ai/features.js', async () => {
 // eslint-disable-next-line prefer-const
 let provider = capturingProvider('external');
 
-const { forTicket, SummaryNotWorthwhileError } = await import(
-  '../../src/services/ai-summary.service.js'
-);
+const { forTicket, SummaryNotWorthwhileError } =
+  await import('../../src/services/ai-summary.service.js');
 const { Ticket } = await import('../../src/models/ticket.model.js');
 const { Message } = await import('../../src/models/message.model.js');
 

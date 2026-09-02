@@ -35,9 +35,7 @@ const emit = defineEmits<{
 // Closed has its own switch rather than sitting in the status list, because it
 // is excluded by DEFAULT (FR-003) — presenting it as just another status would
 // make its absence look like a bug.
-const selectableStatuses = computed(() =>
-  TICKET_STATUSES.filter((status) => status !== 'closed'),
-);
+const selectableStatuses = computed(() => TICKET_STATUSES.filter((status) => status !== 'closed'));
 
 function toggle<T>(list: T[], value: T): T[] {
   return list.includes(value) ? list.filter((item) => item !== value) : [...list, value];

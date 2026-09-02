@@ -75,7 +75,9 @@ watch(locale, load);
         where they are.
       -->
       <p v-if="article.guide" class="mb-4 text-sm font-medium text-slate-700">
-        {{ t('kb.guide.position', { position: article.guide.position, total: article.guide.total }) }}
+        {{
+          t('kb.guide.position', { position: article.guide.position, total: article.guide.total })
+        }}
       </p>
 
       <ArticleReader
@@ -87,7 +89,9 @@ watch(locale, load);
       />
 
       <p v-if="article.guide" class="mt-6 text-sm text-slate-700">
-        {{ t('kb.guide.position', { position: article.guide.position, total: article.guide.total }) }}
+        {{
+          t('kb.guide.position', { position: article.guide.position, total: article.guide.total })
+        }}
       </p>
 
       <!--

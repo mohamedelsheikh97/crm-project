@@ -1,12 +1,7 @@
 import { QueryTypes, type Transaction } from 'sequelize';
 
 import { sequelize } from '../config/database.js';
-import {
-  categoryInUse,
-  notFound,
-  staleRecord,
-  validationError,
-} from '../errors/app-error.js';
+import { categoryInUse, notFound, staleRecord, validationError } from '../errors/app-error.js';
 import { KbArticle, KbCategory, KbGuide, KbGuideStep } from '../models/index.js';
 import { isTicketCategory } from '../tickets/taxonomy.js';
 import * as auditService from './audit.service.js';

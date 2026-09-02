@@ -28,7 +28,9 @@ const SIMULATOR = 'simulator';
 function resolve(channel: Channel): ChannelAdapter {
   switch (channel) {
     case CHANNELS.EMAIL:
-      return env.CHANNEL_EMAIL_PROVIDER === SIMULATOR ? emailSimulatorAdapter : emailImapSmtpAdapter;
+      return env.CHANNEL_EMAIL_PROVIDER === SIMULATOR
+        ? emailSimulatorAdapter
+        : emailImapSmtpAdapter;
     case CHANNELS.WHATSAPP:
       return env.CHANNEL_WHATSAPP_PROVIDER === SIMULATOR
         ? whatsappSimulatorAdapter

@@ -8,6 +8,8 @@ import i18n from './i18n';
 import { resolveInitialLocale } from './i18n/locale-config';
 import router from './router';
 import './style.css';
+import './assets/viz-palette.css';
+import './print.css';
 
 const app = createApp(App);
 

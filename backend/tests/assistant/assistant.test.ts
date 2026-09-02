@@ -118,7 +118,11 @@ describe('the assistant answers only from published help content', () => {
   it('answers from a matching article and cites it by SLUG, never by id', async () => {
     searchResults = [hit(1, 'Restarting your device')];
 
-    const reply = await respond({ portalAccountId: accountId }, null, 'how do I restart the device');
+    const reply = await respond(
+      { portalAccountId: accountId },
+      null,
+      'how do I restart the device',
+    );
 
     expect(reply.needsHuman).toBe(false);
     expect(reply.citedArticles).toEqual([{ slug: 'article-1', title: 'Restarting your device' }]);

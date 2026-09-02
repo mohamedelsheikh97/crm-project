@@ -16,9 +16,7 @@ import { AI_FEATURES, FEATURES } from '../../ai/features.js';
  */
 export function list(req: Request, res: Response, next: NextFunction): void {
   try {
-    const features = Object.fromEntries(
-      AI_FEATURES.map((key) => [key, FEATURES[key].enabled]),
-    );
+    const features = Object.fromEntries(AI_FEATURES.map((key) => [key, FEATURES[key].enabled]));
 
     res.status(200).json({ features });
   } catch (error) {

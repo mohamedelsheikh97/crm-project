@@ -232,6 +232,36 @@ export const PERMISSIONS = [
   // refuse anything is not a gate — it is noise on the roles screen and a
   // matrix row that cannot fail. Phase 4 kept `notifications:view` out for this
   // reason, Phase 5 kept `timeline:view` out, and Phase 6 kept `sla:view` out.
+
+  // Phase 10 — Reports & Management. THREE KEYS, and each split is load-bearing.
+  //
+  // `reports:view` covers the operational reports and the management dashboard:
+  // volume, SLA, CSAT and AI usage. Everyday supervisory work.
+  define('reports', 'view'),
+
+  // SEPARATE BECAUSE THE SUBJECT IS A COLLEAGUE, not a record (Clarifications
+  // Q1). Agent performance reporting is visible to supervisors and
+  // administrators only — an agent cannot reach it even for their own figures.
+  //
+  // One key covering both would make "may see operational reports" and "may see
+  // figures about my team" the same grant, and they are not the same judgement.
+  // It also means the agent report is ABSENT for a holder of `reports:view`
+  // rather than present-and-refusing, which matters: a visible-but-withheld
+  // report tells an agent that figures about them exist and are being kept from
+  // them, which is worse than either alternative (FR-030b).
+  define('reports', 'view_agents'),
+
+  // SEPARATE BECAUSE EXPORT IS THE ACTION THAT TAKES DATA OUT OF THE SYSTEM
+  // (FR-050). Phase 2 established this exact split for `customers:export`
+  // against `customers:view`, and the reasoning transfers with more force: a
+  // report export is SLA breach counts by agent and satisfaction scores by
+  // customer, which is the material an organisation would least like to leave
+  // the building unnoticed.
+  //
+  // Export requires this key AND the exported report's own authority — checked
+  // in the controller, so `reports:export` cannot become a route to the agent
+  // report without `reports:view_agents`.
+  define('reports', 'export'),
 ] as const satisfies readonly PermissionDefinition[];
 
 export type PermissionKey = (typeof PERMISSIONS)[number]['key'];

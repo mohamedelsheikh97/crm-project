@@ -46,13 +46,16 @@ describe('staff AI routes are unreachable without authentication', () => {
     await closeTestDatabase();
   });
 
-  it.each(AI_ROUTES)('$method $path refuses an unauthenticated caller', async ({ method, path }) => {
-    const response = await request(app)[method](path);
+  it.each(AI_ROUTES)(
+    '$method $path refuses an unauthenticated caller',
+    async ({ method, path }) => {
+      const response = await request(app)[method](path);
 
-    // 401, not 403 and not 200. A 403 would mean the request was authenticated
-    // and merely unauthorised, which it was not.
-    expect(response.status).toBe(401);
-  });
+      // 401, not 403 and not 200. A 403 would mean the request was authenticated
+      // and merely unauthorised, which it was not.
+      expect(response.status).toBe(401);
+    },
+  );
 
   it('reconciles this list against the mounted ticket AI router', async () => {
     const { readFile } = await import('node:fs/promises');
@@ -76,7 +79,8 @@ describe('staff AI routes are unreachable without authentication', () => {
     // The ticket AI router declares paths relative to `/tickets`, so strip that
     // prefix from the covered list before comparing.
     const covered = AI_ROUTES.filter((route) => route.path.startsWith('/api/tickets/')).map(
-      (route) => `${route.method} ${route.path.replace('/api/tickets', '').replace('/1/', '/:id/')}`,
+      (route) =>
+        `${route.method} ${route.path.replace('/api/tickets', '').replace('/1/', '/:id/')}`,
     );
 
     for (const route of mounted) {

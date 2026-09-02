@@ -100,7 +100,11 @@ export async function activity(req: Request, res: Response, next: NextFunction):
  * retained because it is what the organisation SAID TO A CUSTOMER, on the same
  * basis Phase 5 retains outbound messages — not because AI produced it.
  */
-export async function conversations(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function conversations(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   try {
     const page = Math.max(1, Number(req.query.page) || 1);
     const pageSize = Math.min(100, Math.max(1, Number(req.query.pageSize) || 25));

@@ -151,6 +151,62 @@ what, when, and what it cost — never the content, so the system keeps no secon
 correspondence. Assistant conversations *are* retained, because they are what the organisation said
 to a customer, on the same basis as any outbound message.
 
+### Reports and the management dashboard (Phase 10)
+
+**Three permission keys, and the split is deliberate.**
+
+| Key                   | Held by            | Covers                                                        |
+| --------------------- | ------------------ | ------------------------------------------------------------- |
+| `reports:view`        | Supervisor, Admin  | The management dashboard, volume, SLA and CSAT reports        |
+| `reports:view_agents` | Supervisor, Admin  | Agent performance — separate so operational reporting can be granted without it |
+| `reports:export`     | Supervisor, Admin  | CSV and Excel export, checked **alongside** the exported report's own key |
+
+**Agents hold none of them.** Not even for their own figures. A team-wide aggregate lets an agent
+infer a colleague's performance without any per-agent breakdown — "two breaches this month" plus
+knowing who was on shift is a name. The agent report answers **404 rather than 403** for anyone
+without `reports:view_agents`, and there is no navigation link to it: a refused link would tell an
+agent that figures about them exist and that somebody else reads them, which is the thing the access
+decision was meant not to say.
+
+**One timezone, and it is the business calendar's.** Every period boundary resolves in the active
+calendar's zone, never the server's and never the browser's — so "yesterday" means the same day for
+a reader in Cairo and a reader in London, and a figure is comparable to the one beside it. Every
+response states the zone it used.
+
+**Reports reflect records AS THEY ARE NOW, not as they were.** Recategorising a ticket today changes
+last month's report. That is a decision, not a defect: the alternative needs somewhere to store a
+snapshot, a rule for when it is taken, and an answer for what happens when a record is corrected.
+The cost is that a figure read on Monday may differ on Friday with nothing having gone wrong — so
+every figure carries `reflectsCurrentState` and every surface says so. An unexplained movement is
+what makes a reader stop trusting the whole report; an explained one does not.
+
+**A percentage never travels without its counts, and a small sample gets no rate at all.** "94%"
+reads identically at 2-of-3 and 6,700-of-10,000. Below the suppression floor the rate is withheld
+and the count shown instead — `null`, never `0`, because zero is a claim and null is an absence.
+The floor is declared once, in `backend/src/reporting/suppression.ts`.
+
+**PDF export is the browser's print dialog, not a server renderer.** Arabic in a PDF needs an
+embedded font, bidirectional reordering and contextual glyph shaping all at once, and the failure
+mode is a document that still looks like Arabic to somebody who does not read it. The browser
+already does all three correctly for the screen in front of the reader; `frontend/src/print.css`
+makes that screen printable. The honest consequence: a browser print cannot be prevented or reliably
+audited, so the PDF button posts a best-effort notification and the code says plainly that this is a
+record and not a control. CSV and Excel *are* server-produced and *are* audited.
+
+**Where the rules live.** `backend/src/reporting/sources.ts` is the only module in the phase
+permitted to name a table owned by another phase — so verifying that SLA state, working hours and
+the ticket lifecycle are read from their owners rather than restated is a one-file read. A report
+that computed SLA compliance itself would become a second definition of Phase 6's rules: both would
+compile, both would pass their own tests, and when they disagreed the report would be the wrong one
+with nothing saying so.
+
+**Charts are inline SVG with no charting library**, and the primitives in
+`frontend/src/components/viz/` do not know which report they serve. Read that directory's README
+before adding one — particularly "no dual-axis chart, ever" and "categorical hues in fixed order,
+never cycled". Every chart has a table view, which is simultaneously the screen-reader route, the
+greyscale fallback, the RTL fallback, and the relief the palette's light-mode contrast warning
+requires.
+
 ## Scripts
 
 Run all of these from the repository root.
@@ -232,6 +288,30 @@ envelope. Stack traces never appear in a response body.
 **A backend call from the frontend?** Add a function to `frontend/src/services/`. Components,
 views, and layouts must never call `fetch` directly. `services/http.ts` already handles the
 `Authorization` header, single-flight token refresh, one retry, and error unwrapping.
+
+**A report or a dashboard figure?** Five things, and the first two are what keep the number
+trustworthy:
+
+1. Add the query to `backend/src/reporting/sources.ts`. It is the **only** module in the phase
+   allowed to name a table another phase owns; a report service that queries a model directly fails
+   `backend/tests/reports/no-rule-restatement.test.ts`.
+2. Return every figure through `figure()` from `backend/src/reporting/figure.ts`. Each field is
+   required, so counts, exclusions, suppression, period, timezone and the current-state disclosure
+   cannot be forgotten — a convention would let them be.
+3. `backend/src/services/report-<name>.service.ts`, then a controller, then a route in
+   `backend/src/routes/reports/index.ts` — and add it to
+   `backend/tests/reports/route-auth.test.ts`, whose reconciliation fails on any route it does not
+   cover.
+4. A rate over fewer records than `SUPPRESSION_FLOOR` returns `null`, never `0`. Use
+   `rate()` from `backend/src/reporting/suppression.ts` rather than dividing.
+5. For a **dashboard** figure, add the key and its required permission to
+   `backend/src/reporting/figures.ts` and a `reports.figure.name.<key>` label to both locale
+   files. The arrangement picker, the authority filter and the layout validator all read that one
+   declaration.
+
+Hand-compute the expected answer in `backend/tests/reporting/fixture-answers.ts` and assert against
+the literal. Not against a second query: two queries share the assumption the bug is in, and this is
+a phase where a wrong number does not announce itself.
 
 **A new environment variable?** Add it to `.env.example`, then to the zod schema in
 `backend/src/config/env.ts`. That schema is the only place `process.env` is read.

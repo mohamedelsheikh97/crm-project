@@ -39,7 +39,8 @@ const windowClosed = computed(
 );
 
 const disabled = computed(
-  () => props.sending || optedOut.value !== null || windowClosed.value || !props.context?.conversation,
+  () =>
+    props.sending || optedOut.value !== null || windowClosed.value || !props.context?.conversation,
 );
 
 function submit(): void {

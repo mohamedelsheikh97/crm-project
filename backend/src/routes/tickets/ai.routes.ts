@@ -61,6 +61,10 @@ router.post(
   rateLimitKeyed(AI_SCOPES.CLASSIFY, AI_STAFF_PER_MINUTE, byUser),
   proposalController.accept,
 );
-router.post('/:id/ai/category-proposal/dismiss', requirePermission('tickets:update'), proposalController.dismiss);
+router.post(
+  '/:id/ai/category-proposal/dismiss',
+  requirePermission('tickets:update'),
+  proposalController.dismiss,
+);
 
 export default router;

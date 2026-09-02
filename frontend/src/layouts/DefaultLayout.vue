@@ -120,6 +120,25 @@ async function signOut(): Promise<void> {
             {{ t('nav.tickets') }}
           </RouterLink>
         </li>
+        <li v-if="can('reports:view')">
+          <RouterLink
+            :to="{ name: 'reports-dashboard' }"
+            class="rounded-md px-2 py-1 text-slate-700 hover:bg-slate-100"
+            active-class="font-medium"
+          >
+            {{ t('nav.reports') }}
+          </RouterLink>
+        </li>
+        <!--
+          THERE IS DELIBERATELY NO LINK TO /reports/agents (FR-030b, T088).
+
+          The router guard and the server both already refuse it, so hiding
+          the link is not the control. It is the point: a visible-but-refused
+          link tells an agent that per-agent figures about them exist and that
+          somebody else can read them — the thing Clarifications Q1 decided
+          not to say. A supervisor reaches the report from the reports
+          dashboard, where the link is rendered against the same permission.
+        -->
         <li v-if="canAny(ADMIN_PERMISSIONS)">
           <RouterLink
             :to="{ name: 'admin-users' }"

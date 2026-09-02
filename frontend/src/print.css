@@ -1,0 +1,113 @@
+/**
+ * Print stylesheet (Phase 10, US3, contracts/export-contract.md § PDF).
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * PDF EXPORT IS THIS FILE. There is no server-side PDF renderer.
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * Arabic in a PDF needs three things at once: an embedded font with Arabic
+ * coverage, bidirectional reordering, and contextual glyph shaping. A
+ * JavaScript PDF library gives you none of them by default, and the failure
+ * mode is a document that still looks like Arabic to somebody who does not
+ * read Arabic — isolated letterforms in the wrong order. The browser already
+ * does all three correctly, for the exact screen the reader is looking at.
+ *
+ * The honest cost, recorded in the contract: a browser print cannot be
+ * prevented or reliably audited. `ExportMenu.vue` posts a best-effort
+ * notification; that is a record, NOT a control.
+ */
+
+@media print {
+  /* Ink, on paper. A dark-mode screen must not print as a black rectangle. */
+  :root {
+    color-scheme: light;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  /*
+   * Chrome goes. Navigation, the export menu itself, filter controls, refresh
+   * buttons — none of it means anything on paper, and all of it costs a page.
+   */
+  [data-print='hide'],
+  nav,
+  aside,
+  header button,
+  .app-sidebar,
+  .app-header-actions,
+  .export-menu,
+  .period-filter,
+  .auto-refresh-toggle {
+    display: none !important;
+  }
+
+  /*
+   * EVERY COLLAPSED TABLE VIEW OPENS.
+   *
+   * On screen a chart's table view is a toggle. On paper the chart may be the
+   * only thing that printed, and a bar without its numbers is unreadable in
+   * greyscale — so the table is not optional here. This is also the greyscale
+   * fallback and the screen-reader equivalent, doing one more job.
+   */
+  [data-figure-table] {
+    display: block !important;
+  }
+
+  [data-figure-table][hidden] {
+    display: block !important;
+  }
+
+  /* No figure splits across a page boundary. A bar chart cut in half mid-axis
+   * invites reading the visible half as the whole. */
+  [data-figure],
+  figure,
+  table {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  [data-figure] {
+    margin-block-end: 1.5rem;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  /*
+   * THE PROVENANCE BLOCK IS VISIBLE, not collapsed behind a disclosure.
+   *
+   * A printed page outlives the screen it came from and gets read by people
+   * who were not in the room. Period, filters, generation time, and
+   * Clarifications Q3's "as they are now" disclosure all have to be on the
+   * paper — otherwise the recipient reasonably assumes the numbers describe
+   * the period as it was.
+   */
+  [data-provenance] {
+    display: block !important;
+    font-size: 0.75rem;
+    border: 1px solid #999999;
+    padding: 0.5rem;
+    margin-block-end: 1rem;
+  }
+
+  /* Charts print as vectors because they are inline SVG (research D7). Force
+   * the fills through rather than letting the browser drop backgrounds. */
+  svg {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  a[href]::after {
+    /* No URL suffixes. Every drill-through link would otherwise print its
+     * absolute href in the middle of a sentence. */
+    content: none;
+  }
+
+  @page {
+    margin: 1.5cm;
+  }
+}

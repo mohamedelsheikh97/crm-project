@@ -198,7 +198,11 @@ const pendingPublish = computed(() => (editing.value ? publishSummary(editing.va
     <div class="mb-4 flex flex-wrap items-end gap-3">
       <label class="text-sm">
         <span class="mb-1 block text-slate-700">{{ t('kb.articles.filter.status') }}</span>
-        <select v-model="statusFilter" class="rounded-md border border-slate-300 px-2 py-1.5" @change="load">
+        <select
+          v-model="statusFilter"
+          class="rounded-md border border-slate-300 px-2 py-1.5"
+          @change="load"
+        >
           <option value="">{{ t('kb.articles.filter.allStatuses') }}</option>
           <option value="draft">{{ t('kb.status.draft') }}</option>
           <option value="published">{{ t('kb.status.published') }}</option>
@@ -208,7 +212,11 @@ const pendingPublish = computed(() => (editing.value ? publishSummary(editing.va
 
       <label class="text-sm">
         <span class="mb-1 block text-slate-700">{{ t('kb.articles.sort.label') }}</span>
-        <select v-model="sort" class="rounded-md border border-slate-300 px-2 py-1.5" @change="load">
+        <select
+          v-model="sort"
+          class="rounded-md border border-slate-300 px-2 py-1.5"
+          @change="load"
+        >
           <option value="updated">{{ t('kb.articles.sort.updated') }}</option>
           <option value="stale">{{ t('kb.articles.sort.stale') }}</option>
           <option value="mostRead">{{ t('kb.articles.sort.mostRead') }}</option>
@@ -217,7 +225,11 @@ const pendingPublish = computed(() => (editing.value ? publishSummary(editing.va
       </label>
     </div>
 
-    <p v-if="errorKey" role="alert" class="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-800">
+    <p
+      v-if="errorKey"
+      role="alert"
+      class="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-800"
+    >
       {{ t(errorKey) }}
     </p>
 
@@ -226,13 +238,20 @@ const pendingPublish = computed(() => (editing.value ? publishSummary(editing.va
       a broken one must not be indistinguishable — this is the state every
       installation starts in, and the one nobody tests.
     -->
-    <p v-if="!loading && items.length === 0" class="rounded-md bg-slate-50 px-4 py-6 text-sm text-slate-600">
+    <p
+      v-if="!loading && items.length === 0"
+      class="rounded-md bg-slate-50 px-4 py-6 text-sm text-slate-600"
+    >
       {{ t('kb.articles.empty.title') }}
       <span class="block text-slate-500">{{ t('kb.articles.empty.hint') }}</span>
     </p>
 
     <table v-else class="w-full text-sm">
-      <caption class="sr-only">{{ t('kb.articles.caption') }}</caption>
+      <caption class="sr-only">
+        {{
+          t('kb.articles.caption')
+        }}
+      </caption>
       <thead>
         <tr class="border-b border-slate-200 text-start text-slate-600">
           <th scope="col" class="py-2 text-start">{{ t('kb.articles.column.title') }}</th>
@@ -257,7 +276,9 @@ const pendingPublish = computed(() => (editing.value ? publishSummary(editing.va
             failure the Phase 6 greyscale rule already caught once.
           -->
           <td class="py-2">
-            <span aria-hidden="true">{{ article.status === 'published' ? '●' : article.status === 'draft' ? '○' : '◌' }}</span>
+            <span aria-hidden="true">{{
+              article.status === 'published' ? '●' : article.status === 'draft' ? '○' : '◌'
+            }}</span>
             {{ t(`kb.status.${article.status}`) }}
           </td>
           <td class="py-2">
@@ -322,13 +343,18 @@ const pendingPublish = computed(() => (editing.value ? publishSummary(editing.va
 
       <label class="mb-4 block text-sm">
         <span class="mb-1 block text-slate-700">{{ t('kb.articles.field.category') }}</span>
-        <select v-model.number="draft.categoryId" class="w-full rounded-md border border-slate-300 px-2 py-1.5">
+        <select
+          v-model.number="draft.categoryId"
+          class="w-full rounded-md border border-slate-300 px-2 py-1.5"
+        >
           <option v-for="category in categories" :key="category.id" :value="category.id">
             {{ categoryName(category) }}
           </option>
         </select>
         <!-- FR-010: an article only search can reach is one nobody can browse to. -->
-        <span class="mt-1 block text-xs text-slate-500">{{ t('kb.articles.field.categoryHint') }}</span>
+        <span class="mt-1 block text-xs text-slate-500">{{
+          t('kb.articles.field.categoryHint')
+        }}</span>
         <span v-if="fieldErrors.categoryId" class="mt-1 block text-xs text-red-700">
           {{ t(fieldErrors.categoryId) }}
         </span>
@@ -344,7 +370,12 @@ const pendingPublish = computed(() => (editing.value ? publishSummary(editing.va
 
           <label class="block text-sm">
             <span class="mb-1 block text-slate-700">{{ t('kb.articles.field.title') }}</span>
-            <input v-model="draft.titleEn" lang="en" dir="ltr" class="w-full rounded-md border border-slate-300 px-2 py-1.5" />
+            <input
+              v-model="draft.titleEn"
+              lang="en"
+              dir="ltr"
+              class="w-full rounded-md border border-slate-300 px-2 py-1.5"
+            />
             <span v-if="fieldErrors.titleEn" class="mt-1 block text-xs text-red-700">
               {{ t(fieldErrors.titleEn) }}
             </span>
@@ -352,7 +383,13 @@ const pendingPublish = computed(() => (editing.value ? publishSummary(editing.va
 
           <label class="block text-sm">
             <span class="mb-1 block text-slate-700">{{ t('kb.articles.field.body') }}</span>
-            <textarea v-model="draft.bodyEn" lang="en" dir="ltr" rows="10" class="w-full rounded-md border border-slate-300 px-2 py-1.5"></textarea>
+            <textarea
+              v-model="draft.bodyEn"
+              lang="en"
+              dir="ltr"
+              rows="10"
+              class="w-full rounded-md border border-slate-300 px-2 py-1.5"
+            ></textarea>
             <span v-if="fieldErrors.bodyEn" class="mt-1 block text-xs text-red-700">
               {{ t(fieldErrors.bodyEn) }}
             </span>
@@ -369,7 +406,12 @@ const pendingPublish = computed(() => (editing.value ? publishSummary(editing.va
               chrome keeps the reader's direction; the content carries its own,
               because its direction is a property of the text (FR-055).
             -->
-            <input v-model="draft.titleAr" lang="ar" dir="rtl" class="w-full rounded-md border border-slate-300 px-2 py-1.5" />
+            <input
+              v-model="draft.titleAr"
+              lang="ar"
+              dir="rtl"
+              class="w-full rounded-md border border-slate-300 px-2 py-1.5"
+            />
             <span v-if="fieldErrors.titleAr" class="mt-1 block text-xs text-red-700">
               {{ t(fieldErrors.titleAr) }}
             </span>
@@ -377,7 +419,13 @@ const pendingPublish = computed(() => (editing.value ? publishSummary(editing.va
 
           <label class="block text-sm">
             <span class="mb-1 block text-slate-700">{{ t('kb.articles.field.body') }}</span>
-            <textarea v-model="draft.bodyAr" lang="ar" dir="rtl" rows="10" class="w-full rounded-md border border-slate-300 px-2 py-1.5"></textarea>
+            <textarea
+              v-model="draft.bodyAr"
+              lang="ar"
+              dir="rtl"
+              rows="10"
+              class="w-full rounded-md border border-slate-300 px-2 py-1.5"
+            ></textarea>
             <span v-if="fieldErrors.bodyAr" class="mt-1 block text-xs text-red-700">
               {{ t(fieldErrors.bodyAr) }}
             </span>
@@ -391,7 +439,9 @@ const pendingPublish = computed(() => (editing.value ? publishSummary(editing.va
           <option value="internal">{{ t('kb.audience.internal') }}</option>
           <option value="customer">{{ t('kb.audience.customer') }}</option>
         </select>
-        <span class="mt-1 block text-xs text-slate-500">{{ t('kb.articles.field.audienceHint') }}</span>
+        <span class="mt-1 block text-xs text-slate-500">{{
+          t('kb.articles.field.audienceHint')
+        }}</span>
       </label>
 
       <div class="mt-6 flex flex-wrap items-center gap-3">

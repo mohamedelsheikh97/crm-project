@@ -183,9 +183,7 @@ describe('the thread conveys state without colour (FR-002, FR-110)', () => {
   it('renders an HTML-sourced body as TEXT, never as markup (FR-008)', () => {
     const wrapper = mountWithPlugins(MessageThread, {
       props: {
-        messages: [
-          message({ body: '<script>alert(1)</script> hello', bodyFormat: 'html_source' }),
-        ],
+        messages: [message({ body: '<script>alert(1)</script> hello', bodyFormat: 'html_source' })],
         loading: false,
       },
     });

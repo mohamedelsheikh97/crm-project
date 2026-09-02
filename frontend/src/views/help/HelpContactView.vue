@@ -4,7 +4,11 @@ import { useI18n } from 'vue-i18n';
 
 import LanguageBadge from '../../components/knowledge/LanguageBadge.vue';
 import { http } from '../../services/http';
-import { searchPublic, type KbLanguage, type PublicSearchResult } from '../../services/knowledge.service';
+import {
+  searchPublic,
+  type KbLanguage,
+  type PublicSearchResult,
+} from '../../services/knowledge.service';
 
 /**
  * Raising a ticket, with deflection beside it (FR-032d, FR-032e, FR-033).
@@ -155,7 +159,11 @@ async function submit(): Promise<void> {
         ></textarea>
       </label>
 
-      <p v-if="failed" role="alert" class="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-800">
+      <p
+        v-if="failed"
+        role="alert"
+        class="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-800"
+      >
         {{ t('help.contact.failed') }}
       </p>
 

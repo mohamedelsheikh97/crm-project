@@ -186,8 +186,11 @@ export async function article(req: Request, res: Response, next: NextFunction): 
     // an article with nothing readable in it does not exist.
     if (!serving) throw notFound();
 
-    const category = (found as KbArticle & { category?: { slug: string; name_en: string | null; name_ar: string | null } })
-      .category;
+    const category = (
+      found as KbArticle & {
+        category?: { slug: string; name_en: string | null; name_ar: string | null };
+      }
+    ).category;
 
     // FR-011c without a second request: the reader's position in the guide
     // travels with the article.

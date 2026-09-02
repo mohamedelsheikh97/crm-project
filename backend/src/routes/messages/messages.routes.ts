@@ -13,11 +13,7 @@ router.get('/:id/messages', requirePermission('tickets:view'), messagesControlle
 // What the composer needs BEFORE the agent types: channel, recipient, opt-out,
 // and reply window (FR-051, FR-057). tickets:view, because it reveals nothing
 // the ticket screen does not already show.
-router.get(
-  '/:id/messages/context',
-  requirePermission('tickets:view'),
-  messagesController.context,
-);
+router.get('/:id/messages/context', requirePermission('tickets:view'), messagesController.context);
 
 // Speaking to a customer in the organisation's name. Deliberately NOT
 // ticket_notes:create: the two composers on one screen require two grants, and

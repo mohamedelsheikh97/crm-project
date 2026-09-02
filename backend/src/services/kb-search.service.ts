@@ -247,11 +247,7 @@ async function scoreArticles(
 }
 
 /** Just the count, for the cross-language near-miss. No scoring, no loading. */
-async function countMatches(
-  terms: string[],
-  lang: Lang,
-  audience: KbAudience,
-): Promise<number> {
+async function countMatches(terms: string[], lang: Lang, audience: KbAudience): Promise<number> {
   if (terms.length === 0) return 0;
 
   const rows = await sequelize.query<{ total: number }>(

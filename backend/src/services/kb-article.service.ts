@@ -194,10 +194,7 @@ const SORTS: Record<string, Array<[string, 'ASC' | 'DESC']>> = {
   leastRead: [['view_count', 'ASC']],
 };
 
-export async function list(
-  options: ListOptions,
-  actor: Actor,
-): Promise<Paged<ArticleView>> {
+export async function list(options: ListOptions, actor: Actor): Promise<Paged<ArticleView>> {
   const pageSize = clampPageSize(options.pageSize);
   const pageNumber = Number(options.page);
   const page = Number.isFinite(pageNumber) && pageNumber >= 1 ? Math.floor(pageNumber) : 1;
@@ -410,7 +407,8 @@ export async function update(
     if (input.titleAr !== undefined) article.title_ar = text(input.titleAr);
     if (input.bodyEn !== undefined) article.body_en = text(input.bodyEn);
     if (input.bodyAr !== undefined) article.body_ar = text(input.bodyAr);
-    if (input.audience !== undefined) article.audience = readAudience(input.audience, article.audience);
+    if (input.audience !== undefined)
+      article.audience = readAudience(input.audience, article.audience);
     if (category) article.category_id = category.id;
 
     article.updated_by_user_id = actor.id;
@@ -669,7 +667,6 @@ export async function restore(
  * this; `kb.articles.noDeleteReason` on the archive control is where a reader
  * finds out why.
  */
-
 
 // --- Readership (User Story 6, FR-049, FR-050, research D11) --------------
 

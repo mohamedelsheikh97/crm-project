@@ -72,7 +72,14 @@ describe('a customer-audience search never returns internal content', () => {
     // argument, not of what was searched for.
     await makeArticle(INTERNAL);
 
-    for (const query of ['card', 'reader', 'escalation', 'runbook', 'on-call engineer', 'card reader']) {
+    for (const query of [
+      'card',
+      'reader',
+      'escalation',
+      'runbook',
+      'on-call engineer',
+      'card reader',
+    ]) {
       expect((await customerSearch(query)).items).toEqual([]);
     }
   });

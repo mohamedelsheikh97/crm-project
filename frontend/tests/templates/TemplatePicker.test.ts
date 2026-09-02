@@ -59,7 +59,10 @@ describe('TemplatePicker — inserting', () => {
   it('inserts the version matching the active language', async () => {
     const wrapper = await mountPicker('en');
 
-    await wrapper.findAll('button').find((b) => b.text() === 'Insert template')!.trigger('click');
+    await wrapper
+      .findAll('button')
+      .find((b) => b.text() === 'Insert template')!
+      .trigger('click');
 
     const [, text] = wrapper.emitted('insert')![0] as [ReplyTemplate, string];
     expect(text).toBe('I have sent you a reset link.');
@@ -68,7 +71,10 @@ describe('TemplatePicker — inserting', () => {
   it('inserts the Arabic version for an Arabic agent, from the same template', async () => {
     const wrapper = await mountPicker('ar');
 
-    await wrapper.findAll('button').find((b) => b.text() === 'إدراج قالب')!.trigger('click');
+    await wrapper
+      .findAll('button')
+      .find((b) => b.text() === 'إدراج قالب')!
+      .trigger('click');
 
     const [, text] = wrapper.emitted('insert')![0] as [ReplyTemplate, string];
     expect(text).toBe('أرسلت إليك رابط إعادة التعيين.');
@@ -79,7 +85,10 @@ describe('TemplatePicker — inserting', () => {
     // picker hands over plain text and keeps no claim on it.
     const wrapper = await mountPicker();
 
-    await wrapper.findAll('button').find((b) => b.text() === 'Insert template')!.trigger('click');
+    await wrapper
+      .findAll('button')
+      .find((b) => b.text() === 'Insert template')!
+      .trigger('click');
 
     const [, text] = wrapper.emitted('insert')![0] as [ReplyTemplate, string];
     expect(typeof text).toBe('string');
@@ -105,7 +114,10 @@ describe('TemplatePicker — single-language templates', () => {
     stubList([ENGLISH_ONLY]);
 
     const wrapper = await mountPicker('ar');
-    await wrapper.findAll('button').find((b) => b.text() === 'إدراج قالب')!.trigger('click');
+    await wrapper
+      .findAll('button')
+      .find((b) => b.text() === 'إدراج قالب')!
+      .trigger('click');
 
     const [, text] = wrapper.emitted('insert')![0] as [ReplyTemplate, string];
     expect(text).toBe('I have passed this to a specialist.');
@@ -137,7 +149,10 @@ describe('TemplatePicker — finding and previewing', () => {
 
     expect(wrapper.text()).not.toContain('I have sent you a reset link.');
 
-    await wrapper.findAll('button').find((b) => b.text() === 'Password reset')!.trigger('click');
+    await wrapper
+      .findAll('button')
+      .find((b) => b.text() === 'Password reset')!
+      .trigger('click');
 
     expect(wrapper.text()).toContain('I have sent you a reset link.');
   });

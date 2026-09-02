@@ -74,9 +74,7 @@ describe('an article in a guide stays where it was', () => {
       g.steps.some((step) => step.articleId === article.id),
     );
 
-    expect(holding.map((g: { id: number }) => g.id).sort()).toEqual(
-      [first, second.body.id].sort(),
-    );
+    expect(holding.map((g: { id: number }) => g.id).sort()).toEqual([first, second.body.id].sort());
   });
 
   it('survives the guide being deleted', async () => {

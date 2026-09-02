@@ -142,7 +142,10 @@ describe('NotificationList — unread state', () => {
     );
 
     const wrapper = mountWithPlugins(NotificationList, { routes, pinia });
-    await wrapper.findAll('button').find((b) => b.text().includes('Sara'))!.trigger('click');
+    await wrapper
+      .findAll('button')
+      .find((b) => b.text().includes('Sara'))!
+      .trigger('click');
 
     expect(notificationsService.markRead).toHaveBeenCalledWith(9);
   });

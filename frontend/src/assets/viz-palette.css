@@ -1,0 +1,144 @@
+/*
+ * The chart palette (Phase 10, research D7).
+ *
+ * VALIDATED AT PLAN STAGE, NOT LEFT TO IMPLEMENTATION. Both modes were run
+ * through the six checks — lightness band, chroma floor, adjacent-pair CVD
+ * separation, normal-vision floor, and contrast against the chart surface —
+ * before any chart code existed. The output is recorded below so a later change
+ * to these values can be re-checked rather than eyeballed.
+ *
+ *   light: ALL CHECKS PASS
+ *     lightness band     all 4 inside L 0.43-0.77
+ *     chroma floor       all 4 >= 0.1
+ *     CVD separation     worst adjacent #eda100 <-> #1baf7a  dE 9.1 (protan), 27.0 (tritan)
+ *     normal-vision      worst adjacent #eda100 <-> #1baf7a  dE 22.9
+ *     contrast           WARN below 3:1 — #1baf7a 2.74, #eda100 2.11
+ *
+ *   dark: ALL CHECKS PASS
+ *     CVD separation     worst adjacent #c98500 <-> #199e70  dE 8.4 (protan), 24.4 (tritan)
+ *     normal-vision      worst adjacent #c98500 <-> #199e70  dE 19.8
+ *     contrast           all 4 >= 3:1
+ *
+ * THE LIGHT-MODE WARN OBLIGATES RELIEF — visible labels or a table view — and
+ * it is not dismissable. The relief is already required by the spec rather than
+ * added for the palette: FR-001's traceability and FR-005's counts-alongside-
+ * percentages mean every figure has its numbers on screen, and every chart has
+ * a FigureTable view. One mechanism discharges the accessibility obligation, the
+ * contrast relief, and FR-001 together.
+ *
+ * FOUR SLOTS, DELIBERATELY. Four is the count at which direct labels become
+ * mandatory rather than optional, and beyond it a fifth hue buys less than a
+ * table does. A ninth series is never a generated hue — it folds into "Other",
+ * facets into small multiples, or becomes a table (see the viz README).
+ *
+ * TO CHANGE THESE VALUES: re-run the validator from the dataviz skill and paste
+ * the new output above. Do not adjust a hex by eye — CVD separation is not
+ * something the eye can check.
+ */
+
+.viz-root {
+  --viz-surface: #fcfcfb;
+  --viz-text-primary: #0b0b0b;
+  --viz-text-secondary: #52514e;
+  --viz-text-muted: #6b7280;
+  --viz-grid: #e5e7eb;
+
+  /* Categorical — fixed order, NEVER cycled. Colour follows the entity, never
+     its rank, so a filter that changes the series count must not repaint the
+     survivors. */
+  --viz-series-1: #2a78d6; /* blue */
+  --viz-series-2: #eb6834; /* orange */
+  --viz-series-3: #1baf7a; /* aqua */
+  --viz-series-4: #eda100; /* yellow */
+
+  /* Sequential — one hue, more is darker. The safe default, and what the
+     magnitude comparisons use (volume by category, agent volumes). */
+  --viz-seq-100: #cde2fb;
+  --viz-seq-250: #86b6ef;
+  --viz-seq-400: #3987e5;
+  --viz-seq-550: #1c5cab;
+  --viz-seq-700: #0d366b;
+
+  /* Diverging — two hues plus a NEUTRAL GREY midpoint, never a hue at the
+     middle. Used by the CSAT distribution, which is an ordered scale. */
+  --viz-div-low: #d03b3b;
+  --viz-div-mid: #f0efec;
+  --viz-div-high: #1baf7a;
+
+  /* Status — RESERVED. Never reused as "series 5", and always shipped with an
+     icon and a label rather than colour alone. */
+  --viz-status-good: #0ca30c;
+  --viz-status-warning: #fab219;
+  --viz-status-serious: #ec835a;
+  --viz-status-critical: #d03b3b;
+
+  /* De-emphasis, for the emphasis form: one series in an accent hue, the rest
+     in this. Often the honest answer to "make this chart clearer". */
+  --viz-muted-mark: #d1d5db;
+}
+
+/* Dark mode is SELECTED, not an automatic flip — its own steps from the same
+   ramps, validated against the dark surface. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .viz-root {
+    --viz-surface: #1a1a19;
+    --viz-text-primary: #ffffff;
+    --viz-text-secondary: #c3c2b7;
+    --viz-text-muted: #9ca3af;
+    --viz-grid: #383835;
+
+    --viz-series-1: #3987e5;
+    --viz-series-2: #d95926;
+    --viz-series-3: #199e70;
+    --viz-series-4: #c98500;
+
+    --viz-seq-100: #0d366b;
+    --viz-seq-250: #184f95;
+    --viz-seq-400: #256abf;
+    --viz-seq-550: #3987e5;
+    --viz-seq-700: #86b6ef;
+
+    --viz-div-low: #d03b3b;
+    --viz-div-mid: #383835;
+    --viz-div-high: #199e70;
+
+    --viz-muted-mark: #4b5563;
+  }
+}
+
+:root[data-theme='dark'] .viz-root {
+  --viz-surface: #1a1a19;
+  --viz-text-primary: #ffffff;
+  --viz-text-secondary: #c3c2b7;
+  --viz-text-muted: #9ca3af;
+  --viz-grid: #383835;
+
+  --viz-series-1: #3987e5;
+  --viz-series-2: #d95926;
+  --viz-series-3: #199e70;
+  --viz-series-4: #c98500;
+
+  --viz-seq-100: #0d366b;
+  --viz-seq-250: #184f95;
+  --viz-seq-400: #256abf;
+  --viz-seq-550: #3987e5;
+  --viz-seq-700: #86b6ef;
+
+  --viz-div-low: #d03b3b;
+  --viz-div-mid: #383835;
+  --viz-div-high: #199e70;
+
+  --viz-muted-mark: #4b5563;
+}
+
+/* Texture, for the cases where colour cannot carry identity: full CVD, greyscale
+   print, and forced-colors. Opt-in per chart, never decorative. */
+@media print, (forced-colors: active) {
+  .viz-texture-45 {
+    fill: url(#viz-hatch-45);
+  }
+
+  .viz-texture-135 {
+    fill: url(#viz-hatch-135);
+  }
+}

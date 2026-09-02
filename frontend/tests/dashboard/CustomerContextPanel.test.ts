@@ -23,7 +23,13 @@ function context(overrides: Partial<CustomerContext> = {}): CustomerContext {
       contacts: [{ id: 1, kind: 'phone', value: '+20 100 123 4567', isPrimary: true }],
     },
     otherTickets: [
-      { id: 51, reference: 'TKT-000051', subject: 'Invoice query', status: 'pending', priority: 'normal' },
+      {
+        id: 51,
+        reference: 'TKT-000051',
+        subject: 'Invoice query',
+        status: 'pending',
+        priority: 'normal',
+      },
     ],
     recentNotes: [
       {

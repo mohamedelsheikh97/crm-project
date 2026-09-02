@@ -185,3 +185,101 @@ describe('Phase 9 externalised its interface text', () => {
     expect(ar['ai.disclosure.label']).not.toBe(en['ai.disclosure.label']);
   });
 });
+
+/**
+ * Phase 10 namespaces, asserted explicitly (T098, FR-063, SC-029).
+ *
+ * The parity suite above already proves the two files hold identical key sets,
+ * so this is not a second parity check. It asserts the namespaces EXIST — that a
+ * phase which put numbers, chart labels and withheld-figure notices on screen
+ * actually externalised them, in both languages, rather than shipping a
+ * hardcoded English string that parity cannot see because it is absent from
+ * both files.
+ *
+ * A chart is the easiest place in a codebase to leave an English axis label: it
+ * is short, it looks like data rather than copy, and nobody reviewing a diff of
+ * SVG reads it as text.
+ */
+describe('Phase 10 externalised its reporting text', () => {
+  const NAMESPACES = [
+    'reports.',
+    'reports.figure.',
+    'reports.column.',
+    'reports.excluded.',
+    'reports.export.',
+    'reports.csat.',
+    'reports.agent.',
+    'reports.arrangement.',
+  ];
+
+  for (const namespace of NAMESPACES) {
+    it(`has ${namespace}* keys in both languages`, () => {
+      const inEn = Object.keys(en).filter((key) => key.startsWith(namespace));
+      const inAr = Object.keys(ar).filter((key) => key.startsWith(namespace));
+
+      expect(inEn.length).toBeGreaterThan(0);
+      expect(inAr.sort()).toEqual(inEn.sort());
+    });
+  }
+
+  it('translates the current-state disclosure rather than leaving it English', () => {
+    /**
+     * Clarifications Q3's disclosure, which is the one string that explains why
+     * last month's report changed since it was last read. An English sentence
+     * there on an Arabic screen leaves the reader with an unexplained
+     * discrepancy — the exact failure the disclosure exists to prevent.
+     */
+    expect(ar['reports.figure.currentState']).toBeTruthy();
+    expect(ar['reports.figure.currentState']).not.toBe(en['reports.figure.currentState']);
+  });
+
+  it('translates the withheld-figure notice, which stands in for a number', () => {
+    // Where a rate is suppressed this text IS the figure. Left in English it
+    // reads as a rendering fault rather than as a deliberate withholding.
+    expect(ar['reports.figure.withheld']).toBeTruthy();
+    expect(ar['reports.figure.withheld']).not.toBe(en['reports.figure.withheld']);
+  });
+
+  it('translates every exclusion reason, so an Arabic reader learns WHY', () => {
+    const reasons = Object.keys(en).filter((key) => key.startsWith('reports.excluded.'));
+
+    expect(reasons.length).toBeGreaterThan(0);
+
+    for (const reason of reasons) {
+      // FR-004 requires the exclusion stated. An untranslated statement of it
+      // is a statement the Arabic reader cannot use.
+      expect((ar as Record<string, string>)[reason], `${reason} is not translated`).not.toBe(
+        (en as Record<string, string>)[reason],
+      );
+    }
+  });
+
+  it('names every dashboard figure key the arrangement picker can offer', () => {
+    /**
+     * The picker renders `reports.figure.name.<key>`. A missing entry there
+     * shows a raw dotted key in a checkbox list — and the literal-key test above
+     * cannot catch it, because the lookup is dynamic.
+     *
+     * The catalog is read from the backend source rather than duplicated, so a
+     * figure added later fails here instead of shipping unlabelled.
+     */
+    const catalog = fs.readFileSync(
+      path.resolve(import.meta.dirname, '../../backend/src/reporting/figures.ts'),
+      'utf8',
+    );
+
+    const block = catalog.slice(
+      catalog.indexOf('export const FIGURE_CATALOG'),
+      catalog.indexOf('} as const satisfies'),
+    );
+
+    const keys = [...block.matchAll(/'([\w.]+)':\s*'[\w:]+'/g)].map((match) => match[1]);
+
+    expect(keys.length).toBeGreaterThan(0);
+
+    for (const key of keys) {
+      expect(Object.keys(en), `reports.figure.name.${key}`).toContain(`reports.figure.name.${key}`);
+      expect(Object.keys(ar), `reports.figure.name.${key}`).toContain(`reports.figure.name.${key}`);
+    }
+  });
+});
