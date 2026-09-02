@@ -9,6 +9,25 @@ import { z } from 'zod';
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(currentDir, '../../../.env') });
 
+/**
+ * A boolean environment variable (Phase 9).
+ *
+ * NOT `z.coerce.boolean()`. That is `Boolean(value)`, which makes the string
+ * `"false"` TRUE — so `AI_ENABLED=false` would enable the phase, and
+ * `AI_ASSISTANT_ENABLED=false` would put a chatbot in front of customers. The
+ * defaults are all `false`, which means the coercion bug only ever fails open.
+ *
+ * Explicit truthy tokens only; anything else, including an empty string, an
+ * absent variable, and every typo, is false.
+ */
+function envFlag() {
+  return z
+    .string()
+    .optional()
+    .default('false')
+    .transform((value) => ['true', '1', 'yes', 'on'].includes(value.trim().toLowerCase()));
+}
+
 const envSchema = z
   .object({
     NODE_ENV: z.enum(['development', 'production', 'test']),
@@ -178,6 +197,64 @@ const envSchema = z
     // keyed by ACCOUNT, not by IP: an office behind one address is many
     // customers, and IP-keying would let one of them lock out the rest (D11).
     PORTAL_RATE_PER_MINUTE: z.coerce.number().int().positive().optional().default(20),
+
+    // --- Phase 9 — AI Features (research.md D2, D4, D11, D12).
+    //
+    // THE EGRESS SPLIT IS NOT CONFIGURABLE HERE, and its absence is the point.
+    // Clarifications Q1 lets staff-facing features use an external provider and
+    // forbids it for the customer-facing assistant. There is deliberately no
+    // AI_ASSISTANT_PROVIDER or AI_*_LOCATION variable: a boundary that lives in
+    // a settings value is one careless edit from sending customer chat to a
+    // third party, with nothing failing and no error raised (FR-008a).
+    // Which processor serves which feature is decided by which factory module a
+    // service imports, and `backend/tests/ai/egress.test.ts` reads the import
+    // graph to prove it.
+    AI_ENABLED: envFlag(),
+
+    // Staff-facing processing. May leave the system (Clarifications Q1).
+    AI_EXTERNAL_API_KEY: z.string().min(1).optional(),
+
+    // Customer-facing processing. MUST NOT leave controlled infrastructure.
+    // Validated below as a private address: the assistant refuses to run rather
+    // than reach a public endpoint (FR-008, FR-008b).
+    AI_LOCAL_BASE_URL: z.string().url().optional(),
+
+    AI_SUMMARY_ENABLED: envFlag(),
+    AI_DRAFT_ENABLED: envFlag(),
+    AI_CLASSIFY_ENABLED: envFlag(),
+    AI_SIMILAR_ENABLED: envFlag(),
+    AI_ASSISTANT_ENABLED: envFlag(),
+
+    // Daily invocation ceilings per feature (D11). A ceiling is not a rate
+    // limit: the limiter stops one principal hammering a surface within a
+    // minute, this stops the monthly bill running away across all of them over
+    // a day. Counted from `ai_invocations` rather than memory, because a
+    // spending limit that resets on deploy is not a limit.
+    AI_CEILING_SUMMARY: z.coerce.number().int().positive().optional().default(500),
+    AI_CEILING_DRAFT: z.coerce.number().int().positive().optional().default(500),
+    AI_CEILING_CLASSIFY: z.coerce.number().int().positive().optional().default(2000),
+    AI_CEILING_ASSISTANT: z.coerce.number().int().positive().optional().default(2000),
+
+    // Which languages the assistant will answer in (D4). A language not listed
+    // falls through to the Phase 8 ticket route. Self-hostable models are
+    // materially weaker in Arabic, and an assistant that answers Arabic
+    // customers confusingly is worse for them than one that routes them to a
+    // person — so English-only is a SUPPORTED configuration, not a degradation.
+    AI_ASSISTANT_LANGS: z
+      .string()
+      .optional()
+      .default('en')
+      .transform((value) =>
+        value
+          .split(',')
+          .map((part) => part.trim())
+          .filter((part) => part === 'ar' || part === 'en'),
+      ),
+
+    // Below this retrieval score the assistant does not call a model at all
+    // (D3 step 2). The single most consequential number in the phase, and the
+    // one every test passes at either extreme — see research open question 1.
+    AI_ASSISTANT_GROUNDING_FLOOR: z.coerce.number().min(0).optional().default(0.35),
   })
   .superRefine((value, ctx) => {
     /**
@@ -270,6 +347,85 @@ const envSchema = z
       ['CHANNEL_ADDRESS_TOKEN_SECRET'],
       'when CHANNEL_EMAIL_PROVIDER is "imap-smtp"',
     );
+
+    /**
+     * PHASE 9 STARTUP REFUSALS (contracts/provider-contract.md § Startup refusal).
+     *
+     * Phase 8 established the pattern and the reason transfers exactly: a
+     * misconfiguration that works perfectly until somebody notices is worse
+     * than one that stops the process. An assistant quietly answering customers
+     * through an external provider is precisely that kind of misconfiguration,
+     * and nothing downstream would raise an error.
+     */
+    const staffAiEnabled =
+      value.AI_ENABLED &&
+      (value.AI_SUMMARY_ENABLED || value.AI_DRAFT_ENABLED || value.AI_CLASSIFY_ENABLED);
+
+    required(
+      staffAiEnabled,
+      ['AI_EXTERNAL_API_KEY'],
+      'when AI_ENABLED is true with a staff-facing AI feature enabled',
+    );
+
+    const assistantEnabled = value.AI_ENABLED && value.AI_ASSISTANT_ENABLED;
+
+    required(
+      assistantEnabled,
+      ['AI_LOCAL_BASE_URL'],
+      'when AI_ASSISTANT_ENABLED is true — the assistant has no external fallback (FR-008b)',
+    );
+
+    // The assistant's processor must be on infrastructure the organisation
+    // controls. Checked HERE rather than at call time so a public URL stops the
+    // process instead of quietly serving one customer conversation offsite.
+    if (assistantEnabled && value.AI_LOCAL_BASE_URL) {
+      let host: string;
+      try {
+        host = new URL(value.AI_LOCAL_BASE_URL).hostname;
+      } catch {
+        // An unparseable URL is not controlled infrastructure. Empty falls
+        // through to the private-address check below and fails it.
+        host = '';
+      }
+
+      const isPrivate =
+        host === 'localhost' ||
+        host === '::1' ||
+        /^127\./.test(host) ||
+        /^10\./.test(host) ||
+        /^192\.168\./.test(host) ||
+        /^172\.(1[6-9]|2\d|3[01])\./.test(host) ||
+        host.endsWith('.internal') ||
+        host.endsWith('.local');
+
+      if (!isPrivate) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['AI_LOCAL_BASE_URL'],
+          message:
+            'must resolve to controlled infrastructure (loopback, RFC1918, .internal or .local). ' +
+            'The customer-facing assistant must not reach a public endpoint (FR-008).',
+        });
+      }
+    }
+
+    // AI_ENABLED with nothing enabled is almost always a half-finished edit.
+    // Refusing is kinder than starting a system whose AI surfaces are all absent
+    // for a reason nobody can see.
+    if (
+      value.AI_ENABLED &&
+      !value.AI_SUMMARY_ENABLED &&
+      !value.AI_DRAFT_ENABLED &&
+      !value.AI_CLASSIFY_ENABLED &&
+      !value.AI_SIMILAR_ENABLED &&
+      !value.AI_ASSISTANT_ENABLED
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['AI_ENABLED'],
+        message: 'is true but no AI feature is enabled — enable one, or set AI_ENABLED=false',
+      });
+    }
   });
 
 const parsed = envSchema.safeParse(process.env);

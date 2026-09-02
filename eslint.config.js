@@ -34,6 +34,41 @@ export default tseslint.config(
     },
   },
   {
+    // THE EGRESS BOUNDARY, ENFORCEMENT LAYER 1 (Phase 9 research D2, FR-008a).
+    //
+    // The customer-facing assistant must not be able to reach the external AI
+    // provider. FR-008a asks for impossible rather than discouraged, so this is
+    // one of three independent guards: lint here, a static import-graph test in
+    // `backend/tests/ai/egress.test.ts`, and a runtime assertion in
+    // `backend/src/ai/invoke.ts`.
+    //
+    // The runtime assertion alone would satisfy a careless reading of the
+    // requirement. It is the weakest of the three, because it is the one a
+    // refactor can delete while every test stays green.
+    files: [
+      'backend/src/services/assistant*.ts',
+      'backend/src/controllers/portal/assistant*.ts',
+      'backend/src/controllers/public/assistant*.ts',
+      'backend/src/ai/prompts/assistant.ts',
+    ],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/ai/providers/external*', '**/providers/external*'],
+              message:
+                'The assistant must not reach the external AI provider. Customer-facing ' +
+                'processing stays on controlled infrastructure (FR-008, research D2). ' +
+                'Import local-factory.js instead.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     rules: {
       // A leading underscore marks a parameter that must exist but is unused —
       // Express identifies error middleware by its 4-arity signature, so

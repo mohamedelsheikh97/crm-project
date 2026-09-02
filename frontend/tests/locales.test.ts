@@ -154,3 +154,34 @@ describe('every message compiles (vue-i18n)', () => {
     });
   }
 });
+
+/**
+ * Phase 9 namespaces, asserted explicitly (T116, FR-058, FR-061).
+ *
+ * The suite above already proves the two files hold identical key sets, so this
+ * is not a second parity check. It asserts the namespaces EXIST — that a phase
+ * which added surfaces in both realms actually externalised their text, in both
+ * languages, rather than shipping a hardcoded English string that the parity
+ * test cannot see because it is absent from both files.
+ */
+describe('Phase 9 externalised its interface text', () => {
+  const NAMESPACES = ['ai.', 'ai.admin.', 'portal.assistant.'];
+
+  for (const namespace of NAMESPACES) {
+    it(`has ${namespace}* keys in both languages`, () => {
+      const inEn = Object.keys(en).filter((key) => key.startsWith(namespace));
+      const inAr = Object.keys(ar).filter((key) => key.startsWith(namespace));
+
+      expect(inEn.length).toBeGreaterThan(0);
+      expect(inAr.sort()).toEqual(inEn.sort());
+    });
+  }
+
+  it('translates the AI disclosure rather than leaving it English (FR-059)', () => {
+    // The one string on every AI surface. An English disclosure on an Arabic
+    // page is the specific failure SC-026 exists to catch, and it is the kind
+    // that survives review by anyone who does not read Arabic.
+    expect(ar['ai.disclosure.label']).toBeTruthy();
+    expect(ar['ai.disclosure.label']).not.toBe(en['ai.disclosure.label']);
+  });
+});

@@ -18,6 +18,7 @@ import HelpContactView from '../views/help/HelpContactView.vue';
 import NotFoundView from '../views/NotFoundView.vue';
 import AcceptInviteView from '../views/portal/AcceptInviteView.vue';
 import NewRequestView from '../views/portal/NewRequestView.vue';
+import PortalAssistantView from '../views/portal/PortalAssistantView.vue';
 import PortalHelpView from '../views/portal/PortalHelpView.vue';
 import PortalLoginView from '../views/portal/PortalLoginView.vue';
 import PortalResetView from '../views/portal/PortalResetView.vue';
@@ -26,6 +27,9 @@ import RequestListView from '../views/portal/RequestListView.vue';
 import TicketCreateView from '../views/tickets/TicketCreateView.vue';
 import TicketDetailView from '../views/tickets/TicketDetailView.vue';
 import TicketListView from '../views/tickets/TicketListView.vue';
+import AiActivityView from '../views/admin/AiActivityView.vue';
+import AiConversationsView from '../views/admin/AiConversationsView.vue';
+import AiSettingsView from '../views/admin/AiSettingsView.vue';
 import AuditLogView from '../views/admin/AuditLogView.vue';
 import RolesView from '../views/admin/RolesView.vue';
 import AssignmentView from '../views/admin/AssignmentView.vue';
@@ -185,6 +189,26 @@ const router = createRouter({
           name: 'admin-audit',
           component: AuditLogView,
           meta: { titleKey: 'route.admin.audit.title', permission: 'audit:view' },
+        },
+        // Phase 9 — AI administration. All three gated on `ai:manage`
+        // (FR-060), which is distinct from the tickets, KB and channel keys.
+        {
+          path: 'ai',
+          name: 'admin-ai',
+          component: AiSettingsView,
+          meta: { titleKey: 'route.admin.ai.title', permission: 'ai:manage' },
+        },
+        {
+          path: 'ai/activity',
+          name: 'admin-ai-activity',
+          component: AiActivityView,
+          meta: { titleKey: 'route.admin.aiActivity.title', permission: 'ai:manage' },
+        },
+        {
+          path: 'ai/conversations',
+          name: 'admin-ai-conversations',
+          component: AiConversationsView,
+          meta: { titleKey: 'route.admin.aiConversations.title', permission: 'ai:manage' },
         },
         // Managing the library is administration; USING a template needs no
         // route at all — the picker lives inside the note composer.
@@ -354,6 +378,18 @@ const router = createRouter({
       component: RequestDetailView,
       meta: {
         titleKey: 'route.portal.request.title',
+        portalShell: true,
+        requiresPortalAuth: true,
+      },
+    },
+    // Phase 9 — the assistant. Under the portal shell and the portal auth
+    // guard, so it is a customer surface in the Phase 8 realm and nothing else.
+    {
+      path: '/portal/assistant',
+      name: 'portal-assistant',
+      component: PortalAssistantView,
+      meta: {
+        titleKey: 'route.portal.assistant.title',
         portalShell: true,
         requiresPortalAuth: true,
       },

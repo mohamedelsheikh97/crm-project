@@ -9,6 +9,7 @@ import formRoutes from './forms/index.js';
 import healthRoutes from './health.routes.js';
 import knowledgeRoutes from './knowledge/index.js';
 import notificationRoutes from './notifications/index.js';
+import aiRoutes from './ai/index.js';
 import portalRoutes from './portal/index.js';
 import publicRoutes from './public/index.js';
 import taskRoutes from './tasks/index.js';
@@ -26,6 +27,13 @@ router.use('/admin', adminRoutes);
 router.use('/customers', customerRoutes);
 // Likewise top level: tickets are the everyday work this system exists for.
 router.use('/tickets', ticketRoutes);
+
+// Phase 9. UNDER A PREFIX, and it has to be: this router applies
+// `authenticate`, and mounted bare it would apply it to every route registered
+// after this line — which is what it did in the first version, silently putting
+// Phase 7's public knowledge base behind a token. Ticket-scoped AI routes live
+// in routes/tickets/ai.routes.ts, inside the tickets group.
+router.use('/ai', aiRoutes);
 
 // Phase 4. All four are top level for the same reason: this is the workspace an
 // agent lives in, not administration. Managing the template LIBRARY is

@@ -40,6 +40,7 @@ import * as auditService from './audit.service.js';
 import * as authorizationService from './authorization.service.js';
 import * as notificationService from './notification.service.js';
 import * as slaTargetService from './sla-target.service.js';
+import * as similarTicketService from './similar-ticket.service.js';
 import * as taskService from './task.service.js';
 import type { TaskView } from './task.service.js';
 import * as historyService from './ticket-history.service.js';
@@ -737,7 +738,27 @@ export async function create(
   // a supervision problem; a ticket that failed to be raised is a lost customer.
   await autoAssignQuietly(created.id);
 
+  // Phase 9: propose a category, off the request path (FR-004).
+  //
+  // NOT AWAITED, and that is the difference from assignment above. Assignment
+  // decides who works the ticket and is worth a moment of the caller's time;
+  // a category PROPOSAL changes nothing about the ticket (Clarifications Q2),
+  // so making an intake request wait on a model call would be spending a
+  // customer's latency on advice nobody has read yet. The service never
+  // throws to its caller, and the invocation record holds any failure.
+  void classifyQuietly(created.id);
+
   return getById(created.id);
+}
+
+/** Propose a category without ever affecting what triggered it. */
+async function classifyQuietly(ticketId: number): Promise<void> {
+  try {
+    const classifyService = await import('./ai-classify.service.js');
+    await classifyService.proposeFor(ticketId);
+  } catch (error) {
+    logger.error({ err: error, ticketId }, 'Category classification failed for a new ticket');
+  }
 }
 
 /**
@@ -1031,6 +1052,14 @@ export async function transition(
     // lives in sla/clock.ts, derived from this same lifecycle — there is
     // deliberately no second state machine to keep in step.
     await slaTargetService.onStatusChange(ticket, edge.from, edge.to, clockNow(), transaction);
+
+    // Phase 9: keep the similar-ticket index in step with the lifecycle
+    // (research D8). Inside the transaction, following Phase 7's reindex
+    // pattern, so the index cannot disagree with the row that produced it.
+    // Reindexing on EVERY transition rather than only into a settled state:
+    // leaving `resolved` must remove the rows, or a reopened ticket would go on
+    // being suggested as though it had an answer.
+    await similarTicketService.reindex(ticket.id, transaction);
 
     automationEngine.emit(
       {

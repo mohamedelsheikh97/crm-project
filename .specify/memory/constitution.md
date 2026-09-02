@@ -1,6 +1,26 @@
 <!--
 ## Sync Impact Report
 
+### v1.2.0 (2026-09-02)
+Bump type: MINOR — materially expanded guidance; no principle removed or redefined.
+
+Modified:
+- Technology Standards: two AI processing rows added (staff-facing external provider,
+  customer-facing controlled-infrastructure processor)
+- Technology Standards: new "AI processing boundary" paragraph making the per-surface
+  egress split a governance rule rather than a deployment decision
+- Open Items: "AI provider selection (needed before Phase 9)" removed — resolved by
+  specs/010-phase-9-ai-features/spec.md Clarifications Q1
+
+Reason: Phase 9 introduces AI processing. The fixed-stack table named no AI provider, and
+the table's own rule forbids introducing one unilaterally within a phase spec. Phase 9
+Clarifications Q1 splits egress per surface, so two entries are required rather than one.
+
+Migration: none. No completed phase is affected — Phases 0-8 contain no AI processing, and
+Phase 9 is additive (SC-022 asserts the Phase 0-8 suite passes with the capability disabled).
+
+Proposal: specs/010-phase-9-ai-features/constitution-amendment-proposal.md
+
 ### v1.1.0 (2026-08-25)
 Bump type: MINOR — traceability source redefined; no principle removed.
 
@@ -141,6 +161,15 @@ this constitution and MUST NOT be introduced unilaterally within a phase spec.
 | Database             | MySQL                                                      |
 | Authentication       | JWT (issued at login, verified per request via middleware) |
 | Internationalisation | vue-i18n with `ar` and `en` locale files                   |
+| AI — staff-facing    | Anthropic Claude API (`claude-opus-5`) via `@anthropic-ai/sdk` |
+| AI — customer-facing | Self-hosted OpenAI-compatible inference server on controlled infrastructure |
+
+**AI processing boundary.** Staff-facing AI features — ticket summarisation, reply drafting, and
+similar-ticket suggestion — MAY transmit ticket content to the external provider named above. The
+customer-facing assistant MUST NOT: its processing occurs only on infrastructure the organisation
+controls. This boundary MUST be structural in code rather than configurable at runtime, and MUST fail
+closed. Changing which surface uses which processor is an amendment to this constitution, not a
+deployment decision.
 
 **Traceability:** `PLAN.md` is the authoritative requirements source for this project.
 Every Spec Kit spec and task file MUST reference the PLAN.md phase it implements, and MUST
@@ -151,7 +180,6 @@ This enables audits to confirm full PLAN.md coverage across phases.
 
 - SLA response/resolution time targets (needed before Phase 6)
 - ERP system identity and integration protocol (needed before Phase 11)
-- AI provider selection (needed before Phase 9)
 - Branding assets per organisation/department (needed before Phase 12)
 - Code style conventions (ESLint/Prettier config — establish in Phase 0 CI pipeline)
 
@@ -215,4 +243,4 @@ constitution prevails and the conflicting artifact MUST be revised.
 **Runtime governance reference:** `.specify/memory/constitution.md` (this file) is the
 authoritative governance document for all `/speckit-plan` runs.
 
-**Version**: 1.1.0 | **Ratified**: 2026-08-25 | **Last Amended**: 2026-08-25
+**Version**: 1.2.0 | **Ratified**: 2026-08-25 | **Last Amended**: 2026-09-02

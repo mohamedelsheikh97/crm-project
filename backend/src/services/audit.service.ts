@@ -156,6 +156,31 @@ export const AUDIT_ACTIONS = {
   // to keep answerable.
   PORTAL_TICKET_CONTACT_ASSOCIATED: 'portal.ticket.contact_associated',
 
+  // Phase 9 — AI Features (research.md D12).
+  //
+  // Configuration actions are security-relevant in the ordinary sense: they
+  // change what the system does with customer content and what it spends.
+  AI_CONFIG_CHANGED: 'ai.config.changed',
+  AI_FEATURE_ENABLED: 'ai.feature.enabled',
+  AI_FEATURE_DISABLED: 'ai.feature.disabled',
+  AI_CEILING_CHANGED: 'ai.ceiling.changed',
+  AI_BUDGET_EXHAUSTED: 'ai.budget.exhausted',
+  AI_INVOCATION_FAILED: 'ai.invocation.failed',
+
+  // Usage actions. These answer FR-011's question — "what was sent, for which
+  // ticket, when, and at whose request" — by REFERENCE, never by copy: the
+  // audit entry names the ticket, and Clarifications Q3 keeps the content out
+  // of both this log and `ai_invocations`.
+  AI_SUMMARY_REQUESTED: 'ai.summary.requested',
+  AI_DRAFT_GENERATED: 'ai.draft.generated',
+  AI_CATEGORY_PROPOSED: 'ai.category.proposed',
+  AI_CATEGORY_ACCEPTED: 'ai.category.accepted',
+  AI_CATEGORY_DISMISSED: 'ai.category.dismissed',
+
+  // A customer was handed to a person. Recorded because it is the moment the
+  // organisation took over a conversation it had been conducting by machine.
+  AI_ASSISTANT_ESCALATED: 'ai.assistant.escalated',
+
   // Defined in Phase 1 with no caller; Phase 2 is the first phase that
   // exports business records, so this finally acquires one.
   DATA_EXPORTED: 'data.exported',

@@ -101,6 +101,56 @@ experience, not a fault.
 **The portal accepts no file uploads.** Customers send files by replying to a request by email.
 Lifting that needs a virus-scanning step first — see Phase 8's Out of Scope.
 
+### AI features (Phase 9)
+
+AI assistance is **optional and off by default**. With `AI_ENABLED=false` — the shipped default —
+every surface below is absent and the product behaves exactly as it did at the end of Phase 8. That
+is asserted by a test, not assumed.
+
+**Processing happens in two places, and the split is not configurable.** Staff-facing features
+(summaries, suggested replies, similar tickets) may send ticket content to an external AI provider.
+The customer-facing assistant may **not**: it runs only on infrastructure this organisation
+controls, and there is no fallback from one to the other in either direction. Which processor serves
+which feature is decided by which module a service imports, enforced by lint, by a test that reads
+the import graph, and by a runtime assertion — because a boundary that lived in a settings value
+would be one careless edit away from sending customer chat to a third party, with nothing failing.
+Changing it is a constitution amendment, not a deployment decision.
+
+| Variable                       | Required | Default | Controls                                        |
+| ------------------------------ | -------- | ------- | ----------------------------------------------- |
+| `AI_ENABLED`                   | no       | `false` | The master switch. Off means Phase 8.           |
+| `AI_EXTERNAL_API_KEY`          | if staff features on | — | Credentials for the external provider |
+| `AI_LOCAL_BASE_URL`            | if assistant on | — | The controlled-infrastructure processor  |
+| `AI_SUMMARY_ENABLED`           | no       | `false` | Initial state of ticket summaries               |
+| `AI_DRAFT_ENABLED`             | no       | `false` | Initial state of suggested replies              |
+| `AI_CLASSIFY_ENABLED`          | no       | `false` | Initial state of category suggestions           |
+| `AI_SIMILAR_ENABLED`           | no       | `false` | Initial state of similar tickets (no model call)|
+| `AI_ASSISTANT_ENABLED`         | no       | `false` | Initial state of the customer assistant         |
+| `AI_CEILING_*`                 | no       | 500-2000| Daily invocations per feature                   |
+| `AI_ASSISTANT_LANGS`           | no       | `en`    | Languages the assistant answers in              |
+| `AI_ASSISTANT_GROUNDING_FLOOR` | no       | `0.35`  | How well an article must match before it answers|
+
+The `*_ENABLED` flags and the ceilings seed a database row on first use; after that **Admin → AI
+features** owns them, so an administrator can switch a surface off without a deploy and the change
+is audited. `AI_ENABLED` stays in the environment: it is the "is this phase deployed at all"
+switch, and no database row can override it.
+
+**The application refuses to start** when a staff feature is enabled with no API key, when the
+assistant is enabled with no local URL, or when `AI_LOCAL_BASE_URL` points anywhere that is not a
+private address. The refusal is the point: an assistant quietly answering customers through a public
+endpoint is the one misconfiguration here that works perfectly until somebody notices.
+
+**Nothing generated reaches a customer without a person sending it**, except the assistant — which
+answers only from published help articles, and declines rather than guessing when they do not cover
+the question. A suggested reply is a draft in the composer with no existence until an agent sends
+it. A category suggestion never writes the ticket; a human accepts it, and the acceptance is the
+write.
+
+**No prompt or completion text is stored.** The activity record under Admin → AI holds what ran, on
+what, when, and what it cost — never the content, so the system keeps no second copy of customer
+correspondence. Assistant conversations *are* retained, because they are what the organisation said
+to a customer, on the same basis as any outbound message.
+
 ## Scripts
 
 Run all of these from the repository root.

@@ -3,6 +3,12 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 
+import CategoryProposalBanner from '../../components/ai/CategoryProposalBanner.vue';
+import DraftReplyButton from '../../components/ai/DraftReplyButton.vue';
+import SimilarTicketsPanel from '../../components/ai/SimilarTicketsPanel.vue';
+import TicketSummaryPanel from '../../components/ai/TicketSummaryPanel.vue';
+import * as aiService from '../../services/ai.service';
+import { useAiStore } from '../../stores/ai.store';
 import CustomerContextPanel from '../../components/tickets/CustomerContextPanel.vue';
 import SearchBox from '../../components/knowledge/SearchBox.vue';
 import SuggestionPanel from '../../components/knowledge/SuggestionPanel.vue';
@@ -39,6 +45,7 @@ import {
 } from '../../services/tickets.service';
 
 const { t, locale } = useI18n();
+const aiStore = useAiStore();
 const { can } = usePermissions();
 const route = useRoute();
 
@@ -138,6 +145,15 @@ function resetForm(): void {
 onMounted(async () => {
   await load();
 
+  if (!aiStore.loaded) {
+    try {
+      aiStore.set((await aiService.features()).features);
+    } catch {
+      // Leaves every AI surface off. With the capability unavailable the
+      // product is Phase 8 (FR-001), which is the right thing to degrade to.
+    }
+  }
+
   if (can('tickets:assign')) {
     try {
       assignableUsers.value = (
@@ -166,6 +182,18 @@ const messages = ref<messagesService.TicketMessage[]>([]);
 const messagesLoading = ref(false);
 const sendingMessage = ref(false);
 const composerContext = ref<messagesService.ComposerContext | null>(null);
+const replyComposer = ref<InstanceType<typeof ReplyComposer> | null>(null);
+
+/**
+ * A draft goes into the composer, never onto the wire (FR-026).
+ *
+ * Reuses the SAME `insert()` Phase 4 built for the template picker, so a
+ * draft and a template arrive by one path and are edited and sent by one
+ * path. The agent sends it under their own name (FR-027).
+ */
+function insertDraft(text: string): void {
+  replyComposer.value?.insert(text);
+}
 
 async function loadMessages(): Promise<void> {
   if (!ticket.value) return;
@@ -351,6 +379,16 @@ const formatter = computed(
  */
 function openArticle(articleId: number): void {
   window.open(`/admin/knowledge?article=${articleId}`, '_blank', 'noopener');
+}
+
+/**
+ * Opens a similar ticket in a new tab.
+ *
+ * Mirrors openArticle rather than routing: the agent may be standing in a
+ * half-written reply, and a route change would discard it.
+ */
+function openTicket(id: number): void {
+  window.open(`/tickets/${id}`, '_blank', 'noopener');
 }
 </script>
 
@@ -735,8 +773,17 @@ function openArticle(articleId: number): void {
       <section>
         <MessageThread :messages="messages" :loading="messagesLoading" />
 
+        <DraftReplyButton
+          v-if="can('messages:send') && !isMerged"
+          class="mt-3"
+          :ticket-id="ticket.id"
+          :available="aiStore.isOn('draft')"
+          @drafted="insertDraft"
+        />
+
         <ReplyComposer
           v-if="can('messages:send') && !isMerged"
+          ref="replyComposer"
           class="mt-3"
           :context="composerContext"
           :sending="sendingMessage"
@@ -771,9 +818,35 @@ function openArticle(articleId: number): void {
         anyone goes looking. Above the search box deliberately — the whole point
         of User Story 3 is that the agent does not have to search.
       -->
+      <!--
+        THE SUMMARY, ABOVE EVERYTHING ELSE IN THIS COLUMN (Phase 9, US1).
+        An agent picking up an unfamiliar ticket reads this first, which is
+        the whole of SC-001 — and it loads AFTER the ticket, so a slow or dead
+        AI service costs a panel rather than the page (FR-004, SC-023).
+      -->
+      <!--
+        A SUGGESTION, NEVER A VALUE (FR-046). Above the summary because triage
+        comes before reading — and the ticket's category has NOT changed while
+        this is on screen (Clarifications Q2).
+      -->
+      <CategoryProposalBanner
+        :ticket-id="ticket.id"
+        :available="aiStore.isOn('classify')"
+        :can-update="can('tickets:update')"
+        @accepted="load"
+      />
+
+      <TicketSummaryPanel :ticket-id="ticket.id" :available="aiStore.isOn('summary')" />
+
       <section class="rounded border p-3">
         <SuggestionPanel :ticket-id="ticket.id" @open="openArticle" />
       </section>
+
+      <SimilarTicketsPanel
+        :ticket-id="ticket.id"
+        :available="aiStore.isOn('similar')"
+        @open="openTicket"
+      />
 
       <!--
         KNOWLEDGE, BESIDE THE WORK (FR-030).
