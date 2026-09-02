@@ -132,13 +132,7 @@ onMounted(load);
 
         <label class="ai-settings__row">
           <span>{{ t('ai.admin.groundingFloor') }}</span>
-          <input
-            v-model.number="config.groundingFloor"
-            type="number"
-            min="0"
-            max="1"
-            step="0.05"
-          />
+          <input v-model.number="config.groundingFloor" type="number" min="0" max="1" step="0.05" />
         </label>
         <p class="ai-settings__hint">{{ t('ai.admin.groundingFloorHint') }}</p>
       </fieldset>

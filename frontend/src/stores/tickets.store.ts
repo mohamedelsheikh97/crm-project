@@ -19,6 +19,16 @@ export const useTicketsStore = defineStore('tickets', () => {
   const priority = ref<TicketPriority[]>([]);
   const category = ref<TicketCategory[]>([]);
   const assigneeId = ref<number | 'unassigned' | undefined>(undefined);
+  /**
+   * A creation-date range, added for reporting drill-through (Phase 10,
+   * FR-001, FR-034).
+   *
+   * ISO date strings, because that is what a report's period filter already
+   * speaks and what the URL has to carry anyway. The server resolves them to
+   * instants; nothing here re-parses them.
+   */
+  const createdFrom = ref<string | undefined>(undefined);
+  const createdTo = ref<string | undefined>(undefined);
   const includeMerged = ref(false);
   const sort = ref('-updatedAt');
   const page = ref(1);
@@ -29,6 +39,8 @@ export const useTicketsStore = defineStore('tickets', () => {
     priority.value = [];
     category.value = [];
     assigneeId.value = undefined;
+    createdFrom.value = undefined;
+    createdTo.value = undefined;
     includeMerged.value = false;
     sort.value = '-updatedAt';
     page.value = 1;
@@ -42,6 +54,8 @@ export const useTicketsStore = defineStore('tickets', () => {
       priority.value.length > 0 ||
       category.value.length > 0 ||
       assigneeId.value !== undefined ||
+      createdFrom.value !== undefined ||
+      createdTo.value !== undefined ||
       includeMerged.value
     );
   }
@@ -52,6 +66,8 @@ export const useTicketsStore = defineStore('tickets', () => {
     priority,
     category,
     assigneeId,
+    createdFrom,
+    createdTo,
     includeMerged,
     sort,
     page,

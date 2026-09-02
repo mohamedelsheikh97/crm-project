@@ -188,6 +188,46 @@ export async function requestBlob(path: string): Promise<Blob> {
   return response.blob();
 }
 
+export interface DownloadedFile {
+  blob: Blob;
+  filename: string;
+}
+
+/**
+ * A file produced by a POST — a report export (Phase 10, FR-046).
+ *
+ * `requestBlob` cannot serve this: an export writes an audit record, so it is
+ * a POST, and it carries the filename the server chose in
+ * `Content-Disposition`. The name matters more than it looks — a file called
+ * `download` in somebody's Downloads folder loses the period and the report it
+ * describes, which is most of what makes it readable a week later.
+ *
+ * Goes through `send` so the Authorization header, the single-flight refresh
+ * and the one retry all still apply.
+ */
+export async function requestFile(path: string, init: RequestInit = {}): Promise<DownloadedFile> {
+  let response = await send(path, init);
+
+  if (response.status === 401) {
+    const refreshed = await refreshOnce();
+
+    if (!refreshed) {
+      throw await toApiError(response);
+    }
+
+    response = await send(path, init);
+  }
+
+  if (!response.ok) {
+    throw await toApiError(response);
+  }
+
+  const disposition = response.headers.get('content-disposition') ?? '';
+  const match = /filename="?([^";]+)"?/.exec(disposition);
+
+  return { blob: await response.blob(), filename: match?.[1] ?? 'report' };
+}
+
 export const http = {
   /**
    * `signal` is accepted from Phase 7 onward, for search-as-you-type.

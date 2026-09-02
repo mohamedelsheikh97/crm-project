@@ -55,9 +55,7 @@ export const externalProvider: AiProvider = {
         // The system prefix is stable per feature and language, so it caches;
         // the volatile ticket content sits after it in `messages`, which is the
         // order the cache requires.
-        system: [
-          { type: 'text', text: request.system, cache_control: { type: 'ephemeral' } },
-        ],
+        system: [{ type: 'text', text: request.system, cache_control: { type: 'ephemeral' } }],
         messages: request.messages.map((message) => ({
           role: message.role,
           content: message.content,

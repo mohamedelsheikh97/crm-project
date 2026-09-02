@@ -31,7 +31,12 @@ const label = computed(() => t(`messages.delivery.${props.state}`));
 </script>
 
 <template>
-  <span class="inline-flex items-center gap-1 text-xs" :class="state === 'failed' ? 'text-red-700 dark:text-red-300' : 'text-slate-600 dark:text-slate-400'">
+  <span
+    class="inline-flex items-center gap-1 text-xs"
+    :class="
+      state === 'failed' ? 'text-red-700 dark:text-red-300' : 'text-slate-600 dark:text-slate-400'
+    "
+  >
     <!-- aria-hidden on the glyph, because the adjacent word already says it.
          Announcing both would read as "tick delivered". -->
     <span aria-hidden="true" class="font-mono">{{ GLYPH[state] }}</span>

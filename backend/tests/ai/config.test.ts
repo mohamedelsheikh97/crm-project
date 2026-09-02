@@ -133,10 +133,7 @@ describe('AI configuration', () => {
   });
 
   it('records a ceiling change with its before and after', async () => {
-    await configService.update(
-      { ceilings: { summary: 42 } },
-      { id: 1, email: 'admin@crm.local' },
-    );
+    await configService.update({ ceilings: { summary: 42 } }, { id: 1, email: 'admin@crm.local' });
 
     const row = (await AuditLog.findOne({ where: { action: 'ai.ceiling.changed' } })) as {
       previous_value: unknown;

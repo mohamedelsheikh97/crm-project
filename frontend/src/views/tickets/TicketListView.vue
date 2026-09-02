@@ -55,6 +55,14 @@ function readFromRoute(): void {
   filters.includeMerged = query.includeMerged === 'true';
   if (typeof query.sort === 'string') filters.sort = query.sort;
   if (query.assigneeId === 'unassigned') filters.assigneeId = 'unassigned';
+  else if (typeof query.assigneeId === 'string' && /^\d+$/.test(query.assigneeId)) {
+    // A numeric assignee arrives from a report drill-through. Without this the
+    // link would land on an unfiltered queue that disagrees with the figure it
+    // came from — worse than no link, because it looks like a check.
+    filters.assigneeId = Number(query.assigneeId);
+  }
+  if (typeof query.createdFrom === 'string') filters.createdFrom = query.createdFrom;
+  if (typeof query.createdTo === 'string') filters.createdTo = query.createdTo;
   const page = Number(query.page);
   if (Number.isInteger(page) && page >= 1) filters.page = page;
 }
@@ -67,6 +75,8 @@ function writeToRoute(): void {
   if (filters.priority.length) query.priority = filters.priority;
   if (filters.category.length) query.category = filters.category;
   if (filters.assigneeId !== undefined) query.assigneeId = String(filters.assigneeId);
+  if (filters.createdFrom) query.createdFrom = filters.createdFrom;
+  if (filters.createdTo) query.createdTo = filters.createdTo;
   if (filters.includeMerged) query.includeMerged = 'true';
   if (filters.sort !== '-updatedAt') query.sort = filters.sort;
   if (filters.page > 1) query.page = String(filters.page);
@@ -85,6 +95,8 @@ async function load(): Promise<void> {
       priority: filters.priority,
       category: filters.category,
       assigneeId: filters.assigneeId,
+      createdFrom: filters.createdFrom,
+      createdTo: filters.createdTo,
       includeMerged: filters.includeMerged,
       sort: filters.sort,
       page: filters.page,
@@ -150,6 +162,39 @@ const emptyIsFiltered = computed(() => total.value === 0 && filters.hasFilters()
     </header>
 
     <TicketFilters @change="refresh" />
+
+    <!--
+      THE DATE RANGE IS THE ONE FILTER WITH NO CONTROL OF ITS OWN.
+
+      It arrives from a report drill-through, so a reader can land on a narrowed
+      queue they did not set. An invisible filter is a trap: the counts look
+      wrong, nothing explains why, and there is nothing to switch off. This says
+      what is applied and offers the switch.
+    -->
+    <p
+      v-if="filters.createdFrom || filters.createdTo"
+      class="flex flex-wrap items-center gap-2 rounded-md border border-blue-200 bg-blue-50 p-2 text-sm dark:border-blue-900 dark:bg-blue-950"
+    >
+      <span>
+        {{
+          t('tickets.filteredByPeriod', {
+            from: filters.createdFrom ?? '—',
+            to: filters.createdTo ?? '—',
+          })
+        }}
+      </span>
+      <button
+        type="button"
+        class="rounded-md border px-2 py-1"
+        @click="
+          filters.createdFrom = undefined;
+          filters.createdTo = undefined;
+          refresh();
+        "
+      >
+        {{ t('tickets.clearPeriod') }}
+      </button>
+    </p>
 
     <p aria-live="polite" class="sr-only">{{ announcement }}</p>
 

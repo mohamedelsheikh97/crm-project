@@ -125,7 +125,9 @@ const isEmptyHelpCentre = computed(
     </header>
 
     <label class="block">
-      <span class="mb-1 block text-sm font-medium text-slate-700">{{ t('help.search.label') }}</span>
+      <span class="mb-1 block text-sm font-medium text-slate-700">{{
+        t('help.search.label')
+      }}</span>
       <input
         v-model="query"
         type="search"

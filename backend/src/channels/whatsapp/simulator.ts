@@ -73,7 +73,11 @@ export const whatsappSimulatorAdapter: ChannelAdapter = {
 
     return Promise.resolve(
       closed
-        ? { freeformAllowed: false, reopensAt: closed.reopensAt, allowedTemplates: closed.templates }
+        ? {
+            freeformAllowed: false,
+            reopensAt: closed.reopensAt,
+            allowedTemplates: closed.templates,
+          }
         : { freeformAllowed: true, reopensAt: null, allowedTemplates: [] },
     );
   },

@@ -141,7 +141,9 @@ const blocks = computed<Block[]>(() => {
           class="overflow-x-auto rounded bg-slate-100 p-3 text-sm"
         ><code>{{ block.text }}</code></pre>
 
-        <p v-else><bdi>{{ block.text }}</bdi></p>
+        <p v-else>
+          <bdi>{{ block.text }}</bdi>
+        </p>
       </template>
 
       <p v-if="blocks.length === 0" class="text-slate-600">{{ t('kb.article.empty') }}</p>

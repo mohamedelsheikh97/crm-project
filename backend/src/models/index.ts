@@ -41,6 +41,7 @@ import { TicketLink } from './ticket-link.model.js';
 import { TicketNoteMention } from './ticket-note-mention.model.js';
 import { TicketNote } from './ticket-note.model.js';
 import { AiCategoryProposal } from './ai-category-proposal.model.js';
+import { DashboardArrangement } from './dashboard-arrangement.model.js';
 import { AiInvocation } from './ai-invocation.model.js';
 import { AiSetting } from './ai-setting.model.js';
 import { AssistantConversation } from './assistant-conversation.model.js';
@@ -331,6 +332,7 @@ export {
   TicketNote,
   TicketNoteMention,
   AiCategoryProposal,
+  DashboardArrangement,
   AiInvocation,
   AiSetting,
   AssistantConversation,

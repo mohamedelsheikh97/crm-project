@@ -54,7 +54,12 @@ async function record(
   context: InvokeContext,
   location: 'external' | 'local' | 'none',
   outcome: AiInvocationOutcome,
-  extra: { inputTokens?: number | null; outputTokens?: number | null; durationMs?: number | null; errorCode?: string | null } = {},
+  extra: {
+    inputTokens?: number | null;
+    outputTokens?: number | null;
+    durationMs?: number | null;
+    errorCode?: string | null;
+  } = {},
 ): Promise<void> {
   // Best-effort and never allowed to fail the caller's request: an accounting
   // write must not turn a working summary into an error. Phase 7 took the same
@@ -189,10 +194,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   if (ms <= 0) return promise;
 
   return new Promise<T>((resolve, reject) => {
-    const timer = setTimeout(
-      () => reject(new AiProviderError('timeout', `exceeded ${ms}ms`)),
-      ms,
-    );
+    const timer = setTimeout(() => reject(new AiProviderError('timeout', `exceeded ${ms}ms`)), ms);
 
     promise.then(
       (value) => {

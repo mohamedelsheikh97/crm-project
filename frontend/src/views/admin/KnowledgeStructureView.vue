@@ -52,7 +52,10 @@ const stepSearch = ref('');
 const TICKET_CATEGORIES = ['general', 'technical', 'billing', 'complaint'] as const;
 
 const name = (entry: { nameEn: string | null; nameAr: string | null; slug: string }): string =>
-  (locale.value === 'ar' ? entry.nameAr : entry.nameEn) ?? entry.nameAr ?? entry.nameEn ?? entry.slug;
+  (locale.value === 'ar' ? entry.nameAr : entry.nameEn) ??
+  entry.nameAr ??
+  entry.nameEn ??
+  entry.slug;
 
 const guideTitle = (guide: KbGuide): string =>
   (locale.value === 'ar' ? guide.titleAr : guide.titleEn) ??
@@ -195,11 +198,7 @@ function startSteps(guide: KbGuide): void {
 function moveStep(index: number, delta: number): void {
   if (!editingSteps.value) return;
 
-  editingSteps.value.articleIds = moveWithin(
-    editingSteps.value.articleIds,
-    index,
-    index + delta,
-  );
+  editingSteps.value.articleIds = moveWithin(editingSteps.value.articleIds, index, index + delta);
 }
 
 function addStep(articleId: number): void {
@@ -239,9 +238,7 @@ async function removeGuide(guide: KbGuide): Promise<void> {
   }
 }
 
-const articleById = computed(
-  () => new Map(articles.value.map((article) => [article.id, article])),
-);
+const articleById = computed(() => new Map(articles.value.map((article) => [article.id, article])));
 
 const stepCandidates = computed(() => {
   const term = stepSearch.value.trim().toLowerCase();
@@ -265,7 +262,11 @@ const stepCandidates = computed(() => {
       <p class="mt-1 text-sm text-slate-600">{{ t('kb.structure.description') }}</p>
     </header>
 
-    <p v-if="errorKey" role="alert" class="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-800">
+    <p
+      v-if="errorKey"
+      role="alert"
+      class="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-800"
+    >
       {{ t(errorKey) }}
       <!-- The count, and the route out of the refusal. -->
       <span v-if="blockedCount !== null" class="block">
@@ -292,10 +293,12 @@ const stepCandidates = computed(() => {
         <div class="min-w-0">
           <p class="font-medium">{{ name(category) }}</p>
           <p class="text-xs text-slate-500">
-            {{ t('kb.structure.counts', {
-              total: category.articleCount,
-              published: category.publishedCount,
-            }) }}
+            {{
+              t('kb.structure.counts', {
+                total: category.articleCount,
+                published: category.publishedCount,
+              })
+            }}
           </p>
         </div>
 
@@ -351,13 +354,26 @@ const stepCandidates = computed(() => {
     <form class="mb-10 flex flex-wrap items-end gap-3" @submit.prevent="addCategory">
       <label class="text-sm">
         <span class="mb-1 block text-slate-700">{{ t('kb.language.en') }}</span>
-        <input v-model="draftCategory.nameEn" lang="en" dir="ltr" class="rounded-md border border-slate-300 px-2 py-1.5" />
+        <input
+          v-model="draftCategory.nameEn"
+          lang="en"
+          dir="ltr"
+          class="rounded-md border border-slate-300 px-2 py-1.5"
+        />
       </label>
       <label class="text-sm">
         <span class="mb-1 block text-slate-700">{{ t('kb.language.ar') }}</span>
-        <input v-model="draftCategory.nameAr" lang="ar" dir="rtl" class="rounded-md border border-slate-300 px-2 py-1.5" />
+        <input
+          v-model="draftCategory.nameAr"
+          lang="ar"
+          dir="rtl"
+          class="rounded-md border border-slate-300 px-2 py-1.5"
+        />
       </label>
-      <button type="submit" class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white">
+      <button
+        type="submit"
+        class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white"
+      >
         {{ t('kb.structure.addCategory') }}
       </button>
     </form>
@@ -419,7 +435,12 @@ const stepCandidates = computed(() => {
               :key="articleId"
               class="flex items-center justify-between gap-2 text-sm"
             >
-              <span>{{ index + 1 }}. {{ articleTitle(articleById.get(articleId) ?? { titleEn: null, titleAr: null }) }}</span>
+              <span
+                >{{ index + 1 }}.
+                {{
+                  articleTitle(articleById.get(articleId) ?? { titleEn: null, titleAr: null })
+                }}</span
+              >
 
               <span class="flex gap-1">
                 <button
@@ -485,13 +506,26 @@ const stepCandidates = computed(() => {
     <form class="flex flex-wrap items-end gap-3" @submit.prevent="addGuide">
       <label class="text-sm">
         <span class="mb-1 block text-slate-700">{{ t('kb.language.en') }}</span>
-        <input v-model="draftGuide.titleEn" lang="en" dir="ltr" class="rounded-md border border-slate-300 px-2 py-1.5" />
+        <input
+          v-model="draftGuide.titleEn"
+          lang="en"
+          dir="ltr"
+          class="rounded-md border border-slate-300 px-2 py-1.5"
+        />
       </label>
       <label class="text-sm">
         <span class="mb-1 block text-slate-700">{{ t('kb.language.ar') }}</span>
-        <input v-model="draftGuide.titleAr" lang="ar" dir="rtl" class="rounded-md border border-slate-300 px-2 py-1.5" />
+        <input
+          v-model="draftGuide.titleAr"
+          lang="ar"
+          dir="rtl"
+          class="rounded-md border border-slate-300 px-2 py-1.5"
+        />
       </label>
-      <button type="submit" class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white">
+      <button
+        type="submit"
+        class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white"
+      >
         {{ t('kb.structure.addGuide') }}
       </button>
     </form>

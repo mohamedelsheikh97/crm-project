@@ -49,7 +49,13 @@ async function seedForm(): Promise<FormDefinition> {
     title_ar: 'اتصل بنا',
     fields_json: [
       { key: 'email', type: 'email', required: true, label_en: 'Your email', label_ar: 'بريدك' },
-      { key: 'detail', type: 'textarea', required: false, label_en: 'Details', label_ar: 'التفاصيل' },
+      {
+        key: 'detail',
+        type: 'textarea',
+        required: false,
+        label_en: 'Details',
+        label_ar: 'التفاصيل',
+      },
     ],
     default_category: null,
     default_priority: null,

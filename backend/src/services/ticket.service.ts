@@ -279,6 +279,21 @@ export interface ListOptions {
   category?: string[];
   assigneeId?: number | 'unassigned';
   customerId?: number;
+  /**
+   * Creation-date bounds, as absolute instants (Phase 10, FR-001, FR-034).
+   *
+   * Added for reporting drill-through. Every figure in a report is scoped to a
+   * period, so a drill-through that could only filter by assignee would land on
+   * a list containing tickets the figure did not count — and a check that
+   * disagrees with the number it is checking is worse than no check, because
+   * nobody can tell which of the two is wrong.
+   *
+   * Instants rather than date strings, resolved by the caller: the report
+   * already resolved the period in the configured timezone, and re-parsing a
+   * date here would be a second timezone decision.
+   */
+  createdFrom?: Date;
+  createdTo?: Date;
   sort?: string;
   includeMerged?: boolean;
   page?: unknown;
@@ -329,6 +344,14 @@ export async function list(options: ListOptions = {}): Promise<Paged<TicketSumma
   if (options.priority?.length) where.priority = options.priority;
   if (options.category?.length) where.category = options.category;
   if (options.customerId !== undefined) where.customer_id = options.customerId;
+
+  if (options.createdFrom && options.createdTo) {
+    where.created_at = { [Op.between]: [options.createdFrom, options.createdTo] };
+  } else if (options.createdFrom) {
+    where.created_at = { [Op.gte]: options.createdFrom };
+  } else if (options.createdTo) {
+    where.created_at = { [Op.lte]: options.createdTo };
+  }
 
   if (options.assigneeId === 'unassigned') {
     where.assignee_user_id = null;

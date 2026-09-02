@@ -10,7 +10,13 @@ import { request } from './http';
  */
 export interface AiConfig {
   enabled: boolean;
-  features: { summary: boolean; draft: boolean; classify: boolean; similar: boolean; assistant: boolean };
+  features: {
+    summary: boolean;
+    draft: boolean;
+    classify: boolean;
+    similar: boolean;
+    assistant: boolean;
+  };
   ceilings: { summary: number; draft: number; classify: number; assistant: number };
   assistantLangs: Array<'ar' | 'en'>;
   groundingFloor: number;
@@ -66,9 +72,13 @@ export function updateConfig(patch: Partial<AiConfig>): Promise<AiConfig> {
   });
 }
 
-export function activity(
-  page = 1,
-): Promise<{ items: AiInvocationRow[]; total: number; page: number; pageSize: number; contentRetained: boolean }> {
+export function activity(page = 1): Promise<{
+  items: AiInvocationRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+  contentRetained: boolean;
+}> {
   return request(`/admin/ai/activity?page=${page}`);
 }
 

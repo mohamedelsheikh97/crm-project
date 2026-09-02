@@ -3,7 +3,11 @@ import type { NextFunction, Request, Response } from 'express';
 import { conflict, unauthenticated } from '../../errors/app-error.js';
 import { AiCategoryProposal } from '../../models/ai-category-proposal.model.js';
 import { Ticket } from '../../models/ticket.model.js';
-import { AUDIT_ACTIONS, auditContextFrom, record as recordAudit } from '../../services/audit.service.js';
+import {
+  AUDIT_ACTIONS,
+  auditContextFrom,
+  record as recordAudit,
+} from '../../services/audit.service.js';
 import * as classifyService from '../../services/ai-classify.service.js';
 import * as ticketService from '../../services/ticket.service.js';
 import { sequelize } from '../../config/database.js';

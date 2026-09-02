@@ -36,9 +36,7 @@ function isArabic(codePoint: number): boolean {
 }
 
 function isLatinLetter(codePoint: number): boolean {
-  return (
-    (codePoint >= 0x41 && codePoint <= 0x5a) || (codePoint >= 0x61 && codePoint <= 0x7a)
-  );
+  return (codePoint >= 0x41 && codePoint <= 0x5a) || (codePoint >= 0x61 && codePoint <= 0x7a);
 }
 
 /**

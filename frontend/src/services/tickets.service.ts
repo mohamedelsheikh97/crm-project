@@ -119,6 +119,9 @@ export interface TicketFilters {
   category?: TicketCategory[];
   assigneeId?: number | 'unassigned';
   customerId?: number;
+  /** Creation-date bounds, for reporting drill-through (Phase 10, FR-034). */
+  createdFrom?: string;
+  createdTo?: string;
   sort?: string;
   includeMerged?: boolean;
   page?: number;
@@ -145,6 +148,8 @@ function query(filters: TicketFilters): string {
   for (const category of filters.category ?? []) params.append('category', category);
   if (filters.assigneeId !== undefined) params.set('assigneeId', String(filters.assigneeId));
   if (filters.customerId !== undefined) params.set('customerId', String(filters.customerId));
+  if (filters.createdFrom) params.set('createdFrom', filters.createdFrom);
+  if (filters.createdTo) params.set('createdTo', filters.createdTo);
   if (filters.sort) params.set('sort', filters.sort);
   if (filters.includeMerged) params.set('includeMerged', 'true');
   if (filters.page) params.set('page', String(filters.page));

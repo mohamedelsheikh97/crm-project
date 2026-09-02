@@ -56,4 +56,3 @@ export async function get(req: Request, res: Response, next: NextFunction): Prom
     next(error);
   }
 }
-

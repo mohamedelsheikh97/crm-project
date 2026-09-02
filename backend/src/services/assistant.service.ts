@@ -146,9 +146,7 @@ export async function respond(
         system: prompt.system(conversation.lang),
         messages: prompt.messages({
           question: text,
-          history: history
-            .slice(0, -1)
-            .map((row) => ({ role: row.role, body: row.body })),
+          history: history.slice(0, -1).map((row) => ({ role: row.role, body: row.body })),
           articles: hits.map((hit) => ({
             id: hit.articleId,
             title: hit.title,
@@ -186,7 +184,10 @@ export async function respond(
 
   const citedHits = hits.filter((hit) => cited.includes(hit.articleId));
 
-  const clean = text_out.replace(/\[article \d+\]/g, '').replace(/\s{2,}/g, ' ').trim();
+  const clean = text_out
+    .replace(/\[article \d+\]/g, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
 
   await AssistantMessage.create({
     conversation_id: conversation.id,

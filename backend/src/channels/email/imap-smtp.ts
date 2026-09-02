@@ -52,7 +52,10 @@ function smtp(): Transporter {
  */
 export function signAddressToken(ticketId: number): string {
   const secret = env.CHANNEL_ADDRESS_TOKEN_SECRET ?? '';
-  const signature = createHmac('sha256', secret).update(String(ticketId)).digest('hex').slice(0, 16);
+  const signature = createHmac('sha256', secret)
+    .update(String(ticketId))
+    .digest('hex')
+    .slice(0, 16);
 
   return `${ticketId}.${signature}`;
 }

@@ -59,9 +59,7 @@ export async function escalate(conversationId: number): Promise<EscalationResult
     ? await PortalAccount.findByPk(conversation.portal_account_id)
     : null;
 
-  const contact = account
-    ? await CustomerContact.findByPk(account.customer_contact_id)
-    : null;
+  const contact = account ? await CustomerContact.findByPk(account.customer_contact_id) : null;
 
   if (!contact) {
     // An anonymous conversation has no customer record to attribute to. The

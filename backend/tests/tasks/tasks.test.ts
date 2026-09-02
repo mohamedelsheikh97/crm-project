@@ -172,9 +172,7 @@ describe('completing and reopening (FR-059, FR-060)', () => {
 describe('due dates and reminders on tasks', () => {
   it('marks an overdue task, and stops once it is completed', async () => {
     const me = await agentAs('agent');
-    const created = await me.agent
-      .post('/api/tasks')
-      .send({ title: 'Late', dueAt: at(-2 * HOUR) });
+    const created = await me.agent.post('/api/tasks').send({ title: 'Late', dueAt: at(-2 * HOUR) });
 
     expect(created.body.isOverdue).toBe(true);
 
@@ -186,9 +184,7 @@ describe('due dates and reminders on tasks', () => {
 
   it('re-arms the reminder when its time changes (FR-062)', async () => {
     const me = await agentAs('agent');
-    const created = await me.agent
-      .post('/api/tasks')
-      .send({ title: 'Moved', remindAt: at(HOUR) });
+    const created = await me.agent.post('/api/tasks').send({ title: 'Moved', remindAt: at(HOUR) });
 
     await Task.update({ reminded_at: new Date() }, { where: { id: created.body.id } });
 

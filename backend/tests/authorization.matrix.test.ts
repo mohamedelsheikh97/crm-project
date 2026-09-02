@@ -109,6 +109,20 @@ const PROBES: Record<
   // write path here would need a real account or invitation id to get that far.
   // Reading the access overview is gated on the same single key.
   'portal:manage': { method: 'get', path: '/api/customers/999999/portal-access' },
+
+  // Phase 9 — AI administration. One key for the whole surface (its FR-060),
+  // distinct from the ticket and settings keys so AI can be configured without
+  // handing over either.
+  'ai:manage': { method: 'get', path: '/api/admin/ai/config' },
+
+  // Phase 10 — reporting. `reports:view` covers the operational reports and the
+  // management dashboard; `reports:export` is checked at the route AND again in
+  // the export controller against the exported report's own key.
+  'reports:view': { method: 'get', path: '/api/reports/volume?from=2026-02-01&to=2026-02-28' },
+  'reports:export': {
+    method: 'post',
+    path: '/api/reports/volume/export?from=2026-02-01&to=2026-02-28',
+  },
 };
 
 const ROLE_KEYS = ['agent', 'supervisor', 'admin'] as const;
@@ -127,6 +141,18 @@ const ROLE_KEYS = ['agent', 'supervisor', 'admin'] as const;
  */
 const CONDITIONAL_PERMISSIONS: Record<string, string> = {
   'notes:manage': 'backend/tests/customers/notes.test.ts',
+
+  /**
+   * Phase 10. `reports:view_agents` CANNOT be probed here, and the reason is
+   * the requirement rather than a limitation.
+   *
+   * The matrix asserts 403 for a role without the key. The agent report answers
+   * 404 instead, because FR-030b requires it to be ABSENT rather than
+   * present-and-withheld: an agent who learns that per-agent figures about them
+   * exist has been told the thing Clarifications Q1 was meant not to tell them.
+   * A 403 here would be a passing test asserting the wrong behaviour.
+   */
+  'reports:view_agents': 'backend/tests/reports/agent-unreachable.test.ts',
 
   // Phase 3. `tickets:close` is conditional in the same way: the route gate is
   // tickets:transition, and the lifecycle service demands tickets:close for the

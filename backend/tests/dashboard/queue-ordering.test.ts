@@ -65,7 +65,9 @@ describe('queue ordering — priority (FR-006)', () => {
 
     const response = await agent.get('/api/dashboard/queue?sort=priority&direction=desc');
 
-    expect(response.body.items.map((item: { priority: string }) => item.priority)).toEqual(expected);
+    expect(response.body.items.map((item: { priority: string }) => item.priority)).toEqual(
+      expected,
+    );
   });
 });
 

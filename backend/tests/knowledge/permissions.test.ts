@@ -82,12 +82,15 @@ describe('kb:publish carries the lifecycle', () => {
       .post('/api/knowledge/articles')
       .send({ categoryId: category.id, ...ENGLISH_ARTICLE });
 
-    expect((await publisher.agent.post(`/api/knowledge/articles/${created.body.id}/publish`)).status)
-      .toBe(200);
-    expect((await publisher.agent.post(`/api/knowledge/articles/${created.body.id}/archive`)).status)
-      .toBe(200);
-    expect((await publisher.agent.post(`/api/knowledge/articles/${created.body.id}/restore`)).status)
-      .toBe(200);
+    expect(
+      (await publisher.agent.post(`/api/knowledge/articles/${created.body.id}/publish`)).status,
+    ).toBe(200);
+    expect(
+      (await publisher.agent.post(`/api/knowledge/articles/${created.body.id}/archive`)).status,
+    ).toBe(200);
+    expect(
+      (await publisher.agent.post(`/api/knowledge/articles/${created.body.id}/restore`)).status,
+    ).toBe(200);
   });
 });
 

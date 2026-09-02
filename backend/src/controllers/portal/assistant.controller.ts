@@ -1,14 +1,8 @@
 import type { NextFunction, Request, Response } from 'express';
 
 import { unauthenticated } from '../../errors/app-error.js';
-import {
-  AlreadyEscalatedError,
-  escalate,
-} from '../../services/assistant-escalation.service.js';
-import {
-  AssistantUnavailableError,
-  respond,
-} from '../../services/assistant.service.js';
+import { AlreadyEscalatedError, escalate } from '../../services/assistant-escalation.service.js';
+import { AssistantUnavailableError, respond } from '../../services/assistant.service.js';
 
 /**
  * The portal assistant (Phase 9, US3).

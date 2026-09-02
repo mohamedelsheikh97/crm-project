@@ -33,7 +33,12 @@ export interface SimulatedEmail {
   inReplyTo?: string | null;
   references?: string[];
   addressToken?: string | null;
-  attachments?: Array<{ fileName: string; content: Buffer; contentType?: string; inline?: boolean }>;
+  attachments?: Array<{
+    fileName: string;
+    content: Buffer;
+    contentType?: string;
+    inline?: boolean;
+  }>;
   /** Set by a test to exercise FR-029 without hand-writing headers. */
   automated?: boolean;
   occurredAt?: Date;

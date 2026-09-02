@@ -32,8 +32,10 @@ vi.mock('../../src/ai/features.js', async () => {
   };
 });
 
-// eslint-disable-next-line prefer-const
-let provider = fakeProvider('external', () => 'Thank you for getting in touch. We are looking into it.');
+let provider = fakeProvider(
+  'external',
+  () => 'Thank you for getting in touch. We are looking into it.',
+);
 
 const { forTicket } = await import('../../src/services/ai-draft.service.js');
 const { Message } = await import('../../src/models/message.model.js');

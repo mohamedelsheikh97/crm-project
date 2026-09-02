@@ -31,7 +31,14 @@ afterAll(async () => {
 
 function rawMail(headers: string, body = 'Automatic response.'): Buffer {
   return Buffer.from(
-    ['From: someone@example.com', 'To: support@example.com', 'Subject: Out of office', headers, '', body]
+    [
+      'From: someone@example.com',
+      'To: support@example.com',
+      'Subject: Out of office',
+      headers,
+      '',
+      body,
+    ]
       .filter((line) => line !== '')
       .join('\r\n'),
   );

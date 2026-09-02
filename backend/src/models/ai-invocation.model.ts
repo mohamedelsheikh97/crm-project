@@ -9,11 +9,7 @@ import {
 import { sequelize } from '../config/database.js';
 
 export type AiInvocationOutcome =
-  | 'success'
-  | 'failed'
-  | 'refused_budget'
-  | 'refused_disabled'
-  | 'refused_ungrounded';
+  'success' | 'failed' | 'refused_budget' | 'refused_disabled' | 'refused_ungrounded';
 
 /**
  * One attempt to produce AI output (Phase 9, research.md D6).

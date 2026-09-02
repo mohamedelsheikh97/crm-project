@@ -9,14 +9,28 @@ import type { Actor, AuditContext, ListOptions } from './customer.service.js';
  * arrive as mojibake — in the one place they are most likely to be read by
  * someone outside the team (research.md D9). It is not decoration.
  */
-const UTF8_BOM = '﻿';
+export const UTF8_BOM = '﻿';
 
 /** Every row is fetched in pages, so a large export is never held in memory whole. */
 const EXPORT_PAGE_SIZE = 100;
 
 const COLUMNS = ['Name', 'Company', 'Primary phone', 'Primary email', 'Status', 'Created'] as const;
 
-function escapeCell(value: unknown): string {
+/**
+ * EXPORTED FOR PHASE 10 (contracts/export-contract.md).
+ *
+ * Phase 10's report exports reuse this rather than writing a second CSV
+ * writer, because it already does the two things that go wrong — the
+ * formula guard below and the UTF-8 BOM above — and FR-048 and FR-049 are
+ * those two fixes restated as requirements. A second implementation would
+ * be the drift that FR-007 exists to prevent, in the one place where the
+ * failure reaches somebody outside the team.
+ *
+ * The formula guard matters MORE for report exports than it did here: a
+ * report carries customer-authored text (CSAT comments, FR-028), so a value
+ * beginning `=` is not hypothetical.
+ */
+export function escapeCell(value: unknown): string {
   if (value === null || value === undefined) {
     return '';
   }

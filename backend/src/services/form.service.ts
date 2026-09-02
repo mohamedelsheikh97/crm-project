@@ -111,7 +111,13 @@ function validate(input: Record<string, unknown>, details: ErrorDetail[]): FormF
       return;
     }
 
-    fields.push({ key, type, required: entry.required === true, label_en: labelEn, label_ar: labelAr });
+    fields.push({
+      key,
+      type,
+      required: entry.required === true,
+      label_en: labelEn,
+      label_ar: labelAr,
+    });
   });
 
   // FR-084: restricted to Phase 3's declared taxonomy, so a form cannot invent

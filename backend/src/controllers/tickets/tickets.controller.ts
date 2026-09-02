@@ -61,6 +61,21 @@ function assigneeFrom(value: unknown): number | 'unassigned' | undefined {
   return Number.isInteger(id) && id >= 1 ? id : undefined;
 }
 
+/**
+ * An ISO instant from a query parameter, or undefined.
+ *
+ * Deliberately strict: an unparseable value is IGNORED rather than silently
+ * treated as the epoch, which would return every ticket ever raised and look
+ * like a working filter.
+ */
+function instantFrom(value: unknown): Date | undefined {
+  if (typeof value !== 'string' || value.trim() === '') return undefined;
+
+  const at = new Date(value);
+
+  return Number.isNaN(at.getTime()) ? undefined : at;
+}
+
 export async function list(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const customerIdRaw = req.query.customerId;
@@ -74,6 +89,10 @@ export async function list(req: Request, res: Response, next: NextFunction): Pro
         category: asList(req.query.category),
         assigneeId: assigneeFrom(req.query.assigneeId),
         customerId: Number.isInteger(customerId) && customerId >= 1 ? customerId : undefined,
+        // Reporting drill-through (Phase 10, FR-034): the same period the
+        // figure was scoped to, so the list contains what the figure counted.
+        createdFrom: instantFrom(req.query.createdFrom),
+        createdTo: instantFrom(req.query.createdTo),
         sort: typeof req.query.sort === 'string' ? req.query.sort : undefined,
         includeMerged: req.query.includeMerged === 'true',
         page: req.query.page,
