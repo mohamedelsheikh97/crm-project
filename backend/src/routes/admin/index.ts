@@ -9,6 +9,7 @@ import alertsRoutes from '../alerts/alerts.routes.js';
 import slaRoutes from '../sla/sla.routes.js';
 
 import auditRoutes from './audit.routes.js';
+import integrationsRoutes from './integrations.routes.js';
 import aiConfigRoutes from './ai-config.routes.js';
 import portalAccessRoutes from './portal-access.routes.js';
 import rolesRoutes from './roles.routes.js';
@@ -45,5 +46,12 @@ router.use('/portal', portalAccessRoutes);
 
 // Phase 9 — AI configuration, the activity record, and chatbot transcripts.
 router.use('/ai', aiConfigRoutes);
+
+// Phase 11 — the credentials external systems hold and the addresses this
+// system sends notifications to. Under /api/admin because it is configuration
+// of an outward-facing surface, and behind its own permission because a
+// credential is a standing grant of data access to a party outside this
+// organisation rather than an application setting (FR-061).
+router.use('/integrations', integrationsRoutes);
 
 export default router;

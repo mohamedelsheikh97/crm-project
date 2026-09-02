@@ -42,6 +42,15 @@ import { TicketNoteMention } from './ticket-note-mention.model.js';
 import { TicketNote } from './ticket-note.model.js';
 import { AiCategoryProposal } from './ai-category-proposal.model.js';
 import { DashboardArrangement } from './dashboard-arrangement.model.js';
+import { ApiClient } from './api-client.model.js';
+import { ApiClientPermission } from './api-client-permission.model.js';
+import { ApiClientSecret } from './api-client-secret.model.js';
+import { ErpLink } from './erp-link.model.js';
+import { ErpSyncRecord } from './erp-sync-record.model.js';
+import { ErpSyncRun } from './erp-sync-run.model.js';
+import { IntegrationEvent } from './integration-event.model.js';
+import { WebhookDeliveryAttempt } from './webhook-delivery-attempt.model.js';
+import { WebhookSubscription } from './webhook-subscription.model.js';
 import { AiInvocation } from './ai-invocation.model.js';
 import { AiSetting } from './ai-setting.model.js';
 import { AssistantConversation } from './assistant-conversation.model.js';
@@ -289,6 +298,68 @@ TicketSatisfaction.belongsTo(CustomerContact, {
   as: 'submittedBy',
 });
 
+// --- Phase 11: Integrations ---
+//
+// THE CREDENTIAL IS THE ROOT, not the user. Every edge in the first block hangs
+// off `api_clients`, because a machine credential carries its own authority
+// rather than impersonating a person (FR-015, and the constitution's machine
+// client authentication paragraph). `created_by_user_id` is provenance, not
+// ownership — which is why it is SET NULL rather than CASCADE: the credential
+// outlives the administrator who issued it, and deleting a person must not
+// silently revoke a live integration. FR-023's rule is that revoking a person
+// revokes the person.
+
+ApiClient.hasMany(ApiClientSecret, { foreignKey: 'api_client_id', as: 'secrets' });
+ApiClientSecret.belongsTo(ApiClient, { foreignKey: 'api_client_id', as: 'client' });
+
+ApiClient.hasMany(ApiClientPermission, { foreignKey: 'api_client_id', as: 'permissions' });
+ApiClientPermission.belongsTo(ApiClient, { foreignKey: 'api_client_id', as: 'client' });
+
+ApiClient.belongsTo(User, { foreignKey: 'created_by_user_id', as: 'createdBy' });
+
+// A SUBSCRIPTION BELONGS TO A CREDENTIAL, and that is load-bearing rather than
+// tidy. FR-037 forbids delivering an event to a subscriber whose credential does
+// not cover the record, because the notification itself discloses that the
+// record exists — "ticket 421 was resolved" says there is a ticket 421. This
+// edge is what makes that checkable at delivery time. CASCADE, because a
+// subscription must not outlive the authority it was granted under.
+ApiClient.hasMany(WebhookSubscription, { foreignKey: 'api_client_id', as: 'subscriptions' });
+WebhookSubscription.belongsTo(ApiClient, { foreignKey: 'api_client_id', as: 'client' });
+
+// An event is retained INDEPENDENTLY of any delivery, so an attempt can be
+// retried or re-sent without the event being reconstructed — a retry twelve
+// hours later must deliver what happened, not what is true now.
+IntegrationEvent.hasMany(WebhookDeliveryAttempt, { foreignKey: 'event_id', as: 'attempts' });
+WebhookDeliveryAttempt.belongsTo(IntegrationEvent, { foreignKey: 'event_id', as: 'event' });
+
+WebhookSubscription.hasMany(WebhookDeliveryAttempt, {
+  foreignKey: 'subscription_id',
+  as: 'attempts',
+});
+WebhookDeliveryAttempt.belongsTo(WebhookSubscription, {
+  foreignKey: 'subscription_id',
+  as: 'subscription',
+});
+
+// Only set for an administrator's manual re-send (FR-059), which is what
+// distinguishes a decision from a retry.
+WebhookDeliveryAttempt.belongsTo(User, { foreignKey: 'resent_by_user_id', as: 'resentBy' });
+
+// hasOne, because `UNIQUE(customer_id)` means there is at most one — the same
+// reasoning Phase 8 applied to `TicketSatisfaction`. A hasMany would invite a
+// caller to render a list and quietly tolerate a second row the database will
+// never let exist.
+Customer.hasOne(ErpLink, { foreignKey: 'customer_id', as: 'erpLink' });
+ErpLink.belongsTo(Customer, { foreignKey: 'customer_id', as: 'customer' });
+
+ErpSyncRun.hasMany(ErpSyncRecord, { foreignKey: 'sync_run_id', as: 'records' });
+ErpSyncRecord.belongsTo(ErpSyncRun, { foreignKey: 'sync_run_id', as: 'run' });
+
+// SET NULL: a record's customer may be removed later, and the run's history is
+// still the answer to "what did the sync do in March?" (FR-049).
+ErpSyncRecord.belongsTo(Customer, { foreignKey: 'customer_id', as: 'customer' });
+ErpSyncRun.belongsTo(User, { foreignKey: 'started_by_user_id', as: 'startedBy' });
+
 export {
   sequelize,
   AlertDelivery,
@@ -333,6 +404,15 @@ export {
   TicketNoteMention,
   AiCategoryProposal,
   DashboardArrangement,
+  ApiClient,
+  ApiClientPermission,
+  ApiClientSecret,
+  ErpLink,
+  ErpSyncRecord,
+  ErpSyncRun,
+  IntegrationEvent,
+  WebhookDeliveryAttempt,
+  WebhookSubscription,
   AiInvocation,
   AiSetting,
   AssistantConversation,

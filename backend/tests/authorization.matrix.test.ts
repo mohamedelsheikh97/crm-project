@@ -123,6 +123,11 @@ const PROBES: Record<
     method: 'post',
     path: '/api/reports/volume/export?from=2026-02-01&to=2026-02-28',
   },
+
+  // Phase 11 — Integrations. Administrator-only, so both probes expect a 403 for
+  // agent and supervisor alike.
+  'integrations:manage': { method: 'get', path: '/api/admin/integrations/clients' },
+  'erp:sync': { method: 'post', path: '/api/admin/integrations/erp/sync' },
 };
 
 const ROLE_KEYS = ['agent', 'supervisor', 'admin'] as const;

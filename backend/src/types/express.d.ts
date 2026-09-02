@@ -47,6 +47,34 @@ declare module 'express-serve-static-core' {
     };
 
     /**
+     * Populated by `authenticate-client` from a verified machine credential
+     * (Phase 11, research D1).
+     *
+     * A THIRD SUBJECT FIELD, and separate for exactly the reason `portal` is
+     * separate from `user`: these are different realms. `req.user` is a row in
+     * `users` with a role; `req.portal` is a customer contact with neither;
+     * `req.apiClient` is an external SYSTEM with its own permission grants and
+     * no person behind it at all.
+     *
+     * IT DOES NOT IMPERSONATE A USER. The constitution's machine-client
+     * paragraph forbids it, because attributing an automated action to whichever
+     * administrator configured the credential makes the audit trail misleading —
+     * a nightly ERP sync would appear as somebody's 3am login.
+     *
+     * `permissions` is read from the credential's own grants on every request,
+     * never from a token claim, so revocation and scope changes take effect
+     * immediately (FR-019).
+     */
+    apiClient?: {
+      /** `api_clients.id`. */
+      id: number;
+      /** The public half of the credential — appears in audit records. */
+      clientId: string;
+      name: string;
+      permissions: ReadonlySet<string>;
+    };
+
+    /**
      * The exact bytes of the request body, captured by `express.json`'s verify
      * callback in app.ts (Phase 5, research.md D5).
      *

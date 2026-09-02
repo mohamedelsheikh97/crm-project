@@ -4,6 +4,8 @@ import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
 import { z } from 'zod';
 
+import { classifyHost, hostOf } from '../lib/net-address.js';
+
 // There is exactly one .env and it lives at the repository root (FR-001).
 // backend/src/config -> backend/src -> backend -> repo root.
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
@@ -255,6 +257,105 @@ const envSchema = z
     // (D3 step 2). The single most consequential number in the phase, and the
     // one every test passes at either extreme — see research open question 1.
     AI_ASSISTANT_GROUNDING_FLOOR: z.coerce.number().min(0).optional().default(0.35),
+
+    /**
+     * Phase 11 — Integrations.
+     *
+     * `envFlag()` for every boolean, NEVER `z.coerce.boolean()`. Phase 9 shipped
+     * that bug and the comment above records why it survived review:
+     * `Boolean("false") === true`, so a flag explicitly switched off would have
+     * read as ON, and it only ever failed open because every AI default was
+     * false. The same trap is here, and this phase has a flag whose wrong value
+     * would expose a published interface rather than merely enable a feature.
+     */
+    INTEGRATIONS_ENABLED: envFlag(),
+
+    /**
+     * Which ERP adapter runs. THE ENVIRONMENT DECIDES WHICH CODE RUNS;
+     * enablement is a database setting an administrator changes at runtime —
+     * the division `channels/registry.ts` established in Phase 5, and the
+     * reason ERP sync can be switched off without a deployment but cannot be
+     * re-pointed at a different adapter through a screen.
+     */
+    ERP_PROVIDER: z.enum(['simulator']).optional().default('simulator'),
+
+    /**
+     * Delivery is separable from the rest of the phase on purpose: an operator
+     * troubleshooting a runaway receiver needs to stop DELIVERING without
+     * taking the published interface down with it. Events keep accumulating in
+     * the outbox meanwhile, so nothing is lost by switching this off.
+     */
+    WEBHOOK_DELIVERY_ENABLED: envFlag(),
+
+    /**
+     * Per-attempt timeout. Not optional in spirit: a receiver that accepts a
+     * connection and never answers would otherwise hold a socket for as long as
+     * the OS allows, and enough of them exhaust the pool.
+     */
+    WEBHOOK_TIMEOUT_MS: z.coerce.number().int().positive().optional().default(10_000),
+
+    /** Requests per credential per five minutes (research D17). */
+    API_RATE_LIMIT_PER_WINDOW: z.coerce.number().int().positive().optional().default(600),
+
+    /**
+     * How long a rotated-out secret keeps working. One working day by default,
+     * so an integrator can redeploy without a failed request — FR-018's whole
+     * point is that rotating is not an outage, because a credential nobody can
+     * rotate without downtime is a credential nobody rotates.
+     */
+    CREDENTIAL_ROTATION_OVERLAP_HOURS: z.coerce.number().int().positive().optional().default(24),
+
+    /**
+     * Retention for events, delivery attempts and sync runs. They answer the
+     * same kind of after-the-fact question an audit record does, so they get
+     * the same basis.
+     */
+    INTEGRATION_RETENTION_DAYS: z.coerce.number().int().positive().optional().default(90),
+
+    /**
+     * The key that encrypts webhook signing secrets at rest (`lib/secret-box.ts`).
+     *
+     * NEEDED BECAUSE THIS SYSTEM SIGNS AND THE SUBSCRIBER VERIFIES — the reverse
+     * of every other secret here, all of which are hashed because somebody else
+     * holds them and we only verify. HMAC needs the key material, so a digest
+     * cannot serve.
+     *
+     * 32 bytes, base64. Distinct from every JWT secret: those authenticate
+     * people and this one protects a secret we send signatures with, and reusing
+     * one value across both would mean a leak of either compromised both.
+     */
+    /**
+     * Lets webhook delivery reach a loopback address. TEST ONLY.
+     *
+     * ═══════════════════════════════════════════════════════════════════════
+     * THE `superRefine` BELOW MAKES THIS IMPOSSIBLE OUTSIDE `NODE_ENV=test`.
+     * ═══════════════════════════════════════════════════════════════════════
+     *
+     * Delivery is tested against a real HTTP server rather than a mocked
+     * `fetch`, because mocking would let the suite pass while the signature was
+     * computed over a re-serialised body, while `redirect: 'manual'` was
+     * missing, or while the timeout was never applied — every one of which is a
+     * real defect this phase can ship, and none of which a mock would notice.
+     *
+     * A real server in a test binds to 127.0.0.1, which FR-034's guard refuses.
+     * So the guard needs one door, and the door has to be one that cannot be
+     * opened in production: the validation below REFUSES TO START if this is
+     * true and the environment is not `test`.
+     *
+     * That is a stronger guarantee than a comment saying "do not set this",
+     * and it keeps the guard's production behaviour identical — there is no
+     * branch in `delivery.ts` that a deployment could reach.
+     */
+    WEBHOOK_ALLOW_LOOPBACK: envFlag(),
+
+    WEBHOOK_SIGNING_KEY: z
+      .string()
+      .optional()
+      .default('')
+      .refine(
+        (value) => value === '' || Buffer.from(value, 'base64').length === 32,
+        'must be 32 bytes, base64-encoded (openssl rand -base64 32)',
+      ),
   })
   .superRefine((value, ctx) => {
     /**
@@ -268,6 +369,51 @@ const envSchema = z
      * Checked pairwise rather than by set size so the message names the pair
      * that collided. A developer who reused one value wants to be told which.
      */
+    /**
+     * THE TEST-ONLY DOOR IS BOLTED SHUT OUTSIDE TESTS.
+     *
+     * `WEBHOOK_ALLOW_LOOPBACK` exists so delivery can be tested against a real
+     * local HTTP server. In any other environment it would turn webhook
+     * delivery into a server-side request forgery primitive — a subscriber
+     * naming an internal address and reading the response — which is precisely
+     * what FR-034 exists to prevent.
+     *
+     * Refusing to START is deliberate rather than ignoring the flag: a
+     * deployment that set it has a misunderstanding worth surfacing loudly, and
+     * silently overriding it would leave somebody believing it worked.
+     */
+    if (value.WEBHOOK_ALLOW_LOOPBACK && value.NODE_ENV !== 'test') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['WEBHOOK_ALLOW_LOOPBACK'],
+        message:
+          'may only be true when NODE_ENV=test. Outside tests it would let a webhook ' +
+          "subscription make this server probe its own network on the subscriber's behalf " +
+          '(FR-034).',
+      });
+    }
+
+    /**
+     * Webhook delivery cannot sign without its key, so it refuses to start
+     * rather than sending unsigned payloads — the same fail-closed posture
+     * Phase 9 applies to its AI provider configuration.
+     *
+     * Checked only when delivery is enabled, so a deployment not using webhooks
+     * needs no key.
+     */
+    if (value.INTEGRATIONS_ENABLED && value.WEBHOOK_DELIVERY_ENABLED) {
+      if (value.WEBHOOK_SIGNING_KEY === '') {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['WEBHOOK_SIGNING_KEY'],
+          message:
+            'is required when WEBHOOK_DELIVERY_ENABLED is true. Without it a payload could only ' +
+            'be sent unsigned, and an unsigned notification is one a receiver cannot trust ' +
+            '(FR-027). Generate one with: openssl rand -base64 32',
+        });
+      }
+    }
+
     const secrets: ReadonlyArray<readonly [name: string, secret: string]> = [
       ['JWT_ACCESS_SECRET', value.JWT_ACCESS_SECRET],
       ['JWT_REFRESH_SECRET', value.JWT_REFRESH_SECRET],
@@ -379,24 +525,19 @@ const envSchema = z
     // controls. Checked HERE rather than at call time so a public URL stops the
     // process instead of quietly serving one customer conversation offsite.
     if (assistantEnabled && value.AI_LOCAL_BASE_URL) {
-      let host: string;
-      try {
-        host = new URL(value.AI_LOCAL_BASE_URL).hostname;
-      } catch {
-        // An unparseable URL is not controlled infrastructure. Empty falls
-        // through to the private-address check below and fails it.
-        host = '';
-      }
-
-      const isPrivate =
-        host === 'localhost' ||
-        host === '::1' ||
-        /^127\./.test(host) ||
-        /^10\./.test(host) ||
-        /^192\.168\./.test(host) ||
-        /^172\.(1[6-9]|2\d|3[01])\./.test(host) ||
-        host.endsWith('.internal') ||
-        host.endsWith('.local');
+      /**
+       * THE ADDRESS RANGES NOW LIVE IN ONE PLACE (Phase 11, research D10).
+       *
+       * `lib/net-address.ts` classifies a host; this call site states which
+       * answer it requires. Phase 11's webhook delivery requires the OPPOSITE
+       * one, and the two assertions are named for their direction so a mistake
+       * reads wrong at the call site rather than looking fine.
+       *
+       * Sharing the classifier means a correction to the ranges — the
+       * link-local block covering cloud metadata was missing here, for
+       * instance — reaches both rules instead of one.
+       */
+      const isPrivate = classifyHost(hostOf(value.AI_LOCAL_BASE_URL)) === 'private';
 
       if (!isPrivate) {
         ctx.addIssue({

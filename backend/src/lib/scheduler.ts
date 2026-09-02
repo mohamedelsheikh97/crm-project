@@ -1,9 +1,10 @@
 import { sequelize } from '../config/database.js';
 import { env } from '../config/env.js';
-import { Task } from '../models/index.js';
+import { ErpSyncRun, IntegrationEvent, Task } from '../models/index.js';
 import { NOTIFICATION_TYPES } from '../models/notification.model.js';
 import { logger } from '../middleware/request-logger.js';
 import * as notificationService from '../services/notification.service.js';
+import * as deliveryService from '../services/webhook-delivery.service.js';
 import * as escalationService from '../services/sla-escalation.service.js';
 import { ticketsDueSoon } from '../services/ticket-due.service.js';
 import { Op } from 'sequelize';
@@ -135,10 +136,75 @@ async function sweepSlaTargets(now: Date): Promise<number> {
   return result.warned + result.escalated + result.refused;
 }
 
+/**
+ * Webhook delivery (Phase 11, US2, FR-030, research D8).
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * THE FOURTH THING THIS SYSTEM DOES ON ITS OWN INITIATIVE.
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * It fits this file's existing discipline exactly, and the fit is the reason no
+ * queue technology was added: EVERY SWEEP IS WRITTEN SO THAT MISSING A TICK IS
+ * HARMLESS. Due-ness is a database column rather than a timer's memory, so a
+ * restart loses nothing — which is FR-030's "must survive a restart" for free
+ * rather than as a feature.
+ *
+ * SEPARATELY SWITCHABLE from the rest of the phase. An operator troubleshooting
+ * a runaway receiver needs to stop DELIVERING without taking the published
+ * interface down with it, and events keep accumulating in the outbox meanwhile,
+ * so nothing is lost by switching it off.
+ *
+ * THE KNOWN LIMIT IS THIS FILE'S OWN, INHERITED. Its header already records that
+ * two processes would double-fire; here the duplicate leaves the building. It is
+ * mitigated rather than solved — attempts are claimed by conditional update, and
+ * FR-031 makes at-least-once part of the published contract so a receiver is
+ * required to deduplicate. A lock is the real answer and it is out of scope.
+ */
+async function sweepWebhookDeliveries(): Promise<number> {
+  if (!env.INTEGRATIONS_ENABLED || !env.WEBHOOK_DELIVERY_ENABLED) return 0;
+
+  const { enqueued, delivered } = await deliveryService.sweep();
+
+  return enqueued + delivered;
+}
+
+/**
+ * Retention (Phase 11, data-model.md D2).
+ *
+ * Events, delivery attempts and sync runs answer the same kind of
+ * after-the-fact question an audit record does, so they get the same basis — and
+ * they are pruned by a sweep rather than a cascade so that "missing a tick is
+ * harmless" continues to hold.
+ */
+async function sweepIntegrationRetention(now: Date): Promise<number> {
+  if (!env.INTEGRATIONS_ENABLED) return 0;
+
+  const cutoff = new Date(now.getTime() - env.INTEGRATION_RETENTION_DAYS * 86_400_000);
+
+  /**
+   * Events only. Attempts and sync records CASCADE from their parents, so
+   * deleting the event removes its attempts — one delete rather than three that
+   * could disagree about what is old.
+   */
+  const removed = await IntegrationEvent.destroy({
+    where: { created_at: { [Op.lt]: cutoff } },
+    limit: 500,
+  });
+
+  const removedRuns = await ErpSyncRun.destroy({
+    where: { created_at: { [Op.lt]: cutoff } },
+    limit: 100,
+  });
+
+  return removed + removedRuns;
+}
+
 export interface SweepResult {
   reminders: number;
   dueWarnings: number;
   slaActions: number;
+  webhookDeliveries: number;
+  integrationRetention: number;
 }
 
 /**
@@ -146,13 +212,15 @@ export interface SweepResult {
  * ever waits on a timer. The interval below is a thin wrapper around this.
  */
 export async function runScheduledSweeps(now: Date = new Date()): Promise<SweepResult> {
-  const [reminders, dueWarnings, slaActions] = [
+  const [reminders, dueWarnings, slaActions, webhookDeliveries, integrationRetention] = [
     await sweepTaskReminders(now),
     await sweepDueWarnings(now),
     await sweepSlaTargets(now),
+    await sweepWebhookDeliveries(),
+    await sweepIntegrationRetention(now),
   ];
 
-  return { reminders, dueWarnings, slaActions };
+  return { reminders, dueWarnings, slaActions, webhookDeliveries, integrationRetention };
 }
 
 export function startScheduler(): void {

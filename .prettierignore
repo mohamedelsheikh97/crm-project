@@ -1,6 +1,7 @@
 node_modules
 dist
 package-lock.json
+coverage
 backend/src/db/migrations
 
 # Hand-authored Spec Kit deliverables. Prettier rewrites markdown structure

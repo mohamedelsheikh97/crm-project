@@ -91,6 +91,25 @@ describe('agent performance is unreachable by an agent', () => {
     }
   });
 
+  it('refuses the dashboard ARRANGEMENT routes to an agent', async () => {
+    /**
+     * Added because the reconciliation below caught them missing.
+     *
+     * US6's arrangement routes were mounted after this file was written, and the
+     * route list is read from the router precisely so that gap fails rather than
+     * shipping. An agent holds no `reports:view`, so both refuse — but "refuses
+     * because nobody probed it" and "refuses because it was checked" are
+     * different states, and only one of them stays true after the next change.
+     */
+    const read = await staffAgent.get('/api/reports/dashboard/arrangement');
+    expect(read.status).toBe(403);
+
+    const write = await staffAgent
+      .put('/api/reports/dashboard/arrangement')
+      .send({ layout: ['volume.received'] });
+    expect(write.status).toBe(403);
+  });
+
   it('refuses the export route to an agent, for every exportable report', async () => {
     const source = await readFile(
       path.resolve(import.meta.dirname, '../../src/controllers/reports/export.controller.ts'),
@@ -151,7 +170,15 @@ describe('agent performance is unreachable by an agent', () => {
 
     // Every mounted reporting path has been probed above as an agent, whether
     // by name or through the export map. Listed here so a new route fails.
-    const probed = ['/dashboard', '/volume', '/sla', '/csat', '/agents', '/:report/export'];
+    const probed = [
+      '/dashboard',
+      '/dashboard/arrangement',
+      '/volume',
+      '/sla',
+      '/csat',
+      '/agents',
+      '/:report/export',
+    ];
 
     for (const route of mounted) {
       // `/:report/print` is deliberately reachable with `reports:view`, which an
