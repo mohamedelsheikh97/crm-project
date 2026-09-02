@@ -1,6 +1,8 @@
 import { Op, type Transaction, type WhereOptions } from 'sequelize';
 
+import { fetchLimit, keysetWhere, KEYSET_ORDER, type KeysetQuery } from '../api/paging.js';
 import { sequelize } from '../config/database.js';
+import * as outbox from '../integrations/outbox.js';
 import {
   conflict,
   duplicateCustomer,
@@ -66,6 +68,16 @@ export interface CustomerSummary {
   primaryEmail: string | null;
   contactCount: number;
   createdAt: Date;
+  /**
+   * Added in Phase 11 for keyset paging (FR-008).
+   *
+   * ADDITIVE — the screens ignore it, and adding a field to a response is not a
+   * breaking change under the published interface's own versioning rules. It is
+   * here rather than only in an API-specific shape so that `toSummary` stays the
+   * single definition of what a customer summary is; a parallel mapper is
+   * exactly the drift FR-010 forbids.
+   */
+  updatedAt: Date;
   version: number;
   matchedOn?: 'name' | 'company' | 'phone' | 'email';
 }
@@ -75,6 +87,13 @@ export interface CustomerDetail extends CustomerSummary {
   contacts: ContactView[];
 }
 
+/**
+ * The published interface's paging primitives.
+ *
+ * Imported here rather than reimplemented so the cursor encoding has one
+ * definition — a client that received two different cursor formats from two
+ * collections would have no way to know which it was holding.
+ */
 export interface Paged<T> {
   items: T[];
   page: number;
@@ -108,6 +127,7 @@ function toSummary(customer: WithContacts): CustomerSummary {
     primaryEmail: email ? email.value_raw : null,
     contactCount: contacts.length,
     createdAt: customer.created_at,
+    updatedAt: customer.updated_at,
     version: customer.version,
   };
 }
@@ -124,6 +144,48 @@ function toDetail(customer: WithContacts): CustomerDetail {
       isPrimary: contact.is_primary,
     })),
   };
+}
+
+/**
+ * Keyset-paged listing for the published interface (Phase 11, FR-008, FR-009).
+ *
+ * EXTENDS RATHER THAN FORKS. It reuses `toSummary`, so there is one definition
+ * of what a customer summary is — a second mapper would be the drift FR-010
+ * exists to prevent, and it would diverge on the first field either surface
+ * added.
+ *
+ * What it does NOT reuse is the offset paging: research D2 records why. Insert a
+ * record while a client is paging and every later page shifts by one, so one
+ * record is read twice and one is never read at all. Harmless for a screen;
+ * for a client synchronising into another database it is a customer that
+ * silently does not exist over there.
+ *
+ * Returns one row MORE than asked for, so `has_more` is derived rather than
+ * counted — paging then costs no extra query, and a short page is never
+ * mistaken for the last page.
+ *
+ * DEACTIVATED CUSTOMERS ARE INCLUDED, unlike the screen's default (FR-008 of
+ * Phase 2). A synchronising client needs to learn that a customer was
+ * deactivated; hiding the row would leave their copy active forever.
+ */
+export async function listKeyset(
+  query: KeysetQuery,
+): Promise<{ rows: Array<CustomerSummary & { id: number; updated_at: Date }>; hasMore: boolean }> {
+  const found = await Customer.findAll({
+    where: keysetWhere(query),
+    include: [{ model: CustomerContact, as: 'contacts' }],
+    order: [...KEYSET_ORDER] as [string, 'ASC'][],
+    limit: fetchLimit(query),
+  });
+
+  const hasMore = found.length > query.limit;
+  const rows = (hasMore ? found.slice(0, query.limit) : found).map((row) => ({
+    ...toSummary(row as WithContacts),
+    id: row.id,
+    updated_at: row.updated_at,
+  }));
+
+  return { rows, hasMore };
 }
 
 /** Clamped rather than rejected — a default alone would not stop a caller asking for everything. */
@@ -423,6 +485,25 @@ export async function create(
         newValue: { displayName: customer.display_name, company: customer.company },
         ...context,
       },
+      transaction,
+    );
+
+    /**
+     * Phase 11 (FR-024). THE OUTBOX ROW, IN THIS TRANSACTION.
+     *
+     * Written inside the transaction that creates the customer, for the reason
+     * integrations/outbox.ts sets out: written before and rolled back, a webhook
+     * fires for a customer that does not exist; written after in a separate
+     * step, a crash in between loses it and nobody is ever told.
+     *
+     * Unlike tickets, customers have no automation event bus to hang this off —
+     * Phase 6's triggers are all ticket-shaped — so this is the emission point
+     * rather than an observation of an existing one. It still adds no new
+     * monitoring (FR-065): a customer being created is already audited on the
+     * line above.
+     */
+    await outbox.record(
+      { eventType: 'customer.created', subjectType: 'customer', subjectId: customer.id },
       transaction,
     );
 

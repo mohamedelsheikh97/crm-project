@@ -262,6 +262,33 @@ export const PERMISSIONS = [
   // in the controller, so `reports:export` cannot become a route to the agent
   // report without `reports:view_agents`.
   define('reports', 'export'),
+
+  // Phase 11 — Integrations. TWO KEYS, and neither is implied by general
+  // administration (FR-061).
+  //
+  // `integrations:manage` covers issuing, rotating and revoking the credentials
+  // external systems hold, registering the addresses notifications are sent to,
+  // and reading the failure overview. It is deliberately NOT part of
+  // `settings:view`: a credential is a standing grant of read access to this
+  // organisation's customer and ticket data, handed to a party outside it. That
+  // is a narrower judgement than "may configure the application", and somebody
+  // trusted with the latter is not automatically trusted with the former.
+  //
+  // ADMINISTRATOR ONLY, unlike Phase 10's reporting keys. A supervisor reading a
+  // report changes nothing; a supervisor issuing a credential creates an ongoing
+  // data flow out of the building that nobody may notice for a year.
+  define('integrations', 'manage'),
+
+  // SEPARATE BECAUSE RUNNING A SYNC WRITES TO CUSTOMER RECORDS. Everything
+  // behind `integrations:manage` is configuration and reading; this one is the
+  // only key in the phase that authorises a second writer to touch data a person
+  // entered (FR-043), and the failure it can cause — an agent's correction
+  // silently replaced — is invisible on every screen.
+  //
+  // Holding it does not imply `integrations:manage`, so somebody can be
+  // permitted to run the nightly reconciliation without also being able to issue
+  // credentials to third parties.
+  define('erp', 'sync'),
 ] as const satisfies readonly PermissionDefinition[];
 
 export type PermissionKey = (typeof PERMISSIONS)[number]['key'];

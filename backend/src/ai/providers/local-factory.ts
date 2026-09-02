@@ -1,4 +1,5 @@
 import { env } from '../../config/env.js';
+import { classifyHost } from '../../lib/net-address.js';
 
 import { localProvider } from './local.js';
 import { AiProviderError, type AiProvider } from './types.js';
@@ -16,7 +17,16 @@ import { AiProviderError, type AiProvider } from './types.js';
  * check, on the grounds that the one which stops customer content leaving the
  * building is worth asserting twice.
  */
-const PRIVATE_HOST = /^(localhost|::1|127\..*|10\..*|192\.168\..*|172\.(1[6-9]|2\d|3[01])\..*)$/;
+/**
+ * Delegated to `lib/net-address.ts` (Phase 11, research D10).
+ *
+ * The regex this replaces did not cover link-local (`169.254.`), which is where
+ * cloud metadata services live. Sharing the classifier with Phase 11's webhook
+ * guard means that gap is closed in both directions at once — and the two
+ * directions are opposite, so they use separately named assertions rather than a
+ * shared `checkHost()` somebody could call backwards.
+ */
+const isPrivateHost = (host: string): boolean => classifyHost(host) === 'private';
 
 export function localProviderFor(): AiProvider {
   if (!env.AI_LOCAL_BASE_URL) {
@@ -34,8 +44,9 @@ export function localProviderFor(): AiProvider {
     throw new AiProviderError('local_not_configured', 'AI_LOCAL_BASE_URL is not a valid URL');
   }
 
-  const controlled =
-    PRIVATE_HOST.test(host) || host.endsWith('.internal') || host.endsWith('.local');
+  // `.internal` and `.local` are part of the classifier now, so this is one
+  // call rather than three conditions that could diverge from env.ts's.
+  const controlled = isPrivateHost(host);
 
   if (!controlled) {
     throw new AiProviderError(

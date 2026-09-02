@@ -1,6 +1,36 @@
 <!--
 ## Sync Impact Report
 
+### v1.3.0 (2026-09-03)
+Bump type: MINOR — materially expanded guidance; no principle removed or redefined.
+
+Modified:
+- Technology Standards: the single "Authentication" row split into "Authentication — people"
+  (JWT at login, preserved verbatim) and "Authentication — machines" (administrator-issued
+  client credentials, hashed at rest, verified per request)
+- Technology Standards: new "Machine client authentication" paragraph requiring the secret to be
+  verifiable but not retrievable, rotatable with an overlap, and revocable with immediate effect —
+  and forbidding a machine credential from impersonating a user or exceeding the authority of the
+  person granting it
+- Open Items: "ERP system identity and integration protocol (needed before Phase 11)" reworded to
+  "ERP system identity" — Phase 11 settles the protocol via its adapter contract, and the identity
+  remains outstanding because which ERP the organisation runs is not a design decision
+
+Reason: Phase 11 exposes a published interface to external systems. A machine client never logs in,
+so the fixed-stack table's authentication row did not describe it, and the table's own rule forbids
+introducing a deviation within a phase spec. The option needing no amendment — a long-lived
+service-account JWT — was rejected because a JWT is valid until expiry by design, which contradicts
+Phase 11's FR-019 requirement of immediate revocation unless a revocation list is added, at which
+point it is the same per-request database lookup with extra machinery.
+
+Migration: none. No completed phase is affected — Phases 0-10 contain no machine clients, every
+authenticated request in them comes from a person's session, and the human-authentication row is
+preserved unchanged. Phase 11 is additive; its FR-067 requires the system to work with every
+integration capability switched off, and SC-026 asserts that by running the Phase 0-10 suite
+unchanged.
+
+Proposal: specs/012-phase-11-integrations/constitution-amendment-proposal.md
+
 ### v1.2.0 (2026-09-02)
 Bump type: MINOR — materially expanded guidance; no principle removed or redefined.
 
@@ -159,10 +189,21 @@ this constitution and MUST NOT be introduced unilaterally within a phase spec.
 | Backend runtime      | Node.js + Express                                          |
 | Backend ORM          | Sequelize                                                  |
 | Database             | MySQL                                                      |
-| Authentication       | JWT (issued at login, verified per request via middleware) |
+| Authentication — people | JWT (issued at login, verified per request via middleware) |
+| Authentication — machines | Administrator-issued client credentials (identifier + secret), hashed at rest, verified per request |
 | Internationalisation | vue-i18n with `ar` and `en` locale files                   |
 | AI — staff-facing    | Anthropic Claude API (`claude-opus-5`) via `@anthropic-ai/sdk` |
 | AI — customer-facing | Self-hosted OpenAI-compatible inference server on controlled infrastructure |
+
+**Machine client authentication.** An external system authenticating to the published interface
+presents an administrator-issued credential rather than a token obtained by logging in, because it
+has no login. The credential's secret MUST be stored such that it can be verified but not retrieved,
+MUST be rotatable with an overlap during which both the old and new secrets are accepted, and MUST be
+revocable with immediate effect — a mechanism that cannot be revoked before it expires does not
+satisfy this. A machine credential carries its own authority, expressed in the same permission
+vocabulary used for people; it MUST NOT impersonate a user, because attributing an automated action
+to whichever administrator configured it makes the audit trail misleading. A machine credential MUST
+NOT be able to reach anything a person granting it could not reach themselves.
 
 **AI processing boundary.** Staff-facing AI features — ticket summarisation, reply drafting, and
 similar-ticket suggestion — MAY transmit ticket content to the external provider named above. The
@@ -179,7 +220,8 @@ This enables audits to confirm full PLAN.md coverage across phases.
 **Open Items (to resolve before the relevant phase begins, not before Phase 0):**
 
 - SLA response/resolution time targets (needed before Phase 6)
-- ERP system identity and integration protocol (needed before Phase 11)
+- ERP system identity — which product the organisation runs (Phase 11 delivers the adapter
+  contract and a simulator; the protocol question is settled by that contract, the identity is not)
 - Branding assets per organisation/department (needed before Phase 12)
 - Code style conventions (ESLint/Prettier config — establish in Phase 0 CI pipeline)
 
@@ -243,4 +285,4 @@ constitution prevails and the conflicting artifact MUST be revised.
 **Runtime governance reference:** `.specify/memory/constitution.md` (this file) is the
 authoritative governance document for all `/speckit-plan` runs.
 
-**Version**: 1.2.0 | **Ratified**: 2026-08-25 | **Last Amended**: 2026-09-02
+**Version**: 1.3.0 | **Ratified**: 2026-08-25 | **Last Amended**: 2026-09-03

@@ -181,6 +181,36 @@ export const AUDIT_ACTIONS = {
   // organisation took over a conversation it had been conducting by machine.
   AI_ASSISTANT_ESCALATED: 'ai.assistant.escalated',
 
+  // Phase 11 — Integrations.
+  //
+  // ONE KEY PER ACTION rather than a shared "settings updated", because these
+  // are not settings. Issuing a credential creates a standing grant of read
+  // access to this organisation's data, handed to a party outside it, that will
+  // keep working until somebody revokes it. Six months later the question is
+  // "who gave that system access, when, and to what?" — and a log where every
+  // integration action shares one key answers it by making somebody read
+  // metadata.
+  API_CLIENT_CREATED: 'integration.client.created',
+  API_CLIENT_SECRET_ROTATED: 'integration.client.secret_rotated',
+  API_CLIENT_REVOKED: 'integration.client.revoked',
+  API_CLIENT_PERMISSIONS_CHANGED: 'integration.client.permissions_changed',
+
+  // FR-062. The ADDRESS is the security-relevant part: it is where this
+  // organisation's event notifications are sent.
+  SUBSCRIPTION_CREATED: 'integration.subscription.created',
+  SUBSCRIPTION_SECRET_ROTATED: 'integration.subscription.secret_rotated',
+  SUBSCRIPTION_DEACTIVATED: 'integration.subscription.deactivated',
+  // FR-059. A re-send is somebody's decision, unlike a retry.
+  WEBHOOK_RESENT: 'integration.webhook.resent',
+
+  // FR-049. A sync is the only external writer to customer records, and
+  // `erp.sync.conflict` is the one an incident would look for: it means an ERP
+  // value replaced something a person here had edited (FR-043).
+  ERP_SYNC_STARTED: 'integration.erp.sync_started',
+  ERP_SYNC_COMPLETED: 'integration.erp.sync_completed',
+  ERP_SYNC_FAILED: 'integration.erp.sync_failed',
+  ERP_SYNC_CONFLICT: 'integration.erp.conflict',
+
   // Defined in Phase 1 with no caller; Phase 2 is the first phase that
   // exports business records, so this finally acquires one.
   DATA_EXPORTED: 'data.exported',

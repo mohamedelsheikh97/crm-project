@@ -1,5 +1,9 @@
 import { Op, literal, type WhereOptions } from 'sequelize';
 
+import { fetchLimit, keysetWhere, KEYSET_ORDER, type KeysetQuery } from '../api/paging.js';
+import * as outbox from '../integrations/outbox.js';
+import { RESOLVED_STATUSES } from '../sla/clock.js';
+
 import { sequelize } from '../config/database.js';
 import { env } from '../config/env.js';
 import {
@@ -399,6 +403,52 @@ export async function list(options: ListOptions = {}): Promise<Paged<TicketSumma
   };
 }
 
+/**
+ * Keyset-paged listing for the published interface (Phase 11, FR-008, FR-009).
+ *
+ * EXTENDS RATHER THAN FORKS: it reuses `toSummary` and `SUMMARY_INCLUDE`, so
+ * there is one definition of what a ticket summary is. A parallel mapper would
+ * be the drift FR-010 exists to prevent, and it would diverge on the first field
+ * either surface added.
+ *
+ * MERGED TICKETS ARE INCLUDED, unlike the working list's default (Phase 3's
+ * FR-044 excludes them because "a queue full of redirects is not a queue"). A
+ * synchronising client needs to learn that a ticket was merged — that is the
+ * whole reason the published contract answers 409 with the survivor's identifier
+ * rather than a bare 404. Hiding merged rows from the collection would leave the
+ * client's copy of an absorbed ticket open forever.
+ *
+ * `filters` reuses the ordinary `ListOptions` fields the screens already use,
+ * so a category filter means the same thing on both surfaces.
+ */
+export async function listKeyset(
+  query: KeysetQuery,
+  filters: Pick<ListOptions, 'status' | 'priority' | 'category' | 'customerId'> = {},
+): Promise<{ rows: Array<TicketSummary & { id: number; updated_at: Date }>; hasMore: boolean }> {
+  const base: WhereOptions & Record<string, unknown> = {};
+
+  if (filters.status?.length) base.status = filters.status;
+  if (filters.priority?.length) base.priority = filters.priority;
+  if (filters.category?.length) base.category = filters.category;
+  if (filters.customerId !== undefined) base.customer_id = filters.customerId;
+
+  const found = await Ticket.findAll({
+    where: keysetWhere(query, base),
+    include: SUMMARY_INCLUDE,
+    order: [...KEYSET_ORDER] as [string, 'ASC'][],
+    limit: fetchLimit(query),
+  });
+
+  const hasMore = found.length > query.limit;
+  const rows = (hasMore ? found.slice(0, query.limit) : found).map((row) => ({
+    ...toSummary(row as Loaded),
+    id: row.id,
+    updated_at: row.updated_at,
+  }));
+
+  return { rows, hasMore };
+}
+
 // --- Reading -------------------------------------------------------------
 
 async function linksFor(ticketId: number): Promise<TicketLinkView[]> {
@@ -740,6 +790,24 @@ export async function create(
     // that definitely exists — nothing evaluates before the commit.
     automationEngine.emit(
       { trigger: 'ticket.created', ticketId: ticket.id, actorUserId: actor.id },
+      transaction,
+    );
+
+    /**
+     * Phase 11 (FR-024, FR-065). THE OUTBOX ROW, IN THIS TRANSACTION.
+     *
+     * Written here rather than after the commit, and that is the whole design:
+     * written before and rolled back, a webhook would fire for a ticket that
+     * does not exist; written after in a separate step, a crash in between loses
+     * it and nobody is ever told. Inside the transaction, the event exists
+     * exactly when the ticket does.
+     *
+     * AT THE EXISTING EMISSION POINT, deliberately. FR-065 says this phase adds
+     * no new monitoring — it observes the transitions Phases 3 and 6 already
+     * record rather than introducing its own.
+     */
+    await outbox.record(
+      { eventType: 'ticket.created', subjectType: 'ticket', subjectId: ticket.id },
       transaction,
     );
 
@@ -1094,6 +1162,29 @@ export async function transition(
       },
       transaction,
     );
+
+    /**
+     * Phase 11 (FR-024). `ticket.resolved` fires on the TRANSITION INTO a
+     * settled state, not on the state itself.
+     *
+     * A ticket resolved, reopened and resolved again therefore produces two
+     * events with different keys and different occurrence times — which is
+     * correct, because it happened twice, and a receiver reconciling work needs
+     * to see both.
+     *
+     * `RESOLVED_STATUSES` comes from `sla/clock.ts`. Writing `['resolved',
+     * 'closed']` here would be a second definition of "finished" that agrees
+     * today and drifts on the first change to Phase 6.
+     */
+    if (
+      (RESOLVED_STATUSES as readonly string[]).includes(edge.to) &&
+      !(RESOLVED_STATUSES as readonly string[]).includes(edge.from)
+    ) {
+      await outbox.record(
+        { eventType: 'ticket.resolved', subjectType: 'ticket', subjectId: ticket.id },
+        transaction,
+      );
+    }
   });
 
   // Reopening RETAINS ALL HISTORY (FR-022) — nothing above deletes anything,

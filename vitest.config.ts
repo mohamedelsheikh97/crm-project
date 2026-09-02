@@ -16,6 +16,12 @@ export default defineConfig({
           // override variables that are already present, so these win over .env.
           env: {
             NODE_ENV: 'test',
+            // Lets delivery reach the loopback receiver the webhook tests stand
+            // up. `config/env.ts` refuses to start with this set outside
+            // NODE_ENV=test, so it cannot leak into a deployment — and setting
+            // it HERE rather than in .env keeps it out of the developer's own
+            // environment too.
+            WEBHOOK_ALLOW_LOOPBACK: 'true',
             DB_NAME: 'crm_support_test',
             LOG_LEVEL: 'silent',
           },

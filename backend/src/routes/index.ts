@@ -1,5 +1,7 @@
 import { Router } from 'express';
 
+import { env } from '../config/env.js';
+
 import adminRoutes from './admin/index.js';
 import authRoutes from './auth.routes.js';
 import channelRoutes from './channels/index.js';
@@ -16,6 +18,7 @@ import publicRoutes from './public/index.js';
 import taskRoutes from './tasks/index.js';
 import templateRoutes from './templates/index.js';
 import ticketRoutes from './tickets/index.js';
+import v1Routes, { publicV1Router } from './v1/index.js';
 
 const router = Router();
 
@@ -74,6 +77,31 @@ router.use('/knowledge', knowledgeRoutes);
 // staff one — and that is enforced by separate signing secrets rather than by
 // this comment (research D1).
 router.use('/portal', portalRoutes);
+
+// Phase 11. THE FOURTH IDENTITY REALM, and the second one with its own
+// credential type.
+//
+// Under a prefix for the reason the AI and report routers are — this router
+// applies its OWN authenticator, and a bare mount would offer
+// machine-credential authentication to every staff route registered after it,
+// which is a worse version of the defect Phase 9 shipped.
+//
+// The version lives in the path, so a request without one cannot be served: it
+// lands on the unversioned staff surface and is refused there for want of a JWT.
+// FR-002 is therefore structural rather than a check somebody has to remember.
+//
+// CONDITIONAL ON `INTEGRATIONS_ENABLED`, and the answer when it is off is 404
+// rather than 401 (FR-067). Absent, not refusing: a 401 would tell a caller the
+// interface exists and they merely lack a credential, when in fact this
+// deployment does not publish one at all. Not mounting it is also what makes
+// SC-026's claim — that the Phase 0-10 suite passes unchanged — true by
+// construction rather than by hoping nothing leaked.
+if (env.INTEGRATIONS_ENABLED) {
+  // The description sits outside the authenticator: an integrator reads it
+  // before they have a credential, and it describes shapes rather than data.
+  router.use('/v1', publicV1Router);
+  router.use('/v1', v1Routes);
+}
 
 // THE ONLY UNAUTHENTICATED SURFACES IN THIS PROJECT (FR-105), gathered under
 // one prefix and one file so the whole public attack surface is reviewable at

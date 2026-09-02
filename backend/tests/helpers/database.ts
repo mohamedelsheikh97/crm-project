@@ -44,6 +44,7 @@ const KB_PERMISSIONS_SEEDER = '20260901000001-kb-permissions.cjs';
 const PORTAL_PERMISSIONS_SEEDER = '20260901000013-portal-permissions.cjs';
 const AI_PERMISSIONS_SEEDER = '20260902000002-ai-permissions.cjs';
 const REPORTING_PERMISSIONS_SEEDER = '20260903000003-reporting-permissions.cjs';
+const INTEGRATION_PERMISSIONS_SEEDER = '20260904000001-integration-permissions.cjs';
 const ADMIN_USER_SEEDER = '20260825000002-admin-user.cjs';
 
 /**
@@ -71,6 +72,7 @@ async function reseed(): Promise<void> {
   await seeder(PORTAL_PERMISSIONS_SEEDER).up(queryInterface);
   await seeder(AI_PERMISSIONS_SEEDER).up(queryInterface);
   await seeder(REPORTING_PERMISSIONS_SEEDER).up(queryInterface);
+  await seeder(INTEGRATION_PERMISSIONS_SEEDER).up(queryInterface);
   await seeder(ADMIN_USER_SEEDER).up(queryInterface);
 }
 
