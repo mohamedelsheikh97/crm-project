@@ -40,6 +40,11 @@ import { TicketHistory } from './ticket-history.model.js';
 import { TicketLink } from './ticket-link.model.js';
 import { TicketNoteMention } from './ticket-note-mention.model.js';
 import { TicketNote } from './ticket-note.model.js';
+import { AiCategoryProposal } from './ai-category-proposal.model.js';
+import { AiInvocation } from './ai-invocation.model.js';
+import { AiSetting } from './ai-setting.model.js';
+import { AssistantConversation } from './assistant-conversation.model.js';
+import { AssistantMessage } from './assistant-message.model.js';
 import { TicketSatisfaction } from './ticket-satisfaction.model.js';
 import { Ticket } from './ticket.model.js';
 import { UserCompetency } from './user-competency.model.js';
@@ -325,6 +330,11 @@ export {
   TicketLink,
   TicketNote,
   TicketNoteMention,
+  AiCategoryProposal,
+  AiInvocation,
+  AiSetting,
+  AssistantConversation,
+  AssistantMessage,
   TicketSatisfaction,
   TicketSla,
   User,

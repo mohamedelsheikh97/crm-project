@@ -213,6 +213,25 @@ export const PERMISSIONS = [
   // middleware resolves a token's subject against `users`, so anything that made
   // a customer look like a permission holder would be one line away from making
   // them a staff member.
+
+  // Phase 9 — AI Features. ONE KEY, covering configuration, the activity view,
+  // and chatbot transcript review.
+  //
+  // One rather than five follows Phase 8's reasoning for `portal:manage` and
+  // Phase 6's for `sla:manage`: the person who may switch the assistant on is
+  // the person who may switch summarisation off, and splitting them produces a
+  // roles screen nobody can reason about. FR-060 requires only that it be
+  // distinct from the tickets, knowledge base, and channels keys — it is.
+  define('ai', 'manage'),
+
+  // There is deliberately NO `ai:use` KEY. Using an AI feature requires the
+  // authority to perform the underlying action (FR-061): summarising requires
+  // `tickets:view` on that ticket, drafting requires `messages:send`, accepting
+  // a category proposal requires `tickets:update`. A separate `ai:use` would be
+  // a permission every role holds unconditionally, and one that can never
+  // refuse anything is not a gate — it is noise on the roles screen and a
+  // matrix row that cannot fail. Phase 4 kept `notifications:view` out for this
+  // reason, Phase 5 kept `timeline:view` out, and Phase 6 kept `sla:view` out.
 ] as const satisfies readonly PermissionDefinition[];
 
 export type PermissionKey = (typeof PERMISSIONS)[number]['key'];

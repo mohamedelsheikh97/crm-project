@@ -89,6 +89,15 @@ export class Ticket extends Model<InferAttributes<Ticket>, InferCreationAttribut
    */
   declare requesting_contact_id: CreationOptional<number | null>;
   /**
+   * The bot conversation this ticket was escalated from (Phase 9, D5).
+   *
+   * NULL for every ticket not born from an assistant escalation, which is
+   * almost all of them. Present so the ticket view can show FR-036b's
+   * provenance without a reverse lookup, and so Phase 10 can report on
+   * assistant-originated tickets.
+   */
+  declare assistant_conversation_id: CreationOptional<number | null>;
+  /**
    * NULL means the system raised this ticket from an inbound message (Phase 5,
    * FR-026). Read together with `source`: a null creator and a non-`manual`
    * source is a ticket nobody typed.
@@ -156,6 +165,7 @@ Ticket.init(
       },
     },
     requesting_contact_id: { type: DataTypes.INTEGER.UNSIGNED, allowNull: true },
+    assistant_conversation_id: { type: DataTypes.INTEGER.UNSIGNED, allowNull: true },
     category: { type: DataTypes.STRING(30), allowNull: false },
     priority: { type: DataTypes.STRING(20), allowNull: false },
     status: { type: DataTypes.STRING(20), allowNull: false, defaultValue: 'new' },

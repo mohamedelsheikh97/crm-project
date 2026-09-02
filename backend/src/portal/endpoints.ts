@@ -161,6 +161,26 @@ export const PORTAL_ENDPOINTS: readonly PortalEndpointDeclaration[] = [
   { method: 'GET', path: '/kb/articles/:slug', session: 'required', rateLimit: 'portal-read' },
   { method: 'GET', path: '/kb/search', session: 'required', rateLimit: 'portal-search' },
   { method: 'GET', path: '/kb/suggestions', session: 'required', rateLimit: 'portal-search' },
+
+  // --- Phase 9. The assistant. Answers ONLY from published, customer-visible
+  // KB content ('audience: customer' is a literal in assistant.service.ts), and
+  // reads no ticket or customer record at all (FR-035). Scoped to the
+  // conversation's own portal account, so a colleague's conversation is NOT
+  // FOUND rather than forbidden.
+  {
+    method: 'POST',
+    path: '/assistant/messages',
+    session: 'required',
+    rateLimit: 'portal-submit',
+    sampleBody: { body: 'how do I reset my password' },
+  },
+  {
+    method: 'POST',
+    path: '/assistant/escalate',
+    session: 'required',
+    rateLimit: 'portal-submit',
+    sampleBody: { conversationId: 1 },
+  },
 ];
 
 /** Where the portal router is mounted. One constant, read by the router and both matrices. */

@@ -4,6 +4,7 @@ import { env } from '../../config/env.js';
 import * as portalAuthController from '../../controllers/portal/auth.controller.js';
 import * as portalInvitationsController from '../../controllers/portal/invitations.controller.js';
 import * as portalKbController from '../../controllers/portal/kb.controller.js';
+import * as portalAssistantController from '../../controllers/portal/assistant.controller.js';
 import * as portalSatisfactionController from '../../controllers/portal/satisfaction.controller.js';
 import * as portalTicketsController from '../../controllers/portal/tickets.controller.js';
 import { validationError } from '../../errors/app-error.js';
@@ -159,6 +160,19 @@ router.post(
   '/tickets/:reference/satisfaction',
   byAccount('portal-submit'),
   portalSatisfactionController.submit,
+);
+
+// Phase 9 — the assistant. Keyed by ACCOUNT like every other authenticated
+// portal route: an office behind one address is many customers (Phase 8 D11).
+router.post(
+  '/assistant/messages',
+  byAccount('portal-submit'),
+  portalAssistantController.message,
+);
+router.post(
+  '/assistant/escalate',
+  byAccount('portal-submit'),
+  portalAssistantController.escalateConversation,
 );
 
 // ---------------------------------------------------------------------------

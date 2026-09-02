@@ -7,6 +7,7 @@ import ticketKnowledgeRoutes from '../knowledge/ticket-knowledge.routes.js';
 import messageRoutes from '../messages/index.js';
 
 import ticketNotesRoutes from './ticket-notes.routes.js';
+import ticketAiRoutes from './ai.routes.js';
 import ticketsRoutes from './tickets.routes.js';
 
 const router = Router();
@@ -18,6 +19,7 @@ router.use(authenticate);
 router.use(requirePasswordChange);
 
 router.use(ticketsRoutes);
+router.use(ticketAiRoutes);
 // Notes live on the ticket path but in their own file: they are a different
 // module with their own permissions, not more ticket endpoints.
 router.use(ticketNotesRoutes);

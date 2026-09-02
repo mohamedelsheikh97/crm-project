@@ -9,6 +9,7 @@ import alertsRoutes from '../alerts/alerts.routes.js';
 import slaRoutes from '../sla/sla.routes.js';
 
 import auditRoutes from './audit.routes.js';
+import aiConfigRoutes from './ai-config.routes.js';
 import portalAccessRoutes from './portal-access.routes.js';
 import rolesRoutes from './roles.routes.js';
 import settingsRoutes from './settings.routes.js';
@@ -41,5 +42,8 @@ router.use('/alerts', alertsRoutes);
 // surface; the per-customer READ is on the customer router, where a staff member
 // is standing when they ask the question.
 router.use('/portal', portalAccessRoutes);
+
+// Phase 9 — AI configuration, the activity record, and chatbot transcripts.
+router.use('/ai', aiConfigRoutes);
 
 export default router;
