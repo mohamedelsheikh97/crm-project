@@ -3,19 +3,25 @@ import { nextTick, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 
-import AiDisclosure from '../../components/ai/AiDisclosure.vue';
+import AiDisclosure from '../ai/AiDisclosure.vue';
 import * as assistantService from '../../services/assistant.service';
 import type { AssistantCitedArticle } from '../../services/assistant.service';
 
 /**
- * The customer assistant (Phase 9, US3).
+ * The customer assistant conversation (Phase 9, US3).
+ *
+ * THE CONVERSATION ONLY — no page title, no page padding, no route of its own.
+ * This was a whole screen at `/portal/assistant` until the assistant became a
+ * popup reachable from every portal page, and splitting it is what let that
+ * happen without the conversation logic existing twice. Whatever renders this
+ * owns the heading and the frame.
  *
  * MOBILE-FIRST, like every Phase 8 portal surface.
  *
  * NO DEAD END, EVER (FR-042). When the assistant is unavailable — disabled, its
  * controlled-infrastructure processor down, or the customer's language not one
- * it answers in — this view says so and offers the Phase 8 route to a ticket.
- * There is no fallback to another processor, by design (FR-008b).
+ * it answers in — this says so and offers the Phase 8 route to a ticket. There
+ * is no fallback to another processor, by design (FR-008b).
  *
  * A REFUSAL IS NOT AN ERROR. "I cannot answer that" arrives as a normal reply
  * carrying `needsHuman`, and the escalation offer appears beside it.
@@ -25,6 +31,13 @@ interface Turn {
   body: string;
   citedArticles?: AssistantCitedArticle[];
 }
+
+/**
+ * Emitted whenever this component sends the customer somewhere else. A popup
+ * host closes itself on it; a full-page host can ignore it. The conversation
+ * does not assume it is inside a popup.
+ */
+const emit = defineEmits<{ (event: 'navigate'): void }>();
 
 const { t } = useI18n();
 const router = useRouter();
@@ -97,18 +110,23 @@ async function escalate(): Promise<void> {
 }
 
 function openRequest(): void {
-  if (escalatedTo.value) router.push(`/portal/requests/${escalatedTo.value}`);
+  if (!escalatedTo.value) return;
+
+  emit('navigate');
+  void router.push(`/portal/requests/${escalatedTo.value}`);
+}
+
+function leaving(): void {
+  emit('navigate');
 }
 </script>
 
 <template>
-  <section class="assistant">
-    <h1 class="assistant__title">{{ t('portal.assistant.title') }}</h1>
-
+  <div class="assistant">
     <!-- No dead end (FR-042). -->
     <div v-if="unavailable" class="assistant__unavailable">
       <p>{{ t('portal.assistant.unavailable') }}</p>
-      <RouterLink class="assistant__cta" to="/portal/requests/new">
+      <RouterLink class="assistant__cta" to="/portal/requests/new" @click="leaving">
         {{ t('portal.assistant.raiseInstead') }}
       </RouterLink>
     </div>
@@ -131,7 +149,11 @@ function openRequest(): void {
 
           <ul v-if="turn.citedArticles && turn.citedArticles.length > 0" class="assistant__cited">
             <li v-for="article in turn.citedArticles" :key="article.slug ?? article.title">
-              <RouterLink v-if="article.slug" :to="`/portal/help?article=${article.slug}`">
+              <RouterLink
+                v-if="article.slug"
+                :to="`/portal/help?article=${article.slug}`"
+                @click="leaving"
+              >
                 {{ article.title }}
               </RouterLink>
               <span v-else>{{ article.title }}</span>
@@ -174,7 +196,7 @@ function openRequest(): void {
         </button>
       </form>
     </template>
-  </section>
+  </div>
 </template>
 
 <style scoped>
@@ -182,24 +204,22 @@ function openRequest(): void {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  max-width: 44rem;
-  margin-inline: auto;
-  padding: 1rem;
-}
-
-.assistant__title {
-  font-size: 1.125rem;
-  font-weight: 600;
-  margin: 0;
+  /* No max-width and no auto margin: the frame decides the width, which is what
+     lets the same conversation sit in a popup and on a page. */
+  min-height: 0;
 }
 
 .assistant__turns {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  /* Bounded so the composer stays reachable with a keyboard covering half a
-     phone screen — the mobile pass this phase is the first to need. */
-  max-height: 55vh;
+  /* Grows into whatever the frame allows rather than carrying its own viewport
+     max-height. Inside the popup the panel already bounds the height, and a
+     second bound measured against the viewport fights it on a phone with the
+     keyboard open — which is exactly the case the Phase 8 mobile pass cared
+     about. */
+  flex: 1 1 auto;
+  min-height: 6rem;
   overflow-y: auto;
   padding: 0.5rem;
   border: 1px solid #e5e7eb;

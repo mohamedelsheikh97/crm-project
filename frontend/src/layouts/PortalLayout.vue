@@ -3,6 +3,7 @@ import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 
 import LanguageToggle from '../components/LanguageToggle.vue';
+import AssistantWidget from '../components/portal/AssistantWidget.vue';
 import * as portalService from '../services/portal.service';
 import { usePortalStore } from '../stores/portal.store';
 
@@ -104,5 +105,10 @@ async function signOut(): Promise<void> {
     <main id="portal-content" class="mx-auto max-w-3xl px-4 py-6">
       <slot />
     </main>
+
+    <!-- Signed in only. The assistant reads a portal session, and offering a
+         launcher on the sign-in screen would promise something that answers
+         with a 401. -->
+    <AssistantWidget v-if="portal.accessToken" />
   </div>
 </template>

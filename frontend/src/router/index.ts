@@ -18,7 +18,6 @@ import HelpContactView from '../views/help/HelpContactView.vue';
 import NotFoundView from '../views/NotFoundView.vue';
 import AcceptInviteView from '../views/portal/AcceptInviteView.vue';
 import NewRequestView from '../views/portal/NewRequestView.vue';
-import PortalAssistantView from '../views/portal/PortalAssistantView.vue';
 import PortalHelpView from '../views/portal/PortalHelpView.vue';
 import PortalLoginView from '../views/portal/PortalLoginView.vue';
 import PortalResetView from '../views/portal/PortalResetView.vue';
@@ -433,18 +432,14 @@ const router = createRouter({
       component: AgentReportView,
       meta: { titleKey: 'route.reports.agents.title', permission: 'reports:view_agents' },
     },
-    // Phase 9 — the assistant. Under the portal shell and the portal auth
-    // guard, so it is a customer surface in the Phase 8 realm and nothing else.
-    {
-      path: '/portal/assistant',
-      name: 'portal-assistant',
-      component: PortalAssistantView,
-      meta: {
-        titleKey: 'route.portal.assistant.title',
-        portalShell: true,
-        requiresPortalAuth: true,
-      },
-    },
+    // Phase 9 — the assistant has NO ROUTE. It is a popup anchored to the
+    // bottom corner of `PortalLayout`, so it travels with the customer across
+    // the request list, a request, and the help centre rather than being a
+    // place they have to navigate to and come back from. `/portal/assistant`
+    // existed and was linked from nowhere, which made the feature reachable
+    // only by typing a URL. Mounting it in the shell keeps it inside the Phase 8
+    // realm exactly as the route did: the shell renders only behind the portal
+    // auth guard, and the widget renders only with a session in hand.
     {
       path: '/portal/help',
       name: 'portal-help',
